@@ -1,0 +1,19 @@
+{
+  "name": "PraktijkEPD - Therapy Practice Management",
+  "short_name": "PraktijkEPD",
+  "description": "Professional therapy practice management system for therapists and clients",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "orientation": "portrait",
+  "categories": ["healthcare", "medical", "productivity"]
+}
