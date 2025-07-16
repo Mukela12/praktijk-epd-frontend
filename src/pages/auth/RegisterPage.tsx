@@ -84,63 +84,58 @@ const RegisterPage: React.FC = () => {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    try {
-      console.log('=== REGISTRATION FORM SUBMISSION ===');
-      console.log('1. Raw form data:', data);
-      
-      // Validate password requirements
-      console.log('2. Password validation:');
-      console.log('   - Length:', data.password.length, '(min: 8)');
-      console.log('   - Has uppercase:', /[A-Z]/.test(data.password));
-      console.log('   - Has lowercase:', /[a-z]/.test(data.password));
-      console.log('   - Has number:', /\d/.test(data.password));
-      console.log('   - Has special char:', /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password));
-      console.log('   - Password matches confirm:', data.password === data.confirmPassword);
-      
-      // Extract acceptTerms from data but don't send it to backend
-      const { acceptTerms, ...registrationData } = data;
-      
-      // Clean up phone field - if empty, don't send it
-      const cleanedData = {
-        email: registrationData.email,
-        password: registrationData.password,
-        confirmPassword: registrationData.confirmPassword,
-        firstName: registrationData.firstName,
-        lastName: registrationData.lastName,
-        ...(registrationData.phone && { phone: registrationData.phone }),
-        role: registrationData.role,
-        preferredLanguage: registrationData.preferredLanguage,
-      };
-      
-      console.log('3. Data being sent to backend:', cleanedData);
-      console.log('4. API endpoint:', import.meta.env.VITE_API_URL || 'http://localhost:3000/api' + '/auth/register');
-      
-      const success = await registerUser(cleanedData);
+    console.log('=== REGISTRATION FORM SUBMISSION ===');
+    console.log('1. Raw form data:', data);
+    
+    // Validate password requirements
+    console.log('2. Password validation:');
+    console.log('   - Length:', data.password.length, '(min: 8)');
+    console.log('   - Has uppercase:', /[A-Z]/.test(data.password));
+    console.log('   - Has lowercase:', /[a-z]/.test(data.password));
+    console.log('   - Has number:', /\d/.test(data.password));
+    console.log('   - Has special char:', /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password));
+    console.log('   - Password matches confirm:', data.password === data.confirmPassword);
+    
+    // Extract acceptTerms from data but don't send it to backend
+    const { acceptTerms, ...registrationData } = data;
+    
+    // Clean up phone field - if empty, don't send it
+    const cleanedData = {
+      email: registrationData.email,
+      password: registrationData.password,
+      confirmPassword: registrationData.confirmPassword,
+      firstName: registrationData.firstName,
+      lastName: registrationData.lastName,
+      ...(registrationData.phone && { phone: registrationData.phone }),
+      role: registrationData.role,
+      preferredLanguage: registrationData.preferredLanguage,
+    };
+    
+    console.log('3. Data being sent to backend:', cleanedData);
+    console.log('4. API endpoint:', import.meta.env.VITE_API_URL || 'http://localhost:3000/api' + '/auth/register');
+    
+    const success = await registerUser(cleanedData);
 
-      console.log('5. Registration response success:', success);
+    console.log('5. Registration response success:', success);
 
-      if (success) {
-        navigate('/auth/login', {
-          state: { message: 'Registration successful! Please check your email to verify your account.' }
+    if (success) {
+      console.log('6. Attempting navigation to email verification pending page');
+      console.log('7. Email being passed in state:', registrationData.email);
+      
+      // Use setTimeout to ensure state updates complete before navigation
+      setTimeout(() => {
+        console.log('8. Executing delayed navigation');
+        navigate('/auth/email-verification-pending', {
+          state: { email: registrationData.email },
+          replace: true // Use replace to ensure clean navigation
         });
-      }
-    } catch (error: any) {
-      console.error('=== REGISTRATION ERROR ===');
-      console.error('Full error object:', error);
-      console.error('Error response:', error.response);
-      console.error('Error response data:', error.response?.data);
-      console.error('Error response status:', error.response?.status);
-      console.error('Error message:', error.response?.data?.message || error.message);
-      
-      // Log specific validation errors
-      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-        console.error('Validation errors:');
-        console.error('Raw errors:', JSON.stringify(error.response.data.errors, null, 2));
-      }
-      
+        console.log('9. Navigation call completed');
+      }, 100);
+    } else {
+      console.log('6. Registration failed, showing error');
       setError('root', {
         type: 'manual',
-        message: error.response?.data?.message || 'Registration failed. Please try again.',
+        message: 'Registration failed. Please check the form and try again.',
       });
     }
   };

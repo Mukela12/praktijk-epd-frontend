@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
 import { UserRole } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -28,6 +28,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -126,10 +127,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {t('twofa.setup')}
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-6">
             Two-factor authentication is required for your account. Please set it up to continue.
           </p>
-          <Navigate to="/auth/2fa-setup" state={{ from: location }} replace />
+          <button
+            onClick={() => navigate('/auth/2fa', { state: { from: location } })}
+            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Set Up Two-Factor Authentication
+          </button>
         </div>
       </div>
     );

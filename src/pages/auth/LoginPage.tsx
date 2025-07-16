@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { EyeIcon, EyeSlashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { LoginFormData } from '@/types/auth';
@@ -27,12 +27,13 @@ const loginSchema = z.object({
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, requiresTwoFactor } = useAuth();
+  const { login, isLoading, requiresTwoFactor, twoFactorSetupRequired } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = (location.state as any)?.from?.pathname || '/';
+  const message = (location.state as any)?.message;
 
   const {
     register,
@@ -51,25 +52,34 @@ const LoginPage: React.FC = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      const success = await login({
-        email: data.email,
-        password: data.password,
-        rememberDevice: data.rememberDevice,
-        twoFactorCode: data.twoFactorCode,
-      });
+    const result = await login({
+      email: data.email,
+      password: data.password,
+      rememberDevice: data.rememberDevice,
+      twoFactorCode: data.twoFactorCode,
+    });
 
-      if (success) {
+    if (result === true) {
+      // Check if 2FA setup is required
+      if (twoFactorSetupRequired) {
+        // Navigate to 2FA setup page
+        navigate('/auth/2fa', { state: { from: location.state?.from || { pathname: '/' } } });
+      } else {
         // Navigate to intended destination or dashboard
         navigate(from, { replace: true });
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError('root', {
-        type: 'manual',
-        message: error.response?.data?.message || 'Login failed. Please try again.',
+    } else if (result === 'email_not_verified') {
+      // Email not verified, redirect to verification pending page
+      console.log('Email not verified, redirecting to verification pending page');
+      navigate('/auth/email-verification-pending', {
+        state: { email: data.email, fromLogin: true },
+        replace: true
       });
+    } else if (requiresTwoFactor) {
+      // Navigate to 2FA page if 2FA verification is required
+      navigate('/auth/2fa', { state: { from: location.state?.from || { pathname: '/' } } });
     }
+    // Note: All error handling is now done in the auth store with toast messages
   };
 
   const emailValue = watch('email');
@@ -90,6 +100,16 @@ const LoginPage: React.FC = () => {
           Sign in to your PraktijkEPD account
         </p>
       </div>
+
+      {/* Success Message */}
+      {message && (
+        <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-start">
+          <CheckCircleIcon className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-green-800">{message}</p>
+          </div>
+        </div>
+      )}
 
       {/* Login Form */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">

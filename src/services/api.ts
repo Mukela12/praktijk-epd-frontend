@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError, CancelToken } from 'axios';
 import { toast } from 'react-hot-toast';
 import { 
   AuthResponse, 
@@ -21,6 +21,29 @@ const api: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Rate limit tracker
+const rateLimitTracker = new Map<string, { count: number; resetTime: number }>();
+
+// Function to check rate limits before making requests
+const checkRateLimit = (endpoint: string, limit: number = 5, windowMs: number = 60000): boolean => {
+  const now = Date.now();
+  const tracker = rateLimitTracker.get(endpoint);
+  
+  if (!tracker || now > tracker.resetTime) {
+    rateLimitTracker.set(endpoint, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  if (tracker.count >= limit) {
+    const waitTime = Math.ceil((tracker.resetTime - now) / 1000);
+    console.warn(`Rate limit reached for ${endpoint}. Wait ${waitTime} seconds.`);
+    return false;
+  }
+  
+  tracker.count++;
+  return true;
+};
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -60,6 +83,26 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
     
+    // Handle 429 rate limit errors specially
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      const waitTime = retryAfter ? parseInt(retryAfter) : 60;
+      
+      // Don't show toast for every 429 error, just log it
+      console.warn(`Rate limited. Retry after ${waitTime} seconds.`);
+      
+      // Set rate limit for this endpoint
+      if (originalRequest.url) {
+        const endpoint = originalRequest.url.split('?')[0];
+        rateLimitTracker.set(endpoint, {
+          count: 100, // Set to high number to block requests
+          resetTime: Date.now() + (waitTime * 1000)
+        });
+      }
+      
+      return Promise.reject(error);
+    }
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
@@ -92,8 +135,6 @@ api.interceptors.response.use(
     } else if (error.response?.status === 422) {
       // Validation errors are handled by individual components
       return Promise.reject(error);
-    } else if (error.response?.status === 429) {
-      toast.error('Too many requests. Please try again later.');
     } else if (error.response?.status && error.response.status >= 500) {
       toast.error('Server error. Please try again later.');
     } else if (error.code === 'NETWORK_ERROR' || !error.response) {
@@ -195,10 +236,46 @@ export const authApi = {
   },
 
   /**
-   * Verify email address
+   * Verify email address with rate limit check
    */
   verifyEmail: async (token: string): Promise<ApiResponse> => {
+    // Check rate limit before making request
+    const endpoint = `/auth/verify-email/${token}`;
+    if (!checkRateLimit(endpoint, 3, 60000)) { // Allow 3 attempts per minute
+      throw {
+        response: {
+          status: 429,
+          data: {
+            success: false,
+            message: 'Too many verification attempts. Please wait before trying again.'
+          }
+        }
+      };
+    }
+    
     const response = await api.get<ApiResponse>(`/auth/verify-email/${token}`);
+    return response.data;
+  },
+
+  /**
+   * Resend verification email with rate limit check
+   */
+  resendVerificationEmail: async (email: string): Promise<ApiResponse> => {
+    // Check rate limit before making request
+    const endpoint = '/auth/resend-verification';
+    if (!checkRateLimit(endpoint, 3, 30000)) { // Allow 3 attempts per 30 seconds
+      throw {
+        response: {
+          status: 429,
+          data: {
+            success: false,
+            message: 'Too many resend attempts. Please wait 30 seconds before trying again.'
+          }
+        }
+      };
+    }
+    
+    const response = await api.post<ApiResponse>('/auth/resend-verification', { email });
     return response.data;
   },
 
@@ -351,6 +428,13 @@ export const apiHelpers = {
    */
   isPermissionError: (error: AxiosError): boolean => {
     return error.response?.status === 403;
+  },
+
+  /**
+   * Check if error is rate limit error
+   */
+  isRateLimitError: (error: AxiosError): boolean => {
+    return error.response?.status === 429;
   },
 
   /**

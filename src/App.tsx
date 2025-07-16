@@ -17,6 +17,7 @@ import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
 import TwoFactorPage from '@/pages/auth/TwoFactorPage';
+import EmailVerificationPendingPage from '@/pages/auth/EmailVerificationPendingPage';
 
 // Dashboard Components
 import AdminDashboard from '@/pages/admin/AdminDashboard';
@@ -40,7 +41,15 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
-  const { isAuthenticated, isLoading, refreshAuth, user } = useAuth();
+  const { isAuthenticated, isLoading, refreshAuth, user, requiresTwoFactor, twoFactorSetupRequired } = useAuth();
+  
+  // Only log when auth state changes significantly
+  React.useEffect(() => {
+    console.log('=== AUTH STATE CHANGE ===');
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('requiresTwoFactor:', requiresTwoFactor);
+    console.log('twoFactorSetupRequired:', twoFactorSetupRequired);
+  }, [isAuthenticated, requiresTwoFactor, twoFactorSetupRequired]);
 
   // Initialize authentication on app load
   useEffect(() => {
@@ -69,25 +78,66 @@ const App: React.FC = () => {
         <Router>
           <div className="App">
             <Routes>
-              {/* Public routes - Redirect to dashboard if authenticated */}
+              {/* Auth routes - Always allow access to auth pages, but redirect authenticated users from login/register */}
               <Route 
                 path="/auth/*" 
                 element={
-                  isAuthenticated ? (
-                    <RoleRedirect />
-                  ) : (
-                    <AuthLayout>
-                      <Routes>
-                        <Route path="login" element={<LoginPage />} />
-                        <Route path="register" element={<RegisterPage />} />
-                        <Route path="forgot-password" element={<ForgotPasswordPage />} />
-                        <Route path="reset-password/:token" element={<ResetPasswordPage />} />
-                        <Route path="verify-email/:token" element={<VerifyEmailPage />} />
-                        <Route path="2fa" element={<TwoFactorPage />} />
-                        <Route path="" element={<Navigate to="login" replace />} />
-                      </Routes>
-                    </AuthLayout>
-                  )
+                  <AuthLayout>
+                    <Routes key={`auth-${isAuthenticated}-${requiresTwoFactor}-${twoFactorSetupRequired}`}>
+                      <Route 
+                        path="login" 
+                        element={
+                          isAuthenticated && !requiresTwoFactor && !twoFactorSetupRequired ? (
+                            <RoleRedirect />
+                          ) : (
+                            <LoginPage />
+                          )
+                        } 
+                      />
+                      <Route 
+                        path="register" 
+                        element={
+                          (() => {
+                            console.log('=== REGISTER ROUTE RENDER CHECK ===');
+                            console.log('isAuthenticated:', isAuthenticated);
+                            console.log('requiresTwoFactor:', requiresTwoFactor);
+                            console.log('twoFactorSetupRequired:', twoFactorSetupRequired);
+                            
+                            if (isAuthenticated && !requiresTwoFactor && !twoFactorSetupRequired) {
+                              console.log('Redirecting authenticated user from register page');
+                              return <RoleRedirect />;
+                            } else {
+                              console.log('Showing register page');
+                              return <RegisterPage />;
+                            }
+                          })()
+                        } 
+                      />
+                      <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                      <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+                      <Route path="verify-email/:token" element={<VerifyEmailPage />} />
+                      <Route 
+                        path="email-verification-pending" 
+                        element={
+                          (() => {
+                            console.log('=== RENDERING EMAIL VERIFICATION PENDING ROUTE ===');
+                            return <EmailVerificationPendingPage />;
+                          })()
+                        } 
+                      />
+                      <Route 
+                        path="2fa" 
+                        element={
+                          isAuthenticated || requiresTwoFactor || twoFactorSetupRequired ? (
+                            <TwoFactorPage />
+                          ) : (
+                            <Navigate to="login" replace />
+                          )
+                        } 
+                      />
+                      <Route path="" element={<Navigate to="login" replace />} />
+                    </Routes>
+                  </AuthLayout>
                 } 
               />
 

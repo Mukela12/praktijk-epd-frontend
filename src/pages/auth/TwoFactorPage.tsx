@@ -11,7 +11,8 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowPathIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -200,22 +201,24 @@ const TwoFactorPage: React.FC = () => {
   // Show backup codes after successful setup
   if (showBackupCodes && setupData) {
     return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <KeyIcon className="w-8 h-8 text-green-600" />
+      <div className="w-full max-w-lg mx-auto">
+        <div className="text-center mb-10">
+          <div className="relative w-20 h-20 bg-green-100 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-bounce">
+            <KeyIcon className="w-10 h-10 text-green-600" />
+            <div className="absolute -inset-1 bg-green-400 rounded-3xl blur opacity-25"></div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
             Save Your Backup Codes
           </h1>
-          <p className="text-gray-600">
-            Store these backup codes in a safe place. You can use them to access your account if you lose your authenticator device.
+          <p className="text-gray-600 text-lg">
+            Store these codes safely - they're your backup access keys
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Backup Codes */}
-          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="space-y-6">
+            {/* Backup Codes */}
+            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-gray-900">Backup Codes</h3>
               <button
@@ -248,13 +251,16 @@ const TwoFactorPage: React.FC = () => {
             </ul>
           </div>
 
-          {/* Complete Setup */}
-          <button
-            onClick={completeSetup}
-            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            Complete Setup
-          </button>
+            {/* Complete Setup */}
+            <button
+              onClick={completeSetup}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center group"
+            >
+              <CheckCircleIcon className="w-5 h-5 mr-2" />
+              Complete Setup & Continue
+              <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -331,22 +337,24 @@ const TwoFactorPage: React.FC = () => {
     }
 
     return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <QrCodeIcon className="w-8 h-8 text-blue-600" />
+      <div className="w-full max-w-lg mx-auto">
+        <div className="text-center mb-10">
+          <div className="relative w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <QrCodeIcon className="w-10 h-10 text-blue-600" />
+            <div className="absolute -inset-1 bg-blue-400 rounded-3xl blur opacity-25"></div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {t('twofa.setup')}
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            Setup Two-Factor Authentication
           </h1>
-          <p className="text-gray-600">
-            {t('twofa.scanQR')}
+          <p className="text-gray-600 text-lg">
+            Secure your account with an authenticator app
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* QR Code */}
-          <div className="bg-white border-2 border-gray-200 rounded-lg p-6 text-center">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="space-y-6">
+            {/* QR Code */}
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-6 text-center">
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Step 1: Scan QR Code
@@ -471,6 +479,7 @@ const TwoFactorPage: React.FC = () => {
               )}
             </button>
           </form>
+          </div>
         </div>
       </div>
     );

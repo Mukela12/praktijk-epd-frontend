@@ -13,7 +13,7 @@ import { toast } from 'react-hot-toast';
 
 interface AuthStore extends AuthState {
   // Actions
-  login: (credentials: LoginCredentials) => Promise<boolean>;
+  login: (credentials: LoginCredentials) => Promise<boolean | 'email_not_verified'>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthStore>()(
       twoFactorSetupRequired: false,
 
       // Actions
-      login: async (credentials: LoginCredentials): Promise<boolean> => {
+      login: async (credentials: LoginCredentials): Promise<boolean | 'email_not_verified'> => {
         try {
           set({ isLoading: true, requiresTwoFactor: false });
           
@@ -55,9 +55,12 @@ export const useAuthStore = create<AuthStore>()(
           
           if (response.success) {
             if (response.requiresTwoFactor) {
+              // Store partial authentication state for 2FA flow
               set({ 
                 requiresTwoFactor: true,
-                isLoading: false 
+                isLoading: false,
+                // Store email for 2FA verification
+                user: { email: credentials.email } as any
               });
               return false; // Need 2FA verification
             }
@@ -78,9 +81,17 @@ export const useAuthStore = create<AuthStore>()(
           toast.error(response.message || 'Login failed');
           return false;
         } catch (error: any) {
+          set({ isLoading: false, requiresTwoFactor: false });
+          
+          // Check if error is due to unverified email
+          if (error.response?.status === 403 && 
+              error.response?.data?.message?.includes('verify your email')) {
+            // Don't show toast error for email verification - let the component handle the redirect
+            return 'email_not_verified';
+          }
+          
           const message = error.response?.data?.message || 'Login failed';
           toast.error(message);
-          set({ isLoading: false, requiresTwoFactor: false });
           return false;
         }
       },
@@ -97,8 +108,17 @@ export const useAuthStore = create<AuthStore>()(
           console.log('API Response:', response);
           
           if (response.success) {
+            // Clear any existing auth state that might interfere with navigation
+            set({ 
+              isLoading: false,
+              user: null,
+              accessToken: null,
+              isAuthenticated: false,
+              requiresTwoFactor: false,
+              twoFactorSetupRequired: false
+            });
+            
             toast.success('Registration successful! Please check your email to verify your account.');
-            set({ isLoading: false });
             return true;
           }
           
@@ -128,7 +148,7 @@ export const useAuthStore = create<AuthStore>()(
           const message = error.response?.data?.message || 'Registration failed';
           toast.error(message);
           set({ isLoading: false });
-          throw error; // Re-throw to be caught by component
+          return false;
         }
       },
 
@@ -209,6 +229,21 @@ export const useAuthStore = create<AuthStore>()(
                   twoFactorSetupRequired: false
                 });
               }
+            } else {
+              // This is a login 2FA verification
+              // Update authentication state if we have user data in response
+              if (response.user && response.accessToken) {
+                set({
+                  user: response.user,
+                  accessToken: response.accessToken,
+                  isAuthenticated: true,
+                  requiresTwoFactor: false
+                });
+                localStorage.setItem('accessToken', response.accessToken);
+                localStorage.setItem('user', JSON.stringify(response.user));
+              }
+              // Clear requiresTwoFactor flag
+              set({ requiresTwoFactor: false });
             }
             
             toast.success('2FA verification successful!');
