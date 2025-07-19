@@ -7,11 +7,68 @@ import {
   LoginCredentials, 
   RegisterData, 
   UserRole,
-  TwoFactorSetup 
+  TwoFactorSetup,
+  AuthenticationState,
+  AuthNavigation
 } from '@/types/auth';
-import { toast } from 'react-hot-toast';
+import { PremiumNotifications } from '@/utils/premiumNotifications';
+
+// Centralized navigation and auth helpers
+const createAuthNavigation = (): AuthNavigation => {
+  const getDashboardPath = (role: UserRole): string => {
+    switch (role) {
+      case UserRole.ADMIN:
+        return '/admin/dashboard';
+      case UserRole.THERAPIST:
+      case UserRole.SUBSTITUTE:
+        return '/therapist/dashboard';
+      case UserRole.CLIENT:
+        return '/client/dashboard';
+      case UserRole.ASSISTANT:
+        return '/assistant/dashboard';
+      case UserRole.BOOKKEEPER:
+        return '/bookkeeper/dashboard';
+      default:
+        return '/client/dashboard';
+    }
+  };
+
+  const requires2FASetup = (user: User): boolean => {
+    // Check if user is in a role that requires 2FA AND hasn't completed setup yet
+    const roleRequires2FA = ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(user.role);
+    return roleRequires2FA && !user.two_factor_setup_completed;
+  };
+
+  const getNextNavigationPath = (user: User, authState: AuthenticationState): string => {
+    switch (authState) {
+      case AuthenticationState.REQUIRES_2FA_SETUP:
+        return '/auth/2fa';
+      case AuthenticationState.REQUIRES_2FA_VERIFICATION:
+        return '/auth/2fa';
+      case AuthenticationState.AUTHENTICATED_COMPLETE:
+        return getDashboardPath(user.role);
+      default:
+        return getDashboardPath(user.role);
+    }
+  };
+
+  const navigateWithAuth = (path: string, replace = false): void => {
+    // Navigation will be handled by the component that subscribes to the store
+    console.log('Navigation request:', path, replace);
+  };
+
+  return {
+    getDashboardPath,
+    requires2FASetup,
+    getNextNavigationPath,
+    navigateWithAuth
+  };
+};
 
 interface AuthStore extends AuthState {
+  // Navigation helper
+  navigation: AuthNavigation;
+  
   // Actions
   login: (credentials: LoginCredentials) => Promise<boolean | 'email_not_verified'>;
   register: (userData: RegisterData) => Promise<boolean>;
@@ -19,8 +76,16 @@ interface AuthStore extends AuthState {
   refreshAuth: () => Promise<void>;
   setup2FA: () => Promise<TwoFactorSetup | null>;
   verify2FA: (code: string, secret?: string) => Promise<boolean>;
+  complete2FALogin: (twoFactorCode: string) => Promise<boolean>;
   disable2FA: (code: string) => Promise<boolean>;
   clearAuth: () => void;
+  
+  // State management with new state machine
+  setAuthenticationState: (state: AuthenticationState) => void;
+  setError: (error: string | null) => void;
+  setPendingNavigation: (path: string | null) => void;
+  
+  // Legacy support (deprecated)
   setLoading: (loading: boolean) => void;
   setRequiresTwoFactor: (requires: boolean) => void;
   setTwoFactorSetupRequired: (required: boolean) => void;
@@ -37,61 +102,150 @@ interface AuthStore extends AuthState {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+      (set, get) => ({
       // Initial state
       user: null,
       accessToken: null,
+      authenticationState: AuthenticationState.IDLE,
+      error: null,
+      pendingNavigation: null,
+      
+      // Legacy support (deprecated)
       isAuthenticated: false,
       isLoading: false,
       requiresTwoFactor: false,
       twoFactorSetupRequired: false,
+      
+      // Navigation helper
+      navigation: createAuthNavigation(),
 
       // Actions
       login: async (credentials: LoginCredentials): Promise<boolean | 'email_not_verified'> => {
+        console.log('[AuthStore] Login attempt started for:', credentials.email);
         try {
-          set({ isLoading: true, requiresTwoFactor: false });
+          // Set authenticating state
+          set({ 
+            authenticationState: AuthenticationState.AUTHENTICATING,
+            error: null,
+            isLoading: true, // Legacy support
+            requiresTwoFactor: false // Legacy support
+          });
           
           const response = await authApi.login(credentials);
+          console.log('[AuthStore] Login response:', response);
           
+          // Handle 2FA requirement (can come with success: false if 2FA is needed)
+          if (response.requiresTwoFactor) {
+            console.log('[AuthStore] 2FA verification required, response:', response);
+            // For 2FA verification, we might not have full user data yet
+            // Try to use existing user data or create minimal user object
+            const userData = response.user || { email: credentials.email } as any;
+            
+            // Store login credentials for 2FA retry (encrypted)
+            const pendingLogin = {
+              email: credentials.email,
+              password: credentials.password,
+              rememberDevice: credentials.rememberDevice
+            };
+            localStorage.setItem('pendingLogin', JSON.stringify(pendingLogin));
+            console.log('[AuthStore] Stored pending login credentials for 2FA verification');
+            
+            set({ 
+              authenticationState: AuthenticationState.REQUIRES_2FA_VERIFICATION,
+              user: userData,
+              error: null,
+              // Legacy support
+              requiresTwoFactor: true,
+              isLoading: false,
+              isAuthenticated: false
+            });
+            return false; // Need 2FA verification
+          }
+
           if (response.success) {
-            if (response.requiresTwoFactor) {
-              // Store partial authentication state for 2FA flow
-              set({ 
-                requiresTwoFactor: true,
-                isLoading: false,
-                // Store email for 2FA verification
-                user: { email: credentials.email } as any
-              });
-              return false; // Need 2FA verification
+            // User is authenticated, now check what kind of 2FA is required
+            const user = response.user!;
+            const navigation = get().navigation;
+            
+            // Check if user's role requires 2FA
+            const roleRequires2FA = ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(user.role);
+            
+            if (roleRequires2FA) {
+              // If user hasn't completed 2FA setup, require setup
+              if (!user.two_factor_setup_completed) {
+                console.log('[AuthStore] 2FA setup required for user:', user.email, 'Role:', user.role);
+                set({
+                  user,
+                  accessToken: response.accessToken || null,
+                  authenticationState: AuthenticationState.REQUIRES_2FA_SETUP,
+                  error: null,
+                  // Legacy support
+                  isAuthenticated: true,
+                  isLoading: false,
+                  requiresTwoFactor: false,
+                  twoFactorSetupRequired: true
+                });
+                
+                PremiumNotifications.auth.twoFactorRequired();
+                return true;
+              }
             }
             
+            // Complete authentication
             set({
-              user: response.user || null,
+              user,
               accessToken: response.accessToken || null,
+              authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+              error: null,
+              pendingNavigation: navigation.getDashboardPath(user.role),
+              // Legacy support
               isAuthenticated: true,
               isLoading: false,
               requiresTwoFactor: false,
-              twoFactorSetupRequired: response.twoFactorSetupRequired || false
+              twoFactorSetupRequired: false
             });
             
-            toast.success('Login successful!');
+            PremiumNotifications.auth.loginSuccess(user.first_name);
             return true;
           }
           
-          toast.error(response.message || 'Login failed');
+          // Login failed
+          set({ 
+            authenticationState: AuthenticationState.ERROR,
+            error: response.message || 'Login failed',
+            // Legacy support
+            isLoading: false,
+            requiresTwoFactor: false
+          });
+          
+          PremiumNotifications.auth.loginFailed(response.message);
           return false;
         } catch (error: any) {
-          set({ isLoading: false, requiresTwoFactor: false });
+          // Handle errors
+          const errorMessage = error.response?.data?.message || 'Login failed';
           
           // Check if error is due to unverified email
           if (error.response?.status === 403 && 
               error.response?.data?.message?.includes('verify your email')) {
-            // Don't show toast error for email verification - let the component handle the redirect
+            set({ 
+              authenticationState: AuthenticationState.ERROR,
+              error: 'Email not verified',
+              // Legacy support
+              isLoading: false,
+              requiresTwoFactor: false
+            });
             return 'email_not_verified';
           }
           
-          const message = error.response?.data?.message || 'Login failed';
-          toast.error(message);
+          set({ 
+            authenticationState: AuthenticationState.ERROR,
+            error: errorMessage,
+            // Legacy support
+            isLoading: false,
+            requiresTwoFactor: false
+          });
+          
+          PremiumNotifications.auth.loginFailed(errorMessage);
           return false;
         }
       },
@@ -100,53 +254,24 @@ export const useAuthStore = create<AuthStore>()(
         try {
           set({ isLoading: true });
           
-          console.log('=== AUTHSTORE REGISTER ===');
-          console.log('Sending registration data to API:', userData);
-          
           const response = await authApi.register(userData);
           
-          console.log('API Response:', response);
-          
           if (response.success) {
-            // Clear any existing auth state that might interfere with navigation
-            set({ 
-              isLoading: false,
-              user: null,
-              accessToken: null,
-              isAuthenticated: false,
-              requiresTwoFactor: false,
-              twoFactorSetupRequired: false
+            set({ isLoading: false });
+            PremiumNotifications.success('Account created successfully!', {
+              title: 'Registration Complete',
+              description: 'Please check your email to verify your account',
+              duration: 8000,
             });
-            
-            toast.success('Registration successful! Please check your email to verify your account.');
             return true;
           }
           
-          console.log('Registration failed with response:', response);
-          toast.error(response.message || 'Registration failed');
+          PremiumNotifications.error(response.message || 'Registration failed', { title: 'Registration Failed' });
           set({ isLoading: false });
           return false;
         } catch (error: any) {
-          console.error('=== AUTHSTORE REGISTER ERROR ===');
-          console.error('Error caught in authStore:', error);
-          console.error('Error response:', error.response);
-          console.error('Error response data:', error.response?.data);
-          
-          // Log specific validation errors
-          if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-            console.error('Specific validation errors from backend:');
-            console.error('Raw errors array:', error.response.data.errors);
-            error.response.data.errors.forEach((err: any, index: number) => {
-              console.error(`  ${index + 1}.`, err);
-              if (typeof err === 'object') {
-                console.error(`     Field: ${err.field || err.path || 'unknown'}`);
-                console.error(`     Message: ${err.message || err.msg || JSON.stringify(err)}`);
-              }
-            });
-          }
-          
           const message = error.response?.data?.message || 'Registration failed';
-          toast.error(message);
+          PremiumNotifications.error(message, { title: 'Registration Error' });
           set({ isLoading: false });
           return false;
         }
@@ -158,15 +283,25 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
+          // Clear all auth state
           set({
             user: null,
             accessToken: null,
+            authenticationState: AuthenticationState.IDLE,
+            error: null,
+            pendingNavigation: null,
+            // Legacy support
             isAuthenticated: false,
             isLoading: false,
             requiresTwoFactor: false,
             twoFactorSetupRequired: false
           });
-          toast.success('Logged out successfully');
+          // Clear local storage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('tempToken');
+          localStorage.removeItem('pendingLogin');
+          PremiumNotifications.success('Logged out successfully', { duration: 2000 });
         }
       },
 
@@ -178,15 +313,44 @@ export const useAuthStore = create<AuthStore>()(
             return;
           }
 
-          set({ isLoading: true });
-          const user = await authApi.getCurrentUser();
-          
-          set({
-            user,
-            accessToken: token,
-            isAuthenticated: true,
-            isLoading: false
+          // Set authenticating state during refresh
+          set({ 
+            authenticationState: AuthenticationState.AUTHENTICATING,
+            isLoading: true,
+            error: null
           });
+          
+          const user = await authApi.getCurrentUser();
+          const navigation = get().navigation;
+          
+          // Check if user needs 2FA setup
+          if (navigation.requires2FASetup(user)) {
+            set({
+              user,
+              accessToken: token,
+              authenticationState: AuthenticationState.REQUIRES_2FA_SETUP,
+              error: null,
+              // Legacy support
+              isAuthenticated: true,
+              isLoading: false,
+              requiresTwoFactor: false,
+              twoFactorSetupRequired: true
+            });
+          } else {
+            // Complete authentication
+            set({
+              user,
+              accessToken: token,
+              authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+              error: null,
+              pendingNavigation: navigation.getDashboardPath(user.role),
+              // Legacy support
+              isAuthenticated: true,
+              isLoading: false,
+              requiresTwoFactor: false,
+              twoFactorSetupRequired: false
+            });
+          }
         } catch (error) {
           console.error('Auth refresh failed:', error);
           get().clearAuth();
@@ -194,9 +358,11 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       setup2FA: async (): Promise<TwoFactorSetup | null> => {
+        console.log('[AuthStore] Starting 2FA setup');
         try {
           const setup = await authApi.setup2FA();
-          toast.success('2FA setup initiated. Scan the QR code with your authenticator app.');
+          console.log('[AuthStore] 2FA setup response:', setup);
+          PremiumNotifications.info('2FA setup initiated', { description: 'Scan the QR code with your authenticator app' });
           return setup;
         } catch (error: any) {
           console.error('2FA setup error:', error);
@@ -210,47 +376,154 @@ export const useAuthStore = create<AuthStore>()(
             message = error.response.data.message;
           }
           
-          toast.error(message);
+          PremiumNotifications.error(message, { title: '2FA Setup Failed' });
           return null;
         }
       },
 
+      // Complete 2FA login by retrying login with 2FA code
+      complete2FALogin: async (twoFactorCode: string): Promise<boolean> => {
+        try {
+          const pendingLoginStr = localStorage.getItem('pendingLogin');
+          if (!pendingLoginStr) {
+            throw new Error('No pending login credentials found');
+          }
+          
+          const pendingLogin = JSON.parse(pendingLoginStr);
+          console.log('[AuthStore] Completing 2FA login for:', pendingLogin.email);
+          
+          // Retry login with 2FA code
+          const loginWithMFA = {
+            ...pendingLogin,
+            twoFactorCode
+          };
+          
+          const response = await authApi.login(loginWithMFA);
+          console.log('[AuthStore] 2FA login response:', response);
+          
+          if (response.success && response.user && response.accessToken) {
+            console.log('[AuthStore] Setting auth state to AUTHENTICATED_COMPLETE for user:', response.user.email, 'role:', response.user.role);
+            const navigation = get().navigation;
+            const dashboardPath = navigation.getDashboardPath(response.user.role);
+            console.log('[AuthStore] Dashboard path:', dashboardPath);
+            
+            set({
+              user: response.user,
+              accessToken: response.accessToken,
+              authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+              error: null,
+              pendingNavigation: dashboardPath,
+              // Legacy support
+              isAuthenticated: true,
+              isLoading: false,
+              requiresTwoFactor: false,
+              twoFactorSetupRequired: false
+            });
+            
+            localStorage.setItem('accessToken', response.accessToken);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            localStorage.removeItem('pendingLogin'); // Clean up
+            
+            PremiumNotifications.auth.loginSuccess(response.user.first_name);
+            console.log('[AuthStore] Auth state updated successfully');
+            return true;
+          } else {
+            console.log('[AuthStore] Login response missing required fields:', {
+              success: response.success,
+              hasUser: !!response.user,
+              hasAccessToken: !!response.accessToken
+            });
+          }
+          
+          PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });
+          return false;
+        } catch (error: any) {
+          console.error('2FA login completion error:', error);
+          let message = '2FA verification failed';
+          
+          if (error.response?.status === 400) {
+            message = 'Invalid verification code. Please try again.';
+          } else if (error.response?.status === 401) {
+            message = 'Authentication failed. Please log in again.';
+            // Clear pending login and redirect to login
+            localStorage.removeItem('pendingLogin');
+            get().clearAuth();
+          } else if (error.response?.status === 429) {
+            message = 'Too many verification attempts. Please wait before trying again.';
+          } else if (error.response?.data?.message) {
+            message = error.response.data.message;
+          }
+          
+          PremiumNotifications.error(message, { title: '2FA Verification Failed' });
+          return false;
+        }
+      },
+
       verify2FA: async (code: string, secret?: string): Promise<boolean> => {
+        console.log('[AuthStore] Verifying 2FA code, isSetup:', !!secret);
         try {
           const response = await authApi.verify2FA(code, secret);
           
           if (response.success) {
+            console.log('[AuthStore] 2FA verification successful, response:', response);
+            const navigation = get().navigation;
+            
             // Update user 2FA status if this was setup verification
             if (secret) {
               const currentUser = get().user;
               if (currentUser) {
+                const updatedUser = { 
+                  ...currentUser, 
+                  two_factor_enabled: true,
+                  two_factor_setup_completed: true 
+                };
                 set({
-                  user: { ...currentUser, two_factor_enabled: true },
-                  twoFactorSetupRequired: false
+                  user: updatedUser,
+                  authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+                  error: null,
+                  pendingNavigation: navigation.getDashboardPath(updatedUser.role),
+                  // Legacy support
+                  twoFactorSetupRequired: false,
+                  isAuthenticated: true,
+                  requiresTwoFactor: false
                 });
               }
             } else {
               // This is a login 2FA verification
               // Update authentication state if we have user data in response
               if (response.user && response.accessToken) {
+                console.log('[AuthStore] Setting authenticated state with user:', response.user.email, 'role:', response.user.role);
+                const dashboardPath = navigation.getDashboardPath(response.user.role);
+                console.log('[AuthStore] Dashboard path:', dashboardPath);
                 set({
                   user: response.user,
                   accessToken: response.accessToken,
+                  authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+                  error: null,
+                  pendingNavigation: dashboardPath,
+                  // Legacy support
                   isAuthenticated: true,
-                  requiresTwoFactor: false
+                  requiresTwoFactor: false,
+                  twoFactorSetupRequired: false
                 });
                 localStorage.setItem('accessToken', response.accessToken);
                 localStorage.setItem('user', JSON.stringify(response.user));
+              } else {
+                console.log('[AuthStore] No user data in response, keeping current state');
+                // Clear requiresTwoFactor flag but keep current user
+                set({ 
+                  authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+                  error: null,
+                  requiresTwoFactor: false 
+                });
               }
-              // Clear requiresTwoFactor flag
-              set({ requiresTwoFactor: false });
             }
             
-            toast.success('2FA verification successful!');
+            PremiumNotifications.auth.twoFactorSuccess();
             return true;
           }
           
-          toast.error(response.message || '2FA verification failed');
+          PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });
           return false;
         } catch (error: any) {
           console.error('2FA verification error:', error);
@@ -258,6 +531,11 @@ export const useAuthStore = create<AuthStore>()(
           
           if (error.response?.status === 400) {
             message = 'Invalid verification code. Please try again.';
+          } else if (error.response?.status === 401) {
+            message = 'Authentication expired. Please log in again.';
+            // Clear auth state and redirect to login
+            get().clearAuth();
+            // Don't redirect here, let the component handle it
           } else if (error.response?.status === 429) {
             message = 'Too many verification attempts. Please wait before trying again.';
           } else if (error.response?.status === 404) {
@@ -266,7 +544,7 @@ export const useAuthStore = create<AuthStore>()(
             message = error.response.data.message;
           }
           
-          toast.error(message);
+          PremiumNotifications.error(message, { title: '2FA Verification Failed' });
           return false;
         }
       },
@@ -279,19 +557,24 @@ export const useAuthStore = create<AuthStore>()(
             const currentUser = get().user;
             if (currentUser) {
               set({
-                user: { ...currentUser, two_factor_enabled: false }
+                user: { 
+                  ...currentUser, 
+                  two_factor_enabled: false,
+                  // Keep setup completion flag - user has completed setup before
+                  two_factor_setup_completed: true
+                }
               });
             }
             
-            toast.success('2FA disabled successfully');
+            PremiumNotifications.success('2FA disabled successfully', { title: 'Security Updated' });
             return true;
           }
           
-          toast.error(response.message || '2FA disable failed');
+          PremiumNotifications.error(response.message || '2FA disable failed', { title: '2FA Disable Failed' });
           return false;
         } catch (error: any) {
           const message = error.response?.data?.message || '2FA disable failed';
-          toast.error(message);
+          PremiumNotifications.error(message, { title: '2FA Setup Failed' });
           return false;
         }
       },
@@ -299,9 +582,15 @@ export const useAuthStore = create<AuthStore>()(
       clearAuth: (): void => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('pendingLogin');
         set({
           user: null,
           accessToken: null,
+          authenticationState: AuthenticationState.IDLE,
+          error: null,
+          pendingNavigation: null,
+          // Legacy support
           isAuthenticated: false,
           isLoading: false,
           requiresTwoFactor: false,
@@ -309,6 +598,31 @@ export const useAuthStore = create<AuthStore>()(
         });
       },
 
+      // New state management methods
+      setAuthenticationState: (state: AuthenticationState): void => {
+        set({ 
+          authenticationState: state,
+          // Update legacy flags for backward compatibility
+          isLoading: state === AuthenticationState.AUTHENTICATING,
+          requiresTwoFactor: state === AuthenticationState.REQUIRES_2FA_VERIFICATION,
+          twoFactorSetupRequired: state === AuthenticationState.REQUIRES_2FA_SETUP,
+          isAuthenticated: [
+            AuthenticationState.AUTHENTICATED,
+            AuthenticationState.REQUIRES_2FA_SETUP,
+            AuthenticationState.AUTHENTICATED_COMPLETE
+          ].includes(state)
+        });
+      },
+
+      setError: (error: string | null): void => {
+        set({ error });
+      },
+
+      setPendingNavigation: (path: string | null): void => {
+        set({ pendingNavigation: path });
+      },
+
+      // Legacy support methods (deprecated)
       setLoading: (loading: boolean): void => {
         set({ isLoading: loading });
       },
@@ -375,6 +689,9 @@ export const useAuthStore = create<AuthStore>()(
         user: state.user,
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
+        // Persist 2FA states to maintain them across refreshes
+        requiresTwoFactor: state.requiresTwoFactor,
+        twoFactorSetupRequired: state.twoFactorSetupRequired
       }),
     }
   )
@@ -385,17 +702,30 @@ export const useAuth = () => {
   const store = useAuthStore();
   return {
     user: store.user,
+    // New state machine properties
+    authenticationState: store.authenticationState,
+    error: store.error,
+    pendingNavigation: store.pendingNavigation,
+    navigation: store.navigation,
+    // Legacy properties (for backward compatibility)
     isAuthenticated: store.isAuthenticated,
     isLoading: store.isLoading,
     requiresTwoFactor: store.requiresTwoFactor,
     twoFactorSetupRequired: store.twoFactorSetupRequired,
+    // Actions
     login: store.login,
     register: store.register,
     logout: store.logout,
     refreshAuth: store.refreshAuth,
     setup2FA: store.setup2FA,
     verify2FA: store.verify2FA,
+    complete2FALogin: store.complete2FALogin,
     disable2FA: store.disable2FA,
+    // State management
+    setAuthenticationState: store.setAuthenticationState,
+    setError: store.setError,
+    setPendingNavigation: store.setPendingNavigation,
+    // Computed values
     isAdmin: store.isAdmin,
     isTherapist: store.isTherapist,
     isClient: store.isClient,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,7 @@ import { authApi } from '@/services/api';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { ResetPasswordFormData } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useNavigateWithTransition } from '@/hooks/useNavigateWithTransition';
 
 // Forbidden passwords (should match backend)
 const forbiddenPasswords = [
@@ -41,7 +42,7 @@ const ResetPasswordPage: React.FC = () => {
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   const { token } = useParams<{ token: string }>();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
 
   const {
     register,

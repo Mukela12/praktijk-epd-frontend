@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import { NotificationProvider, useNotifications } from '@/components/ui/NotificationProvider';
+import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
-import { UserRole } from '@/types/auth';
+import { UserRole, AuthenticationState } from '@/types/auth';
 
 // Layout Components
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -40,31 +41,49 @@ const queryClient = new QueryClient({
   },
 });
 
-const App: React.FC = () => {
-  const { isAuthenticated, isLoading, refreshAuth, user, requiresTwoFactor, twoFactorSetupRequired } = useAuth();
+// Component to initialize the premium notifications
+const NotificationInitializer: React.FC = () => {
+  const { addNotification, removeNotification, clearAll } = useNotifications();
   
-  // Only log when auth state changes significantly
-  React.useEffect(() => {
-    console.log('=== AUTH STATE CHANGE ===');
-    console.log('isAuthenticated:', isAuthenticated);
-    console.log('requiresTwoFactor:', requiresTwoFactor);
-    console.log('twoFactorSetupRequired:', twoFactorSetupRequired);
-  }, [isAuthenticated, requiresTwoFactor, twoFactorSetupRequired]);
+  useEffect(() => {
+    PremiumNotifications.init({
+      addNotification,
+      removeNotification,
+      clearAll
+    });
+  }, [addNotification, removeNotification, clearAll]);
+  
+  return null;
+};
+
+const App: React.FC = () => {
+  const { 
+    isAuthenticated, 
+    authenticationState, 
+    refreshAuth, 
+    user, 
+    requiresTwoFactor, 
+    twoFactorSetupRequired 
+  } = useAuth();
 
   // Initialize authentication on app load
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken');
-      if (token && !user) {
-        await refreshAuth();
+      if (token && !user && authenticationState === AuthenticationState.IDLE) {
+        try {
+          await refreshAuth();
+        } catch (error) {
+          console.error('Auth initialization failed:', error);
+        }
       }
     };
 
     initAuth();
-  }, [refreshAuth, user]);
+  }, [refreshAuth, user, authenticationState]);
 
-  // Show loading spinner during initial auth check
-  if (isLoading) {
+  // Show loading spinner during authentication
+  if (authenticationState === AuthenticationState.AUTHENTICATING) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="large" />
@@ -74,20 +93,22 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <Router>
+      <NotificationProvider>
+        <LanguageProvider>
+          <NotificationInitializer />
+          <Router>
           <div className="App">
             <Routes>
-              {/* Auth routes - Always allow access to auth pages, but redirect authenticated users from login/register */}
+              {/* Auth routes - Only render when on auth paths */}
               <Route 
                 path="/auth/*" 
                 element={
                   <AuthLayout>
-                    <Routes key={`auth-${isAuthenticated}-${requiresTwoFactor}-${twoFactorSetupRequired}`}>
+                    <Routes>
                       <Route 
                         path="login" 
                         element={
-                          isAuthenticated && !requiresTwoFactor && !twoFactorSetupRequired ? (
+                          authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
                             <RoleRedirect />
                           ) : (
                             <LoginPage />
@@ -97,20 +118,11 @@ const App: React.FC = () => {
                       <Route 
                         path="register" 
                         element={
-                          (() => {
-                            console.log('=== REGISTER ROUTE RENDER CHECK ===');
-                            console.log('isAuthenticated:', isAuthenticated);
-                            console.log('requiresTwoFactor:', requiresTwoFactor);
-                            console.log('twoFactorSetupRequired:', twoFactorSetupRequired);
-                            
-                            if (isAuthenticated && !requiresTwoFactor && !twoFactorSetupRequired) {
-                              console.log('Redirecting authenticated user from register page');
-                              return <RoleRedirect />;
-                            } else {
-                              console.log('Showing register page');
-                              return <RegisterPage />;
-                            }
-                          })()
+                          authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+                            <RoleRedirect />
+                          ) : (
+                            <RegisterPage />
+                          )
                         } 
                       />
                       <Route path="forgot-password" element={<ForgotPasswordPage />} />
@@ -118,17 +130,16 @@ const App: React.FC = () => {
                       <Route path="verify-email/:token" element={<VerifyEmailPage />} />
                       <Route 
                         path="email-verification-pending" 
-                        element={
-                          (() => {
-                            console.log('=== RENDERING EMAIL VERIFICATION PENDING ROUTE ===');
-                            return <EmailVerificationPendingPage />;
-                          })()
-                        } 
+                        element={<EmailVerificationPendingPage />} 
                       />
                       <Route 
                         path="2fa" 
                         element={
-                          isAuthenticated || requiresTwoFactor || twoFactorSetupRequired ? (
+                          [
+                            AuthenticationState.REQUIRES_2FA_SETUP,
+                            AuthenticationState.REQUIRES_2FA_VERIFICATION,
+                            AuthenticationState.AUTHENTICATED
+                          ].includes(authenticationState) ? (
                             <TwoFactorPage />
                           ) : (
                             <Navigate to="login" replace />
@@ -224,7 +235,7 @@ const App: React.FC = () => {
               <Route
                 path="/"
                 element={
-                  isAuthenticated ? (
+                  authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
                     <RoleRedirect />
                   ) : (
                     <Navigate to="/auth/login" replace />
@@ -236,7 +247,7 @@ const App: React.FC = () => {
               <Route
                 path="*"
                 element={
-                  isAuthenticated ? (
+                  authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
                     <RoleRedirect />
                   ) : (
                     <Navigate to="/auth/login" replace />
@@ -245,30 +256,11 @@ const App: React.FC = () => {
               />
             </Routes>
 
-            {/* Global toast notifications */}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                success: {
-                  style: {
-                    background: '#10b981',
-                  },
-                },
-                error: {
-                  style: {
-                    background: '#ef4444',
-                  },
-                },
-              }}
-            />
+            
           </div>
         </Router>
-      </LanguageProvider>
+        </LanguageProvider>
+      </NotificationProvider>
     </QueryClientProvider>
   );
 };

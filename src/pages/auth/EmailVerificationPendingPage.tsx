@@ -1,40 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { EnvelopeIcon, CheckCircleIcon, ClockIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { authApi } from '@/services/api';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { toast } from 'react-hot-toast';
+import { useNavigateWithTransition } from '@/hooks/useNavigateWithTransition';
+import PageTransition from '@/components/ui/PageTransition';
 
 const EmailVerificationPendingPage: React.FC = () => {
-  console.log('=== EMAIL VERIFICATION PENDING PAGE RENDER ===');
-  
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [emailSent, setEmailSent] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
   const location = useLocation();
   
   // Get email from location state (passed from registration or login)
   const email = (location.state as any)?.email || '';
   const fromLogin = location.state?.fromLogin || false;
-  
-  console.log('Location state:', location.state);
-  console.log('Email from state:', email);
-  console.log('From login attempt:', fromLogin);
-  console.log('Current pathname:', location.pathname);
+  const role = (location.state as any)?.role;
+  const willNeed2FA = (location.state as any)?.will_need_2fa || false;
   
   // If no email is provided, redirect to register page after initialization
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitializing(false);
       if (!email && !isResending) {
-        console.log('No email found in state, redirecting to register');
         navigate('/auth/register', { replace: true });
       }
-    }, 200); // Give time for navigation state to settle
+    }, 200);
     
     return () => clearTimeout(timer);
   }, [email, navigate, isResending]);
@@ -121,21 +117,22 @@ const EmailVerificationPendingPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto">
+    <PageTransition>
+      <div className="w-full max-w-lg mx-auto">
       {/* Header */}
-      <div className="text-center mb-10">
-        <div className={`relative w-20 h-20 ${emailSent ? 'bg-green-100' : 'bg-blue-100'} rounded-3xl flex items-center justify-center mx-auto mb-6 transition-all duration-500`}>
+      <div className="text-center mb-6">
+        <div className={`relative w-16 h-16 ${emailSent ? 'bg-green-100' : 'bg-blue-100'} rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-500 shadow-lg`}>
           {emailSent ? (
-            <CheckCircleIcon className="w-10 h-10 text-green-600 animate-bounce" />
+            <CheckCircleIcon className="w-8 h-8 text-green-600 animate-bounce" />
           ) : (
-            <EnvelopeIcon className="w-10 h-10 text-blue-600" />
+            <EnvelopeIcon className="w-8 h-8 text-blue-600" />
           )}
-          <div className={`absolute -inset-1 ${emailSent ? 'bg-green-400' : 'bg-blue-400'} rounded-3xl blur opacity-25 transition-all duration-500`}></div>
+          <div className={`absolute -inset-1 ${emailSent ? 'bg-green-400' : 'bg-blue-400'} rounded-2xl blur opacity-25 transition-all duration-500`}></div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
           {fromLogin ? 'Email Verification Required' : 'Check Your Email'}
         </h1>
-        <p className="text-gray-600 text-lg">
+        <p className="text-gray-600">
           {fromLogin 
             ? 'Please verify your email address to continue' 
             : 'We\'ve sent a verification link to your email'
@@ -144,8 +141,8 @@ const EmailVerificationPendingPage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-        <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <div className="space-y-5">
           {/* Email Display */}
           {email && (
             <div className={`${fromLogin ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50'} rounded-xl p-4 text-center ${fromLogin ? 'border' : ''}`}>
@@ -192,13 +189,36 @@ const EmailVerificationPendingPage: React.FC = () => {
                 <span className="text-sm font-semibold text-blue-600">3</span>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Sign in to your account</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  {willNeed2FA ? 'Complete account setup' : 'Sign in to your account'}
+                </h3>
                 <p className="text-sm text-gray-600">
-                  After verification, you'll be able to access your dashboard
+                  {willNeed2FA 
+                    ? 'After verification, you\'ll need to set up two-factor authentication for enhanced security'
+                    : 'After verification, you\'ll be able to access your dashboard'
+                  }
                 </p>
               </div>
             </div>
           </div>
+
+          {/* 2FA Information for non-client roles */}
+          {willNeed2FA && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                Enhanced Security Required
+              </h4>
+              <p className="text-sm text-blue-700 mb-2">
+                As a {role?.toLowerCase()} user, you'll need to set up two-factor authentication (2FA) for enhanced security.
+              </p>
+              <ul className="text-xs text-blue-600 space-y-1">
+                <li>• Download an authenticator app (Google Authenticator, Authy, etc.)</li>
+                <li>• Have your phone ready for the setup process</li>
+                <li>• This is a one-time setup to keep your account secure</li>
+              </ul>
+            </div>
+          )}
 
           {/* Resend Email Button */}
           <div className="pt-4 border-t border-gray-200">
@@ -264,7 +284,8 @@ const EmailVerificationPendingPage: React.FC = () => {
           </Link>
         </div>
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 

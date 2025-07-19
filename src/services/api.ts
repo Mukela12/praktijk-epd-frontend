@@ -48,6 +48,7 @@ const checkRateLimit = (endpoint: string, limit: number = 5, windowMs: number = 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    console.log('[API] Request:', config.method?.toUpperCase(), config.url);
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -78,9 +79,11 @@ api.interceptors.request.use(
 // Response interceptor for error handling and token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
+    console.log('[API] Response:', response.config.method?.toUpperCase(), response.config.url, response.status);
     return response;
   },
   async (error: AxiosError) => {
+    console.log('[API] Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status);
     const originalRequest = error.config as any;
     
     // Handle 429 rate limit errors specially
@@ -103,7 +106,20 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh for certain endpoints
+    const skipRefreshEndpoints = [
+      '/auth/login',
+      '/auth/register',
+      '/auth/refresh-token',
+      '/auth/verify-2fa',
+      '/auth/setup-2fa'
+    ];
+    
+    const isSkipEndpoint = skipRefreshEndpoints.some(endpoint => 
+      originalRequest.url?.includes(endpoint)
+    );
+    
+    if (error.response?.status === 401 && !originalRequest._retry && !isSkipEndpoint) {
       originalRequest._retry = true;
       
       try {
@@ -185,7 +201,7 @@ export const authApi = {
    */
   logout: async (): Promise<void> => {
     try {
-      await api.post('/auth/logout');
+      await api.delete('/auth/logout');
     } catch (error) {
       // Continue with logout even if API call fails
       console.error('Logout API call failed:', error);
@@ -290,11 +306,28 @@ export const authApi = {
   /**
    * Verify 2FA setup
    */
-  verify2FA: async (code: string, secret?: string): Promise<ApiResponse> => {
-    const response = await api.post<ApiResponse>('/auth/verify-2fa', { 
+  verify2FA: async (code: string, secret?: string): Promise<AuthResponse> => {
+    // Include temporary token if available (for 2FA verification during login)
+    const tempToken = localStorage.getItem('tempToken');
+    const headers: any = {};
+    
+    if (tempToken && !secret) {
+      // Use temp token for login 2FA verification
+      headers['X-Temp-Token'] = tempToken;
+    }
+    
+    const response = await api.post<AuthResponse>('/auth/verify-2fa', { 
       code, 
       ...(secret && { secret }) 
+    }, {
+      headers
     });
+    
+    // Clear temp token after successful verification
+    if (response.data.success && tempToken && !secret) {
+      localStorage.removeItem('tempToken');
+    }
+    
     return response.data;
   },
 

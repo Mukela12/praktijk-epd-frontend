@@ -30,12 +30,15 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <div className={clsx('flex flex-col items-center justify-center', className)}>
       <div
         className={clsx(
-          'animate-spin rounded-full border-2 border-solid border-current border-r-transparent',
+          'animate-spin rounded-full border-2 border-solid border-current border-r-transparent transition-all duration-200',
           sizeClasses[size],
           colorClasses[color]
         )}
         role="status"
         aria-label="Loading"
+        style={{
+          borderWidth: size === 'small' ? '2px' : size === 'medium' ? '2px' : '3px'
+        }}
       >
         <span className="sr-only">Loading...</span>
       </div>

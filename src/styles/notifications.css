@@ -1,0 +1,49 @@
+/* Toast notification animations */
+@keyframes enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes leave {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(100%, 0, 0) scale(0.95);
+  }
+}
+
+.animate-enter {
+  animation: enter 0.3s ease-out;
+}
+
+.animate-leave {
+  animation: leave 0.2s ease-in forwards;
+}
+
+/* Custom scrollbar for toast container */
+[data-testid="toast-container"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+[data-testid="toast-container"]::-webkit-scrollbar {
+  width: 4px;
+}
+
+[data-testid="toast-container"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-testid="toast-container"]::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}

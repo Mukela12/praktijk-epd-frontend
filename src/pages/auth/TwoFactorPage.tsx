@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,10 +14,11 @@ import {
   InformationCircleIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '@/store/authStore';
+import { useAuth, useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { TwoFactorFormData, TwoFactorSetup } from '@/types/auth';
+import { TwoFactorFormData, TwoFactorSetup, AuthenticationState } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import PageTransition from '@/components/ui/PageTransition';
 
 // Validation schema
 const twoFactorSchema = z.object({
@@ -51,13 +52,28 @@ const TwoFactorPage: React.FC = () => {
   const { 
     setup2FA, 
     verify2FA, 
-    requiresTwoFactor, 
-    twoFactorSetupRequired, 
-    isLoading 
+    complete2FALogin,
+    authenticationState,
+    pendingNavigation,
+    user,
+    navigation,
+    setAuthenticationState
   } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Debug logging
+  console.log('[TwoFactorPage] Rendering with:', {
+    authenticationState,
+    mode,
+    user: user?.email,
+    role: user?.role,
+    setupData: !!setupData,
+    isLoadingSetup,
+    showBackupCodes,
+    setupError
+  });
 
   const from = (location.state as any)?.from?.pathname || '/';
 
@@ -89,37 +105,88 @@ const TwoFactorPage: React.FC = () => {
 
   // Determine mode based on auth state
   useEffect(() => {
-    if (twoFactorSetupRequired) {
-      setMode('setup');
-      initializeSetup();
-    } else if (requiresTwoFactor) {
-      setMode('verify');
-    } else {
-      // User shouldn't be here, redirect to dashboard
-      navigate(from, { replace: true });
+    console.log('[TwoFactorPage] Auth state effect triggered:', authenticationState, 'User:', user?.email, 'Role:', user?.role);
+    console.log('[TwoFactorPage] Current auth state from store:', useAuthStore.getState().authenticationState);
+    switch (authenticationState) {
+      case AuthenticationState.REQUIRES_2FA_SETUP:
+        console.log('[TwoFactorPage] Setting mode to setup and initializing');
+        setMode('setup');
+        initializeSetup();
+        break;
+      case AuthenticationState.REQUIRES_2FA_VERIFICATION:
+        console.log('[TwoFactorPage] Setting mode to verify');
+        setMode('verify');
+        break;
+      case AuthenticationState.AUTHENTICATED_COMPLETE:
+        console.log('[TwoFactorPage] User authenticated, redirecting to dashboard');
+        // User is fully authenticated, redirect to dashboard
+        // Force check current state to ensure we have latest data
+        const currentState = useAuthStore.getState();
+        if (currentState.user && currentState.user.role) {
+          const dashboardPath = navigation.getDashboardPath(currentState.user.role);
+          console.log('[TwoFactorPage] Force redirecting to:', dashboardPath);
+          navigate(dashboardPath, { replace: true });
+        } else if (user && user.role) {
+          // Fallback to prop user if state user not available
+          const dashboardPath = navigation.getDashboardPath(user.role);
+          console.log('[TwoFactorPage] Fallback redirecting to:', dashboardPath);
+          navigate(dashboardPath, { replace: true });
+        } else {
+          console.log('[TwoFactorPage] No user or role found, cannot redirect');
+        }
+        break;
+      case AuthenticationState.IDLE:
+      case AuthenticationState.ERROR:
+        console.log('[TwoFactorPage] Auth state reset, redirecting to login');
+        // Auth state was cleared (likely due to session expiration)
+        navigate('/auth/login', { replace: true });
+        break;
+      default:
+        console.log('[TwoFactorPage] Invalid auth state, redirecting to login');
+        // If user is not in a 2FA state, redirect to login
+        navigate('/auth/login', { replace: true });
+        break;
     }
-  }, [twoFactorSetupRequired, requiresTwoFactor, from, navigate]);
+  }, [authenticationState, user, navigation, navigate]);
+
+  // Handle pending navigation
+  useEffect(() => {
+    console.log('[TwoFactorPage] Pending navigation effect, path:', pendingNavigation);
+    if (pendingNavigation) {
+      console.log('[TwoFactorPage] Navigating to pending path:', pendingNavigation);
+      navigate(pendingNavigation, { replace: true });
+    }
+  }, [pendingNavigation, navigate]);
 
   const initializeSetup = async () => {
-    if (setupData) return; // Already initialized
+    console.log('[TwoFactorPage] initializeSetup called, existing data:', !!setupData);
+    if (setupData) {
+      console.log('[TwoFactorPage] Setup data already exists, skipping');
+      return; // Already initialized
+    }
     
+    console.log('[TwoFactorPage] Starting 2FA setup initialization');
     setIsLoadingSetup(true);
     setSetupError(null);
     
     try {
       const data = await setup2FA();
+      console.log('[TwoFactorPage] Setup 2FA response:', data);
       if (data) {
         setSetupData(data);
         setRetryCount(0);
+        console.log('[TwoFactorPage] Setup data saved successfully');
       } else {
+        console.log('[TwoFactorPage] Setup 2FA returned null');
         setSetupError('Failed to initialize 2FA setup. Please try again.');
       }
     } catch (error: any) {
-      console.error('2FA setup error:', error);
+      console.error('[TwoFactorPage] 2FA setup error:', error);
       const errorMessage = error.response?.data?.message || 'Failed to initialize 2FA setup. Please try again.';
       setSetupError(errorMessage);
     } finally {
       setIsLoadingSetup(false);
+      console.log('[TwoFactorPage] Setup initialization complete, loading:', false);
     }
   };
 
@@ -130,16 +197,42 @@ const TwoFactorPage: React.FC = () => {
 
   const onSubmit = async (data: TwoFactorFormData) => {
     try {
-      const success = await verify2FA(
-        data.code, 
-        mode === 'setup' ? setupData?.secret : undefined
-      );
-
-      if (success) {
-        if (mode === 'setup') {
+      if (mode === 'setup') {
+        // For setup mode, use the verify2FA function
+        console.log('[TwoFactorPage] Completing 2FA setup with code:', data.code);
+        const success = await verify2FA(data.code, setupData?.secret);
+        if (success) {
+          console.log('[TwoFactorPage] 2FA setup completed successfully');
           setShowBackupCodes(true);
-        } else {
-          navigate(from, { replace: true });
+          
+          // Check if auth state was updated and force navigation if needed
+          const currentState = useAuthStore.getState();
+          console.log('[TwoFactorPage] Current state after setup:', currentState.authenticationState, currentState.user?.role);
+          
+          if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
+            // Don't navigate immediately, let user see backup codes first
+            console.log('[TwoFactorPage] Setup complete, showing backup codes first');
+          }
+        }
+      } else {
+        // For verification mode during login, complete the 2FA login
+        console.log('[TwoFactorPage] Completing 2FA login with code:', data.code);
+        const success = await complete2FALogin(data.code);
+        
+        if (success) {
+          console.log('[TwoFactorPage] 2FA login completed successfully');
+          // Force navigation since the auth state change isn't triggering the useEffect
+          const currentState = useAuthStore.getState();
+          console.log('[TwoFactorPage] Current state after login:', currentState.authenticationState, currentState.user?.role);
+          
+          if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
+            const dashboardPath = navigation.getDashboardPath(currentState.user.role);
+            console.log('[TwoFactorPage] Force navigating to:', dashboardPath);
+            navigate(dashboardPath, { replace: true });
+          } else if (currentState.pendingNavigation) {
+            console.log('[TwoFactorPage] Force navigating to pending path:', currentState.pendingNavigation);
+            navigate(currentState.pendingNavigation, { replace: true });
+          }
         }
       }
     } catch (error: any) {
@@ -154,9 +247,19 @@ const TwoFactorPage: React.FC = () => {
 
   const onBackupCodeSubmit = async (data: { code: string }) => {
     try {
-      const success = await verify2FA(data.code);
-      if (success) {
-        navigate(from, { replace: true });
+      if (mode === 'setup') {
+        // For setup mode, this shouldn't happen
+        console.error('[TwoFactorPage] Backup code submission during setup mode');
+        return;
+      } else {
+        // For verification mode during login, complete the 2FA login with backup code
+        console.log('[TwoFactorPage] Completing 2FA login with backup code');
+        const success = await complete2FALogin(data.code);
+        
+        if (success) {
+          console.log('[TwoFactorPage] 2FA login completed successfully with backup code');
+          // Navigation will be handled by the auth state change useEffect
+        }
       }
     } catch (error: any) {
       console.error('Backup code verification error:', error);
@@ -195,30 +298,51 @@ const TwoFactorPage: React.FC = () => {
   };
 
   const completeSetup = () => {
-    navigate(from, { replace: true });
+    console.log('[TwoFactorPage] Completing setup and navigating to dashboard');
+    // Force navigation to ensure we get the latest auth state
+    const currentState = useAuthStore.getState();
+    console.log('[TwoFactorPage] Current state during complete setup:', currentState.authenticationState, currentState.user?.role);
+    
+    if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
+      const dashboardPath = navigation.getDashboardPath(currentState.user.role);
+      console.log('[TwoFactorPage] Force navigating to dashboard:', dashboardPath);
+      navigate(dashboardPath, { replace: true });
+    } else if (currentState.pendingNavigation) {
+      console.log('[TwoFactorPage] Force navigating to pending path:', currentState.pendingNavigation);
+      navigate(currentState.pendingNavigation, { replace: true });
+    } else if (user) {
+      // Fallback to user prop if state isn't updated yet
+      const dashboardPath = navigation.getDashboardPath(user.role);
+      console.log('[TwoFactorPage] Fallback navigation to:', dashboardPath);
+      navigate(dashboardPath, { replace: true });
+    } else {
+      console.log('[TwoFactorPage] No user found, navigating to home');
+      navigate('/', { replace: true });
+    }
   };
 
   // Show backup codes after successful setup
   if (showBackupCodes && setupData) {
     return (
-      <div className="w-full max-w-lg mx-auto">
-        <div className="text-center mb-10">
-          <div className="relative w-20 h-20 bg-green-100 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-bounce">
-            <KeyIcon className="w-10 h-10 text-green-600" />
-            <div className="absolute -inset-1 bg-green-400 rounded-3xl blur opacity-25"></div>
+      <PageTransition>
+        <div className="w-full max-w-lg mx-auto">
+        <div className="text-center mb-6">
+          <div className="relative w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-bounce">
+            <KeyIcon className="w-8 h-8 text-green-600" />
+            <div className="absolute -inset-1 bg-green-400 rounded-2xl blur opacity-25"></div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Save Your Backup Codes
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {t('twofa.saveBackupCodesTitle')}
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600">
             Store these codes safely - they're your backup access keys
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="space-y-5">
             {/* Backup Codes */}
-            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-6">
+            <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-gray-900">Backup Codes</h3>
               <button
@@ -257,12 +381,13 @@ const TwoFactorPage: React.FC = () => {
               className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center group"
             >
               <CheckCircleIcon className="w-5 h-5 mr-2" />
-              Complete Setup & Continue
+              {t('twofa.completeSetup')}
               <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      </PageTransition>
     );
   }
 
@@ -270,15 +395,18 @@ const TwoFactorPage: React.FC = () => {
   if (mode === 'setup') {
     if (isLoadingSetup) {
       return (
-        <div className="w-full max-w-md mx-auto text-center">
-          <LoadingSpinner size="large" text="Setting up two-factor authentication..." />
-        </div>
+        <PageTransition>
+          <div className="w-full max-w-md mx-auto text-center">
+            <LoadingSpinner size="large" text="Setting up two-factor authentication..." />
+          </div>
+        </PageTransition>
       );
     }
 
     if (setupError) {
       return (
-        <div className="w-full max-w-md mx-auto">
+        <PageTransition>
+          <div className="w-full max-w-md mx-auto">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
@@ -324,40 +452,44 @@ const TwoFactorPage: React.FC = () => {
               Cancel
             </button>
           </div>
-        </div>
+          </div>
+        </PageTransition>
       );
     }
 
     if (!setupData) {
       return (
-        <div className="w-full max-w-md mx-auto text-center">
-          <LoadingSpinner size="large" text="Setting up two-factor authentication..." />
-        </div>
+        <PageTransition>
+          <div className="w-full max-w-md mx-auto text-center">
+            <LoadingSpinner size="large" text="Setting up two-factor authentication..." />
+          </div>
+        </PageTransition>
       );
     }
 
     return (
-      <div className="w-full max-w-lg mx-auto">
-        <div className="text-center mb-10">
-          <div className="relative w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <QrCodeIcon className="w-10 h-10 text-blue-600" />
-            <div className="absolute -inset-1 bg-blue-400 rounded-3xl blur opacity-25"></div>
+      <PageTransition>
+        <div className="w-full max-w-lg mx-auto">
+        <div className="text-center mb-6">
+          <div className="relative w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <QrCodeIcon className="w-8 h-8 text-blue-600" />
+            <div className="absolute -inset-1 bg-blue-400 rounded-2xl blur opacity-25"></div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Setup Two-Factor Authentication
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {t('twofa.setup')}
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600">
             Secure your account with an authenticator app
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="space-y-5">
             {/* QR Code */}
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-6 text-center">
+            <div className="bg-white border-2 border-gray-200 rounded-lg p-4 text-center">
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Step 1: Scan QR Code
+                {t('twofa.step1')}
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Use your authenticator app to scan this QR code
@@ -375,7 +507,7 @@ const TwoFactorPage: React.FC = () => {
               <div className="w-48 h-48 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
                 <div className="text-center">
                   <ExclamationTriangleIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">QR code failed to load</p>
+                  <p className="text-sm text-gray-500">{t('twofa.qrFailed')}</p>
                   <button
                     onClick={() => {
                       setQrCodeError(false);
@@ -440,7 +572,7 @@ const TwoFactorPage: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="font-semibold">Step 2:</span> {t('twofa.enterCode')}
+                <span className="font-semibold">{t('twofa.step2')}</span> {t('twofa.enterCode')}
               </label>
               <input
                 {...register('code')}
@@ -460,7 +592,7 @@ const TwoFactorPage: React.FC = () => {
                 </p>
               )}
               <p className="mt-2 text-sm text-gray-600">
-                Enter the 6-digit code from your authenticator app
+                {t('twofa.enterCode')}
               </p>
             </div>
 
@@ -474,36 +606,38 @@ const TwoFactorPage: React.FC = () => {
               ) : (
                 <>
                   <CheckCircleIcon className="w-5 h-5 mr-2" />
-                  Verify and Enable 2FA
+                  {t('twofa.verifyEnable')}
                 </>
               )}
             </button>
           </form>
           </div>
         </div>
-      </div>
+        </div>
+      </PageTransition>
     );
   }
 
   // Verify mode
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <ShieldCheckIcon className="w-8 h-8 text-blue-600" />
+    <PageTransition>
+      <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <ShieldCheckIcon className="w-7 h-7 text-blue-600" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
           {t('twofa.verify')}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           {showBackupCodeInput ? 'Enter a backup code' : t('twofa.enterCode')}
         </p>
       </div>
 
       {!showBackupCodeInput ? (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-2">
               {t('auth.twoFactorCode')}
             </label>
             <input
@@ -513,8 +647,8 @@ const TwoFactorPage: React.FC = () => {
               maxLength={8}
               autoComplete="one-time-code"
               autoFocus
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center font-mono text-lg ${
-                errors.code ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-center font-mono ${
+                errors.code ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 bg-gray-50 focus:bg-white'
               }`}
               placeholder="123456"
             />
@@ -525,21 +659,21 @@ const TwoFactorPage: React.FC = () => {
               </p>
             )}
             <p className="mt-2 text-sm text-gray-600">
-              Enter the 6-digit code from your authenticator app
+              {t('twofa.enterCode')}
             </p>
           </div>
 
           <button
             type="submit"
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center font-medium"
           >
-            {isSubmitting || isLoading ? (
+            {isSubmitting ? (
               <LoadingSpinner size="small" color="white" />
             ) : (
               <>
                 <CheckCircleIcon className="w-5 h-5 mr-2" />
-                Verify Code
+                {t('twofa.verifyCode')}
               </>
             )}
           </button>
@@ -554,7 +688,7 @@ const TwoFactorPage: React.FC = () => {
               }}
               className="text-sm text-blue-600 hover:text-blue-700 underline"
             >
-              Use backup code instead
+              {t('twofa.useBackupCode')}
             </button>
           </div>
         </form>
@@ -597,7 +731,7 @@ const TwoFactorPage: React.FC = () => {
             ) : (
               <>
                 <CheckCircleIcon className="w-5 h-5 mr-2" />
-                Verify Backup Code
+                {t('twofa.verifyBackupCode')}
               </>
             )}
           </button>
@@ -612,7 +746,7 @@ const TwoFactorPage: React.FC = () => {
               }}
               className="text-sm text-blue-600 hover:text-blue-700 underline"
             >
-              Use authenticator app instead
+              {t('twofa.useAuthenticator')}
             </button>
           </div>
         </form>
@@ -639,7 +773,8 @@ const TwoFactorPage: React.FC = () => {
           </ul>
         )}
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 

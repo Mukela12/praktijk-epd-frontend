@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { CheckCircleIcon, XCircleIcon, EnvelopeIcon, ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { authApi } from '@/services/api';
 import { useTranslation } from '@/contexts/LanguageContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useNavigateWithTransition } from '@/hooks/useNavigateWithTransition';
 
 const VerifyEmailPage: React.FC = () => {
   const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const { token } = useParams<{ token: string }>();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
   
   // Use refs to track state across renders
   const verificationInProgress = useRef(false);

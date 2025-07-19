@@ -43,6 +43,9 @@ export default {
         'slide-up': 'slideUp 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'pulse-soft': 'pulseSoft 2s infinite',
+        'notification-enter': 'notificationEnter 0.3s ease-out',
+        'notification-exit': 'notificationExit 0.3s ease-in',
+        'notification-bounce': 'notificationBounce 0.5s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -64,6 +67,40 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
+        },
+        notificationEnter: {
+          from: { 
+            transform: 'translateX(100%) scale(0.9)', 
+            opacity: '0' 
+          },
+          to: { 
+            transform: 'translateX(0) scale(1)', 
+            opacity: '1' 
+          },
+        },
+        notificationExit: {
+          from: { 
+            transform: 'translateX(0) scale(1)', 
+            opacity: '1' 
+          },
+          to: { 
+            transform: 'translateX(100%) scale(0.9)', 
+            opacity: '0' 
+          },
+        },
+        notificationBounce: {
+          '0%': { 
+            transform: 'translateX(100%) scale(0.9)', 
+            opacity: '0' 
+          },
+          '60%': { 
+            transform: 'translateX(-10px) scale(1.02)', 
+            opacity: '1' 
+          },
+          '100%': { 
+            transform: 'translateX(0) scale(1)', 
+            opacity: '1' 
+          },
         },
       },
     },

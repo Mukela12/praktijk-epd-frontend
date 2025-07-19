@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,6 +8,8 @@ import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { RegisterFormData, UserRole, LanguageCode } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useNavigateWithTransition } from '@/hooks/useNavigateWithTransition';
+import PageTransition from '@/components/ui/PageTransition';
 
 // Forbidden passwords (should match backend)
 const forbiddenPasswords = [
@@ -60,7 +62,7 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register: registerUser, isLoading } = useAuth();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
 
   const {
     register,
@@ -84,18 +86,6 @@ const RegisterPage: React.FC = () => {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    console.log('=== REGISTRATION FORM SUBMISSION ===');
-    console.log('1. Raw form data:', data);
-    
-    // Validate password requirements
-    console.log('2. Password validation:');
-    console.log('   - Length:', data.password.length, '(min: 8)');
-    console.log('   - Has uppercase:', /[A-Z]/.test(data.password));
-    console.log('   - Has lowercase:', /[a-z]/.test(data.password));
-    console.log('   - Has number:', /\d/.test(data.password));
-    console.log('   - Has special char:', /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password));
-    console.log('   - Password matches confirm:', data.password === data.confirmPassword);
-    
     // Extract acceptTerms from data but don't send it to backend
     const { acceptTerms, ...registrationData } = data;
     
@@ -111,28 +101,18 @@ const RegisterPage: React.FC = () => {
       preferredLanguage: registrationData.preferredLanguage,
     };
     
-    console.log('3. Data being sent to backend:', cleanedData);
-    console.log('4. API endpoint:', import.meta.env.VITE_API_URL || 'http://localhost:3000/api' + '/auth/register');
-    
     const success = await registerUser(cleanedData);
 
-    console.log('5. Registration response success:', success);
-
     if (success) {
-      console.log('6. Attempting navigation to email verification pending page');
-      console.log('7. Email being passed in state:', registrationData.email);
-      
-      // Use setTimeout to ensure state updates complete before navigation
-      setTimeout(() => {
-        console.log('8. Executing delayed navigation');
-        navigate('/auth/email-verification-pending', {
-          state: { email: registrationData.email },
-          replace: true // Use replace to ensure clean navigation
-        });
-        console.log('9. Navigation call completed');
-      }, 100);
+      navigate('/auth/email-verification-pending', {
+        state: { 
+          email: registrationData.email,
+          role: registrationData.role,
+          will_need_2fa: ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(registrationData.role)
+        },
+        replace: true
+      });
     } else {
-      console.log('6. Registration failed, showing error');
       setError('root', {
         type: 'manual',
         message: 'Registration failed. Please check the form and try again.',
@@ -159,17 +139,18 @@ const RegisterPage: React.FC = () => {
   const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <PageTransition>
+      <div className="w-full max-w-md mx-auto">
       {/* Header */}
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-green-600 to-green-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <UserPlusIcon className="w-8 h-8 text-white" />
+      <div className="text-center mb-6">
+        <div className="w-14 h-14 bg-gradient-to-r from-green-600 to-green-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <UserPlusIcon className="w-7 h-7 text-white" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
           {t('auth.register')}
         </h1>
-        <p className="text-gray-600">
-          Create your PraktijkEPD account
+        <p className="text-gray-600 text-sm">
+          {t('twofa.createAccountSubtitle')}
         </p>
       </div>
 
@@ -296,7 +277,7 @@ const RegisterPage: React.FC = () => {
         {/* Language Selection */}
         <div>
           <label htmlFor="preferredLanguage" className="block text-sm font-medium text-gray-700 mb-2">
-            Preferred Language
+            {t('twofa.preferredLanguage')}
           </label>
           <select
             {...register('preferredLanguage')}
@@ -463,7 +444,8 @@ const RegisterPage: React.FC = () => {
           </p>
         </div>
       </form>
-    </div>
+      </div>
+    </PageTransition>
   );
 };
 

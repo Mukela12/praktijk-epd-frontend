@@ -32,15 +32,32 @@ export enum UserRole {
     phone?: string;
     preferred_language: LanguageCode;
     two_factor_enabled: boolean;
+    two_factor_setup_completed: boolean;
     email_verified: boolean;
     last_login?: string;
     created_at: string;
     updated_at: string;
   }
   
+  // Authentication state machine
+  export enum AuthenticationState {
+    IDLE = 'IDLE',
+    AUTHENTICATING = 'AUTHENTICATING',
+    AUTHENTICATED = 'AUTHENTICATED',
+    REQUIRES_2FA_VERIFICATION = 'REQUIRES_2FA_VERIFICATION',
+    REQUIRES_2FA_SETUP = 'REQUIRES_2FA_SETUP',
+    AUTHENTICATED_COMPLETE = 'AUTHENTICATED_COMPLETE',
+    ERROR = 'ERROR'
+  }
+
   export interface AuthState {
     user: User | null;
     accessToken: string | null;
+    authenticationState: AuthenticationState;
+    error: string | null;
+    // Navigation state
+    pendingNavigation: string | null;
+    // Legacy support (deprecated)
     isAuthenticated: boolean;
     isLoading: boolean;
     requiresTwoFactor: boolean;
@@ -73,6 +90,31 @@ export enum UserRole {
     refreshToken?: string;
     requiresTwoFactor?: boolean;
     twoFactorSetupRequired?: boolean;
+    tempToken?: string;
+    sessionToken?: string;
+  }
+
+  // Centralized navigation and auth helpers
+  export interface AuthNavigation {
+    /**
+     * Get the dashboard path for a given role
+     */
+    getDashboardPath: (role: UserRole) => string;
+    
+    /**
+     * Check if user requires 2FA setup
+     */
+    requires2FASetup: (user: User) => boolean;
+    
+    /**
+     * Get the next navigation path based on auth state
+     */
+    getNextNavigationPath: (user: User, authState: AuthenticationState) => string;
+    
+    /**
+     * Handle navigation with proper state management
+     */
+    navigateWithAuth: (path: string, replace?: boolean) => void;
   }
   
   export interface ApiError {
