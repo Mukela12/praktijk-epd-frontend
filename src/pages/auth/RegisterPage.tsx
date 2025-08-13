@@ -10,6 +10,8 @@ import { RegisterFormData, UserRole, LanguageCode } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useNavigateWithTransition } from '@/hooks/useNavigateWithTransition';
 import PageTransition from '@/components/ui/PageTransition';
+import AuthErrorMessage from '@/components/auth/AuthErrorMessage';
+import { useAuthError } from '@/hooks/useAuthError';
 
 // Forbidden passwords (should match backend)
 const forbiddenPasswords = [
@@ -63,12 +65,12 @@ const RegisterPage: React.FC = () => {
   const { register: registerUser, isLoading } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigateWithTransition();
+  const { error, handleAuthError, clearError } = useAuthError();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
     watch
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -86,37 +88,40 @@ const RegisterPage: React.FC = () => {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    // Extract acceptTerms from data but don't send it to backend
-    const { acceptTerms, ...registrationData } = data;
-    
-    // Clean up phone field - if empty, don't send it
-    const cleanedData = {
-      email: registrationData.email,
-      password: registrationData.password,
-      confirmPassword: registrationData.confirmPassword,
-      firstName: registrationData.firstName,
-      lastName: registrationData.lastName,
-      ...(registrationData.phone && { phone: registrationData.phone }),
-      role: registrationData.role,
-      preferredLanguage: registrationData.preferredLanguage,
-    };
-    
-    const success = await registerUser(cleanedData);
+    try {
+      clearError(); // Clear any previous errors
+      
+      // Extract acceptTerms from data but don't send it to backend
+      const { acceptTerms, ...registrationData } = data;
+      
+      // Clean up phone field - if empty, don't send it
+      const cleanedData = {
+        email: registrationData.email,
+        password: registrationData.password,
+        confirmPassword: registrationData.confirmPassword,
+        firstName: registrationData.firstName,
+        lastName: registrationData.lastName,
+        ...(registrationData.phone && { phone: registrationData.phone }),
+        role: registrationData.role,
+        preferredLanguage: registrationData.preferredLanguage,
+      };
+      
+      const success = await registerUser(cleanedData);
 
-    if (success) {
-      navigate('/auth/email-verification-pending', {
-        state: { 
-          email: registrationData.email,
-          role: registrationData.role,
-          will_need_2fa: ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(registrationData.role)
-        },
-        replace: true
-      });
-    } else {
-      setError('root', {
-        type: 'manual',
-        message: 'Registration failed. Please check the form and try again.',
-      });
+      if (success) {
+        navigate('/auth/email-verification-pending', {
+          state: { 
+            email: registrationData.email,
+            role: registrationData.role,
+            will_need_2fa: ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(registrationData.role)
+          },
+          replace: true
+        });
+      } else {
+        // Error is handled in the catch block
+      }
+    } catch (err) {
+      handleAuthError(err, 'register');
     }
   };
 
@@ -142,24 +147,28 @@ const RegisterPage: React.FC = () => {
     <PageTransition>
       <div className="w-full max-w-md mx-auto">
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="w-14 h-14 bg-gradient-to-r from-green-600 to-green-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <UserPlusIcon className="w-7 h-7 text-white" />
+      <div className="text-center mb-8 animate-fadeInUp">
+        <div className="relative inline-flex items-center justify-center mb-6">
+          <div className="w-20 h-20 gradient-medical rounded-2xl flex items-center justify-center shadow-premium">
+            <UserPlusIcon className="w-10 h-10 text-white" />
+          </div>
+          <div className="absolute -inset-2 gradient-medical rounded-2xl blur-xl opacity-25 animate-pulse"></div>
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-2">
+        <h1 className="heading-primary text-gray-900 mb-2">
           {t('auth.register')}
         </h1>
-        <p className="text-gray-600 text-sm">
+        <p className="text-body text-gray-600">
           {t('twofa.createAccountSubtitle')}
         </p>
       </div>
 
       {/* Registration Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="card-premium p-8 animate-fadeInUp">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Name Fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="firstName" className="label-premium">
               {t('auth.firstName')}
             </label>
             <input
@@ -167,13 +176,13 @@ const RegisterPage: React.FC = () => {
               type="text"
               id="firstName"
               autoComplete="given-name"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                errors.firstName ? 'border-red-300' : 'border-gray-300'
+              className={`input-premium ${
+                errors.firstName ? 'border-red-300 bg-red-50' : ''
               }`}
               placeholder="John"
             />
             {errors.firstName && (
-              <p className="mt-2 text-sm text-red-600 flex items-center">
+              <p className="form-error flex items-center">
                 <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
                 {errors.firstName.message?.toString()}
               </p>
@@ -181,7 +190,7 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="lastName" className="label-premium">
               {t('auth.lastName')}
             </label>
             <input
@@ -189,13 +198,13 @@ const RegisterPage: React.FC = () => {
               type="text"
               id="lastName"
               autoComplete="family-name"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                errors.lastName ? 'border-red-300' : 'border-gray-300'
+              className={`input-premium ${
+                errors.lastName ? 'border-red-300 bg-red-50' : ''
               }`}
               placeholder="Doe"
             />
             {errors.lastName && (
-              <p className="mt-2 text-sm text-red-600 flex items-center">
+              <p className="form-error flex items-center">
                 <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
                 {errors.lastName.message?.toString()}
               </p>
@@ -205,7 +214,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="email" className="label-premium">
             {t('auth.email')}
           </label>
           <input
@@ -213,13 +222,13 @@ const RegisterPage: React.FC = () => {
             type="email"
             id="email"
             autoComplete="email"
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-              errors.email ? 'border-red-300' : 'border-gray-300'
+            className={`select-premium ${
+              errors.email ? 'border-red-300 bg-red-50' : ''
             }`}
             placeholder="john.doe@example.com"
           />
           {errors.email && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.email.message?.toString()}
             </p>
@@ -228,7 +237,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Phone Field */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="phone" className="label-premium">
             {t('auth.phone')} <span className="text-gray-400">(optional)</span>
           </label>
           <input
@@ -236,13 +245,13 @@ const RegisterPage: React.FC = () => {
             type="tel"
             id="phone"
             autoComplete="tel"
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-              errors.phone ? 'border-red-300' : 'border-gray-300'
+            className={`select-premium ${
+              errors.phone ? 'border-red-300 bg-red-50' : ''
             }`}
             placeholder="+31 6 12345678"
           />
           {errors.phone && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.phone.message?.toString()}
             </p>
@@ -251,14 +260,14 @@ const RegisterPage: React.FC = () => {
 
         {/* Role Selection */}
         <div>
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="role" className="label-premium">
             {t('auth.role')}
           </label>
           <select
             {...register('role')}
             id="role"
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-              errors.role ? 'border-red-300' : 'border-gray-300'
+            className={`select-premium ${
+              errors.role ? 'border-red-300 bg-red-50' : ''
             }`}
           >
             <option value={UserRole.CLIENT}>{t('role.client')}</option>
@@ -267,7 +276,7 @@ const RegisterPage: React.FC = () => {
             <option value={UserRole.BOOKKEEPER}>{t('role.bookkeeper')}</option>
           </select>
           {errors.role && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.role.message?.toString()}
             </p>
@@ -276,21 +285,21 @@ const RegisterPage: React.FC = () => {
 
         {/* Language Selection */}
         <div>
-          <label htmlFor="preferredLanguage" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="preferredLanguage" className="label-premium">
             {t('twofa.preferredLanguage')}
           </label>
           <select
             {...register('preferredLanguage')}
             id="preferredLanguage"
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-              errors.preferredLanguage ? 'border-red-300' : 'border-gray-300'
+            className={`select-premium ${
+              errors.preferredLanguage ? 'border-red-300 bg-red-50' : ''
             }`}
           >
             <option value={LanguageCode.EN}>🇺🇸 English</option>
             <option value={LanguageCode.NL}>🇳🇱 Nederlands</option>
           </select>
           {errors.preferredLanguage && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.preferredLanguage.message?.toString()}
             </p>
@@ -299,7 +308,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="password" className="label-premium">
             {t('auth.password')}
           </label>
           <div className="relative">
@@ -308,15 +317,15 @@ const RegisterPage: React.FC = () => {
               type={showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="new-password"
-              className={`w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                errors.password ? 'border-red-300' : 'border-gray-300'
+              className={`input-premium pr-12 ${
+                errors.password ? 'border-red-300 bg-red-50' : ''
               }`}
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus-visible-premium"
             >
               {showPassword ? (
                 <EyeSlashIcon className="w-5 h-5" />
@@ -346,7 +355,7 @@ const RegisterPage: React.FC = () => {
           )}
 
           {errors.password && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.password.message?.toString()}
             </p>
@@ -355,7 +364,7 @@ const RegisterPage: React.FC = () => {
 
         {/* Confirm Password Field */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="confirmPassword" className="label-premium">
             {t('auth.confirmPassword')}
           </label>
           <div className="relative">
@@ -364,15 +373,15 @@ const RegisterPage: React.FC = () => {
               type={showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
               autoComplete="new-password"
-              className={`w-full px-4 py-3 pr-12 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+              className={`input-premium pr-12 ${
+                errors.confirmPassword ? 'border-red-300 bg-red-50' : ''
               }`}
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus-visible-premium"
             >
               {showConfirmPassword ? (
                 <EyeSlashIcon className="w-5 h-5" />
@@ -382,7 +391,7 @@ const RegisterPage: React.FC = () => {
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="form-error flex items-center">
               <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
               {errors.confirmPassword.message?.toString()}
             </p>
@@ -405,24 +414,20 @@ const RegisterPage: React.FC = () => {
           </label>
         </div>
         {errors.acceptTerms && (
-          <p className="mt-2 text-sm text-red-600 flex items-center">
+          <p className="form-error flex items-center">
             <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
             {errors.acceptTerms.message?.toString()}
           </p>
         )}
 
         {/* Error Message */}
-        {errors.root && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-600">{errors.root.message?.toString()}</p>
-          </div>
-        )}
+        <AuthErrorMessage error={error} onDismiss={clearError} />
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting || isLoading}
-          className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          className="btn-premium-success w-full py-3 px-6 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {isSubmitting || isLoading ? (
             <LoadingSpinner size="small" color="white" />
@@ -433,17 +438,18 @@ const RegisterPage: React.FC = () => {
 
         {/* Login Link */}
         <div className="text-center pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
+          <p className="text-body-sm text-gray-600">
             Already have an account?{' '}
             <Link
               to="/auth/login"
-              className="text-green-600 hover:text-green-700 hover:underline font-medium"
+              className="text-gradient-primary hover:underline font-medium"
             >
               {t('auth.login')}
             </Link>
           </p>
         </div>
       </form>
+      </div>
       </div>
     </PageTransition>
   );

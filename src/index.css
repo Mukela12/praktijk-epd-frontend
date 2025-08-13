@@ -4,6 +4,11 @@
 /* Import Tailwind CSS v4 */
 @import "tailwindcss";
 
+/* Import PraktijkEPD Design System */
+@import "./styles/design-system.css";
+@import "./styles/ui-polish.css";
+@import "./styles/professional-ui.css";
+
 /* Base styles */
 @layer base {
   * {
@@ -253,23 +258,23 @@
 /* Utility classes */
 @layer utilities {
   /* Animation utilities */
-  .animate-fade-in {
+  .anim-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
 
-  .animate-slide-in {
+  .anim-slide-in {
     animation: slideIn 0.3s ease-out;
   }
 
-  .animate-slide-up {
+  .anim-slide-up {
     animation: slideUp 0.3s ease-out;
   }
 
-  .animate-scale-in {
+  .anim-scale-in {
     animation: scaleIn 0.2s ease-out;
   }
 
-  .animate-pulse-soft {
+  .anim-pulse-soft {
     animation: pulseSoft 2s infinite;
   }
 
@@ -314,9 +319,14 @@
 
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
-    .motion-reduce {
-      animation: none;
-      transition: none;
+    .motion-reduce,
+    .anim-fade-in,
+    .anim-slide-in,
+    .anim-slide-up,
+    .anim-scale-in,
+    .anim-pulse-soft {
+      animation: none !important;
+      transition: none !important;
     }
   }
 }

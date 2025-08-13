@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { useAuth, useAuthStore } from '@/store/authStore';
+import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { LoginFormData, AuthenticationState } from '@/types/auth';
-import { UserRole } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
+import AuthErrorMessage from '@/components/auth/AuthErrorMessage';
+import { useAuthError } from '@/hooks/useAuthError';
 
 // Validation schema
 const loginSchema = z.object({
@@ -29,12 +30,12 @@ const loginSchema = z.object({
 
 const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, authenticationState, pendingNavigation, error, user, isLoading, requiresTwoFactor } = useAuth();
+  const { login, authenticationState, pendingNavigation, isLoading, requiresTwoFactor } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { error, handleAuthError, clearError } = useAuthError();
 
-  const from = (location.state as any)?.from?.pathname || '/';
   const message = (location.state as any)?.message;
 
   // Handle navigation based on authentication state
@@ -72,7 +73,6 @@ const LoginPage: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
     watch
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -85,23 +85,29 @@ const LoginPage: React.FC = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    const result = await login({
-      email: data.email,
-      password: data.password,
-      rememberDevice: data.rememberDevice,
-      twoFactorCode: data.twoFactorCode,
-    });
-
-    // Handle email verification case
-    if (result === 'email_not_verified') {
-      navigate('/auth/email-verification-pending', {
-        state: { email: data.email, fromLogin: true },
-        replace: true
+    try {
+      clearError(); // Clear any previous errors
+      
+      const result = await login({
+        email: data.email,
+        password: data.password,
+        rememberDevice: data.rememberDevice,
+        twoFactorCode: data.twoFactorCode,
       });
+
+      // Handle email verification case
+      if (result === 'email_not_verified') {
+        navigate('/auth/email-verification-pending', {
+          state: { email: data.email, fromLogin: true },
+          replace: true
+        });
+      }
+      
+      // All other cases (success, 2FA, etc.) are handled by the useEffect hooks
+      // that listen to the authentication state changes
+    } catch (err) {
+      handleAuthError(err, 'login');
     }
-    
-    // All other cases (success, 2FA, etc.) are handled by the useEffect hooks
-    // that listen to the authentication state changes
   };
 
   const emailValue = watch('email');
@@ -111,22 +117,24 @@ const LoginPage: React.FC = () => {
     <PageTransition>
       <div className="w-full max-w-md mx-auto">
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="relative w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <ShieldCheckIcon className="w-8 h-8 text-white" />
-          <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-2xl blur opacity-20"></div>
+      <div className="text-center mb-8 animate-fadeInUp">
+        <div className="relative inline-flex items-center justify-center mb-6">
+          <div className="w-20 h-20 gradient-healthcare rounded-2xl flex items-center justify-center shadow-premium">
+            <ShieldCheckIcon className="w-10 h-10 text-white" />
+          </div>
+          <div className="absolute -inset-2 gradient-healthcare rounded-2xl blur-xl opacity-25 animate-pulse"></div>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="heading-primary text-gray-900 mb-2">
           {t('twofa.welcomeBack')}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-body text-gray-600">
           {t('twofa.signInAccount')}
         </p>
       </div>
 
       {/* Success Message */}
       {message && (
-        <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-start">
+        <div className="mb-6 card-premium bg-green-50 border-green-200 p-4 flex items-start animate-slideIn">
           <CheckCircleIcon className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-green-800">{message}</p>
@@ -135,11 +143,11 @@ const LoginPage: React.FC = () => {
       )}
 
       {/* Login Form */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+      <div className="card-premium p-8 animate-fadeInUp">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+            <label htmlFor="email" className="label-premium">
               {t('twofa.emailAddress')}
             </label>
             <div className="relative">
@@ -148,10 +156,11 @@ const LoginPage: React.FC = () => {
                 type="email"
                 id="email"
                 autoComplete="email"
-                className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                onFocus={clearError}
+                className={`input-premium ${
                   errors.email 
                     ? 'border-red-300 bg-red-50' 
-                    : 'border-gray-200 bg-gray-50 focus:bg-white hover:border-gray-300'
+                    : ''
                 }`}
                 placeholder="your.email@praktijkepd.nl"
               />
@@ -162,7 +171,7 @@ const LoginPage: React.FC = () => {
               )}
             </div>
             {errors.email && (
-              <p className="mt-2 text-sm text-red-600 flex items-center">
+              <p className="form-error flex items-center">
                 <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
                 {errors.email.message}
               </p>
@@ -171,7 +180,7 @@ const LoginPage: React.FC = () => {
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+            <label htmlFor="password" className="label-premium">
               {t('twofa.password')}
             </label>
             <div className="relative">
@@ -180,17 +189,18 @@ const LoginPage: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 autoComplete="current-password"
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                onFocus={clearError}
+                className={`input-premium pr-12 ${
                   errors.password 
                     ? 'border-red-300 bg-red-50' 
-                    : 'border-gray-200 bg-gray-50 focus:bg-white hover:border-gray-300'
+                    : ''
                 }`}
                 placeholder="••••••••••••"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 focus-visible-premium"
               >
                 {showPassword ? (
                   <EyeSlashIcon className="w-5 h-5" />
@@ -205,7 +215,7 @@ const LoginPage: React.FC = () => {
               )}
             </div>
             {errors.password && (
-              <p className="mt-2 text-sm text-red-600 flex items-center">
+              <p className="form-error flex items-center">
                 <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
                 {errors.password.message}
               </p>
@@ -214,8 +224,8 @@ const LoginPage: React.FC = () => {
 
           {/* Two-Factor Code Field (shown when required) */}
           {requiresTwoFactor && (
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <label htmlFor="twoFactorCode" className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="card-premium bg-blue-50 border-blue-200 p-4">
+              <label htmlFor="twoFactorCode" className="label-premium">
                 Two-Factor Authentication Code
               </label>
               <input
@@ -223,16 +233,16 @@ const LoginPage: React.FC = () => {
                 type="text"
                 id="twoFactorCode"
                 maxLength={6}
-                className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-center tracking-widest ${
+                className={`input-premium text-center tracking-widest ${
                   errors.twoFactorCode 
                     ? 'border-red-300 bg-red-50' 
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    : ''
                 }`}
                 placeholder="000000"
                 autoComplete="one-time-code"
               />
               {errors.twoFactorCode && (
-                <p className="mt-2 text-sm text-red-600 flex items-center">
+                <p className="form-error flex items-center">
                   <span className="w-1 h-1 bg-red-600 rounded-full mr-2"></span>
                   {errors.twoFactorCode.message}
                 </p>
@@ -260,20 +270,13 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Error Message */}
-          {errors.root && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                <p className="text-sm text-red-700 font-medium">{errors.root.message}</p>
-              </div>
-            </div>
-          )}
+          <AuthErrorMessage error={error} onDismiss={clearError} />
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting || isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-semibold shadow-lg hover:shadow-xl"
+            className="btn-premium-primary w-full py-3 px-6 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isSubmitting || isLoading ? (
               <div className="flex items-center">
@@ -288,11 +291,11 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Links */}
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 space-y-4 animate-fadeInUp">
         <div className="text-center">
           <Link
             to="/auth/forgot-password"
-            className="text-blue-600 hover:text-blue-700 font-medium transition-colors text-sm"
+            className="text-gradient-primary hover:underline font-medium transition-all text-sm"
           >
             {t('twofa.forgotPassword')}
           </Link>
@@ -300,12 +303,12 @@ const LoginPage: React.FC = () => {
 
         {/* Register Link */}
         <div className="text-center pt-4 border-t border-gray-200">
-          <p className="text-gray-600 mb-3 text-sm">
+          <p className="text-body-sm text-gray-600 mb-3">
             {t('twofa.alreadyAccount')}
           </p>
           <Link
             to="/auth/register"
-            className="inline-flex items-center justify-center px-6 py-2.5 border-2 border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-200 text-sm"
+            className="btn-premium-secondary inline-flex items-center justify-center"
           >
             {t('twofa.createAccount')}
           </Link>

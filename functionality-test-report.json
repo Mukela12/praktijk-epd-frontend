@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-08-13T06:21:53.633Z",
+  "summary": {
+    "total": 8,
+    "passed": 0,
+    "failed": 8,
+    "successRate": "0.0%"
+  },
+  "details": [
+    {
+      "testName": "admin dashboard",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "therapist dashboard",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "client dashboard",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "assistant dashboard",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "bookkeeper dashboard",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "Client messages",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "Bookkeeper login",
+      "success": false,
+      "details": "Failed to login"
+    },
+    {
+      "testName": "Report generation",
+      "success": false,
+      "details": "Failed to login"
+    }
+  ]
+}

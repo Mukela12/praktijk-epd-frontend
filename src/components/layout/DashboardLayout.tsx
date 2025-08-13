@@ -16,6 +16,9 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   ClipboardDocumentListIcon,
+  BookOpenIcon,
+  PuzzlePieceIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -58,9 +61,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.BOOKKEEPER, UserRole.SUBSTITUTE],
       },
       {
-        name: 'Calendar',
+        name: 'Agenda',
         nameKey: 'nav.calendar',
-        href: `${getRoleBasePath()}/calendar`,
+        href: `${getRoleBasePath()}/agenda`,
         icon: CalendarIcon,
         roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.SUBSTITUTE],
       },
@@ -105,6 +108,27 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           href: '/admin/reports',
           icon: ChartBarIcon,
           roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Resources',
+          nameKey: 'nav.resources',
+          href: '/admin/resources',
+          icon: BookOpenIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Challenges',
+          nameKey: 'nav.challenges',
+          href: '/admin/challenges',
+          icon: PuzzlePieceIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Surveys',
+          nameKey: 'nav.surveys',
+          href: '/admin/surveys',
+          icon: ClipboardDocumentCheckIcon,
+          roles: [UserRole.ADMIN],
         }
       );
     }
@@ -123,6 +147,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           nameKey: 'nav.appointments',
           href: '/therapist/appointments',
           icon: CalendarIcon,
+          roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
+        },
+        {
+          name: 'Challenges',
+          nameKey: 'nav.challenges',
+          href: '/therapist/challenges',
+          icon: PuzzlePieceIcon,
+          roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
+        },
+        {
+          name: 'Surveys',
+          nameKey: 'nav.surveys',
+          href: '/therapist/surveys',
+          icon: ClipboardDocumentCheckIcon,
           roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
         }
       );
@@ -143,6 +181,65 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           href: '/client/therapist',
           icon: UserCircleIcon,
           roles: [UserRole.CLIENT],
+        },
+        {
+          name: 'Payments',
+          nameKey: 'nav.payments',
+          href: '/client/payment-center',
+          icon: CurrencyDollarIcon,
+          roles: [UserRole.CLIENT],
+        },
+        {
+          name: 'Payment Methods',
+          nameKey: 'nav.paymentMethods',
+          href: '/client/payment-methods',
+          icon: ShieldCheckIcon,
+          roles: [UserRole.CLIENT],
+        }
+      );
+    }
+
+    if (user?.role === UserRole.BOOKKEEPER) {
+      roleSpecificItems.push(
+        {
+          name: 'Financial',
+          nameKey: 'nav.financial',
+          href: '/bookkeeper/financial',
+          icon: CurrencyDollarIcon,
+          roles: [UserRole.BOOKKEEPER],
+        },
+        {
+          name: 'Invoices',
+          nameKey: 'nav.invoices',
+          href: '/bookkeeper/invoices',
+          icon: ClipboardDocumentListIcon,
+          roles: [UserRole.BOOKKEEPER],
+        },
+        {
+          name: 'Reports',
+          nameKey: 'nav.reports',
+          href: '/bookkeeper/reports',
+          icon: ChartBarIcon,
+          roles: [UserRole.BOOKKEEPER],
+        }
+      );
+    }
+
+    if (user?.role === UserRole.ASSISTANT) {
+      roleSpecificItems.push(
+        {
+          name: 'Client Support',
+          nameKey: 'nav.clientSupport',
+          href: '/assistant/client-support',
+          icon: UsersIcon,
+          roles: [UserRole.ASSISTANT],
+        },
+        {
+          name: 'Scheduling',
+          nameKey: 'nav.scheduling',
+          href: '/assistant/scheduling',
+          icon: CalendarIcon,
+          roles: [UserRole.ASSISTANT],
         }
       );
     }
@@ -154,7 +251,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         nameKey: 'nav.messages',
         href: `${getRoleBasePath()}/messages`,
         icon: ChatBubbleLeftIcon,
-        roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.SUBSTITUTE],
+        roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.BOOKKEEPER, UserRole.SUBSTITUTE],
       },
     ];
 
@@ -247,36 +344,65 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className={`fixed inset-0 bg-gray-600 transition-opacity ${sidebarOpen ? 'opacity-75' : 'opacity-0'}`} onClick={() => setSidebarOpen(false)} />
         
         <div className={`fixed inset-y-0 left-0 w-64 bg-white shadow-xl transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link to={getDashboardPath()} className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getLogoColorClass(user?.role || UserRole.CLIENT)}`}>
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">PraktijkEPD</span>
-            </Link>
-            <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600">
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-          </div>
-          
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  item.current
-                    ? 'text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                style={item.current ? { backgroundColor: getActiveColor(user?.role || UserRole.CLIENT) } : undefined}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon className="w-5 h-5 mr-3" />
-                {t(item.nameKey)}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+              <Link to={getDashboardPath()} className="flex items-center space-x-2">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getLogoColorClass(user?.role || UserRole.CLIENT)}`}>
+                  <span className="text-white font-bold text-sm">P</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-900">PraktijkEPD</span>
               </Link>
-            ))}
-          </nav>
+              <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Scrollable navigation */}
+            <div className="flex flex-col flex-1 min-h-0">
+              <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                {navigationItems.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      item.current
+                        ? 'text-white'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                    style={item.current ? { backgroundColor: getActiveColor(user?.role || UserRole.CLIENT) } : undefined}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {t(item.nameKey)}
+                  </Link>
+                ))}
+              </nav>
+              
+              {/* Bottom section with user info and logout */}
+              <div className="flex-shrink-0 border-t border-gray-200 p-4">
+                <div className="flex items-center mb-3">
+                  <div className="flex-shrink-0">
+                    <UserCircleIcon className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <div className="ml-3 flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {getDisplayName()}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user?.role}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors"
+                >
+                  <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+                  {t('auth.logout')}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -292,23 +418,50 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </Link>
           </div>
           
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  item.current
-                    ? 'text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                style={item.current ? { backgroundColor: getActiveColor(user?.role || UserRole.CLIENT) } : undefined}
+          {/* Scrollable navigation */}
+          <div className="flex flex-col flex-1 min-h-0">
+            <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    item.current
+                      ? 'text-white'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  style={item.current ? { backgroundColor: getActiveColor(user?.role || UserRole.CLIENT) } : undefined}
+                >
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {t(item.nameKey)}
+                </Link>
+              ))}
+            </nav>
+            
+            {/* Bottom section with user info and logout */}
+            <div className="flex-shrink-0 border-t border-gray-200 p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <UserCircleIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {getDisplayName()}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.role}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="mt-3 w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-lg transition-colors"
               >
-                <item.icon className="w-5 h-5 mr-3" />
-                {t(item.nameKey)}
-              </Link>
-            ))}
-          </nav>
+                <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+                {t('auth.logout')}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

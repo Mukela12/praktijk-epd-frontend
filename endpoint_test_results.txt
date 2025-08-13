@@ -1,0 +1,16 @@
+## 1. Testing Auth Endpoints
+### 1.1 Test Register New User
+{
+  "success": false,
+  "message": "Bad escaped character in JSON at position 79 (line 3 column 30)",
+  "stack": "SyntaxError: Bad escaped character in JSON at position 79 (line 3 column 30)\n    at JSON.parse (<anonymous>)\n    at parse (/Users/mukelakatungu/praktijk-epd-backend/node_modules/body-parser/lib/types/json.js:77:19)\n    at /Users/mukelakatungu/praktijk-epd-backend/node_modules/body-parser/lib/read.js:123:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)\n    at invokeCallback (/Users/mukelakatungu/praktijk-epd-backend/node_modules/raw-body/index.js:238:16)\n    at done (/Users/mukelakatungu/praktijk-epd-backend/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/mukelakatungu/praktijk-epd-backend/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:519:28)\n    at endReadableNT (node:internal/streams/readable:1696:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)",
+  "error": {
+    "expose": true,
+    "statusCode": 400,
+    "status": 400,
+    "body": "{\n    \"email\": \"newclient1754963050@example.com\",\n    \"password\": \"TestPass123\\!\",\n    \"firstName\": \"Test\",\n    \"lastName\": \"Client\",\n    \"role\": \"client\",\n    \"phone\": \"+31612345678\"\n  }",
+    "type": "entity.parse.failed"
+  },
+  "timestamp": "2025-08-12T01:44:10.629Z",
+  "path": "/api/auth/register"
+}

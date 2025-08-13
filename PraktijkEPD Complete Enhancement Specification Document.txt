@@ -1,0 +1,638 @@
+﻿PraktijkEPD Complete Enhancement Specification Document
+Table of Contents
+
+
+Admin Dashboard & System
+Therapist Dashboard
+Financial Management (Admin/Bookkeeper)
+Client Management (Admin)
+Therapist Management (Admin)
+Waiting List Management (Admin)
+Calendar System (All Roles)
+Authentication & Security (All Roles)
+Global System Changes
+
+
+
+
+Admin Dashboard & System
+Role: Administrator
+Screen: Admin Dashboard (main landing page)
+1. Admin Role Flexibility
+
+
+Feature: Allow admin to also function as therapist
+Implementation:
+
+
+Add role selection toggle in admin settings
+When admin = therapist, display "My Appointments Today" section
+Conditional rendering based on admin role selection
+
+
+
+
+
+
+2. Complete Sidebar Navigation Restructure
+Replace current sidebar with:
+🏠 Dashboard
+📅 Agenda
+   ├── My Agenda (if admin is therapist)
+   └── Full Practice Agenda
+👥 Client Management
+   ├── Status of New Applications
+   ├── Add Client
+   ├── All Clients
+   ├── Client Dashboard Settings
+   ├── Client Invoices
+   ├── Client Agreement Forms
+   ├── Dashboard Settings (email, notifications, pop-up)
+   └── Statistics
+👨‍⚕️ Therapist Management
+   ├── Status of In/Out Offices and Vacation
+   ├── All Therapists
+   ├── Add Therapist
+   ├── Therapist Dashboard Settings
+   ├── Therapist Invoices
+   ├── Therapist Contracts
+   ├── Dashboard Settings (email, notifications, pop-up)
+   └── Statistics
+💰 Financial Management
+   ├── Total Revenue Dashboard
+   ├── Total Client Revenue
+   ├── Total Therapist Cost (invoice pairing)
+   ├── All Unpaid Invoices Client
+   ├── Invoice Settings
+   ├── Settings (email, notifications, pop-up)
+   └── Statistics
+💬 Message Center
+   ├── My Messages
+   ├── Full Messages of Whole Practice (with filters)
+   ├── Send Message (therapist/client/other roles)
+   ├── Send E-mail
+   └── Dashboard Settings (email, notifications, pop-up)
+📞 Phonebook
+   ├── Add Contacts (pairable with therapist and clients)
+   └── Dashboard Settings (email, notifications, pop-up)
+⚙️ Admin Company Settings
+   ├── Company name, logo, email
+   ├── Street name and number, zipcode, country
+   ├── Phone number, general signature
+   ├── AGB code practice
+   └── Full dashboard settings
+3. Modular Dashboard Cards
+
+
+Feature: Make all metric cards customizable
+Implementation:
+
+
+Drag-and-drop functionality
+Show/hide options for each card
+Admin can prioritize card order
+Resize options for cards
+
+
+
+
+
+
+4. Admin To-Do List Section
+
+
+Add: Priority task management
+Features:
+
+
+Deadline tracking
+Task assignment capabilities
+Completion status indicators
+Priority levels (urgent, high, normal, low)
+
+
+
+
+
+
+5. Enhanced Dashboard Sections
+
+
+Waiting List Overview: Clickable overview of all applications
+Instant Pairing System: Real-time therapist-client pairing with notifications
+Therapist Status Overview: Quick view of in/out office and vacation status
+Contract Management: Renewal notifications and visibility system
+
+
+
+
+Therapist Dashboard
+Role: Therapist
+Screen: Therapist main dashboard
+1. New Sidebar Items
+A. "Edit Profile" Section
+Add comprehensive profile management with subsections:
+
+
+Basic Information: Title, profile photo, phone number
+Communication: Message section with clients, therapists, admin
+Services:
+
+
+Therapy types (toggle on/off, connected to booking)
+Duration and price (set by admin)
+
+
+
+
+Categories: Mental health issue categories (Hulpvragen)
+Locations: Toggle locations on/off with full addresses
+Credentials: Education, continuing education, AGB-code, logo
+Professional: Professional associations, work hours
+Financial Management:
+
+
+Upload invoices to admin
+Quick overview unpaid invoices with color coding
+
+
+
+
+Calendar Management: Block times/days/holidays
+Contract Management (view-only):
+
+
+🟢 Green: Active & signed
+🔵 Blue: Draft awaiting signature
+⚪ White: No contract prepared
+🟠 Orange: Expired/expiring
+🔴 Red: No valid contract
+🟤 Brown: Ended, admin closure pending
+
+
+
+
+Approval System: All changes require admin approval
+Notifications: Admin notified of every change
+
+
+B. "Therapist to Admin Invoice" Section
+
+
+Upload System: Submit invoices to admin
+Status Tracking: Color-coded payment status
+
+
+🟢 Green: Fully paid to practitioner
+🟡 Yellow: Partially paid
+🔴 Red: Not paid to practitioner
+🔵 Blue: Awaiting client payment
+🟠 Orange: Rejected/dispute
+⚪ White: Not yet processed
+🟣 Purple: Paid as courtesy/exception
+
+
+
+
+
+
+2. Calendar Enhancements (Mijn Agenda)
+
+
+View Options: Add day, week, month grid views
+List View: Alternative to calendar grid
+Easy Switching: Prominent view toggle buttons
+
+
+3. Layout Repositioning
+
+
+"Agenda Vandaag": Move to top-left corner (sessions are priority)
+"Snelle Acties": Move to top-right corner
+Invoice Section: Position parallel next to agenda
+
+
+
+
+Financial Management (Admin/Bookkeeper)
+Role: Admin/Bookkeeper
+Screen: Financial dashboard and invoice management
+1. New Sidebar Items
+A. "Incoming Invoices Therapist"
+
+
+Therapist Invoice Processing:
+
+
+Automatic verification against session data
+Discrepancy flagging system
+Auto-linking to therapist and client profiles
+
+
+
+
+Advanced Filtering: Date, client, therapist, session, location
+Workflow Automation: Speeds up financial administration
+
+
+B. Enhanced "Send Invoice" Functionality
+
+
+Bulk Billing: Generate from completed sessions
+Partial Billing: Filterable system for selective invoicing
+Flexible Generation: Choose specific sessions to include
+
+
+2. Enhanced Features
+A. Reminder Tracking
+
+
+Counter System: Show number of reminders sent per invoice
+Communication History: Track all client payment communications
+
+
+B. Comprehensive Color-Coded Status System
+Client Invoice Status:
+
+
+🟢 Green: "Invoices paid on time – no action needed"
+🟡 Yellow: "Payment plan in place – payments in progress"
+🟠 Orange: "Payment plan in place, but client no longer complying"
+🔴 Red: "Client not paying – forwarded to debt collection agency"
+⚫ Black: "Client not paying – escalated to legal proceedings"
+🔵 Blue: "Invoice not yet due – within payment term"
+🟣 Purple: "Temporarily on hold due to exceptional circumstances"
+
+
+C. Revenue Analytics Dashboard
+
+
+Per-Therapist Metrics:
+
+
+Total sessions count
+Revenue per session
+Monthly financial insights
+Quarterly financial insights
+
+
+
+
+
+
+3. Enhanced Filtering System
+
+
+Multi-criteria Filtering: Date, client, therapist, session type, location, status
+Advanced Search: Comprehensive search capabilities
+
+
+
+
+Client Management (Admin)
+Role: Admin
+Screen: Client management dashboard
+1. Dual Color-Coding System
+A. Invoice/Payment Status Colors
+
+
+🟢 Green: Invoice paid and on time – no action required
+🟡 Yellow: Payment plan arranged, payments ongoing
+🟠 Orange: Payment plan arranged, but client not complying
+🔴 Red: Client not paying, referred to collection agency
+⚫ Black: Client not paying, escalated to legal proceedings
+🔵 Blue: Invoice not yet due / within payment term
+🟣 Purple: Temporarily suspended due to exceptional circumstances
+⚪ White/Grey: Unknown status or invoice being drafted/processed
+
+
+B. Client Onboarding Workflow Colors
+
+
+⚪ White: New Registration – not yet viewed by practitioner
+🟡 Yellow: Viewed by Practitioner – no further action yet
+🔵 Blue: Intake Scheduled – practitioner scheduled intake session
+🟣 Purple: Starting Treatment – intake completed, treatment starting
+🟢 Green: Active Treatment – ongoing treatment process
+🔴 Red: On Hold or Discontinued – paused/stopped
+
+
+2. Enhanced Client Information
+
+
+Location Data: Add client location/address column
+Unpaid Invoice Overview:
+
+
+Number of unpaid invoices per client
+Total outstanding amount
+Days overdue indicators
+
+
+
+
+
+
+3. Advanced Features
+
+
+Enhanced Filtering: Payment status, treatment status, therapist, location, therapy type, date ranges
+View Options: Toggle between list and grid views
+Message Action: Add "Message" button to client actions
+Search Enhancement: By name, location, gender, therapy status
+
+
+4. Client Data Management
+
+
+Filter System: Filter by application/therapy status
+Status Management: View pending applications
+Communication Tools: Invite clients to complete missing info/contracts
+Relational Features: Parent/employer relationship pairing
+Approval System: Accept/deny booking buttons with notifications
+Permission Control: Therapists see only their clients (unless admin overrides)
+Notification System: Admin notified when client status changes
+
+
+
+
+Therapist Management (Admin)
+Role: Admin
+Screen: Therapist management dashboard
+1. Visual Enhancements
+
+
+Profile Photos: Add to therapist cards (with initials fallback)
+Enhanced Header: Make summary information bigger and more prominent
+
+
+2. Color-Coded Reimbursement Status
+Apply to therapist card borders/backgrounds:
+
+
+🟢 Green: "AGB Reimbursed" - Has AGB code, insurance reimbursed
+🔵 Blue: "Basic Reimbursement" - Municipality/special programs
+🔴 Red: "No Reimbursement" - Client pays out of pocket
+🟠 Orange: "On Vacation" - Not available for sessions
+🟡 Yellow: "Day off/Unavailable" - Temporary unavailability
+
+
+3. Enhanced Information Display
+
+
+Therapy Services Section: Add to each therapist card showing offered services
+Consistent Button Layout: Standardize across all therapist cards
+
+
+4. Advanced Functionality
+
+
+Enhanced Filtering: Hulpvragen, therapies, location, name search
+View Options: Grid and list view toggle
+Specialization Display: Clear presentation of therapist specializations
+
+
+
+
+Waiting List Management (Admin)
+Role: Admin
+Screen: Smart waiting list dashboard
+1. Color-Coded Client Status System
+Add visual status indicators to each client card:
+
+
+⚪ White: New Registration – not yet viewed by practitioner
+🟡 Yellow: Viewed by Practitioner – no further action yet
+🔵 Blue: Intake Scheduled – practitioner scheduled intake session
+🟣 Purple: Starting Treatment – intake completed, treatment starting
+🟢 Green: Active Treatment – ongoing treatment process
+🔴 Red: On Hold or Discontinued – paused/stopped
+
+
+2. Enhanced Client Information
+A. Therapist Preferences Section
+
+
+Add to client information alongside existing sections:
+
+
+Preferred therapist (if any)
+Gender preference
+Language preference
+Therapy style preference
+Previous therapist history
+
+
+
+
+
+
+B. Direct Scheduling Information
+
+
+Appointment Details from Application:
+
+
+Requested appointment times/dates
+Urgency level for scheduling
+Specific scheduling requirements
+Availability constraints
+
+
+
+
+
+
+3. Enhanced AI Matching
+
+
+No-Preference Client Handling: Special indicators for clients without therapist preferences
+AI Optimal Match Badge: Highlight when AI matching is particularly effective
+Enhanced Algorithm: Give extra weight when no preferences exist
+
+
+4. Communication Enhancement
+
+
+Message Button: Add to action buttons section
+Use Cases: Follow up on missing information, confirm preferences, update on progress
+
+
+
+
+Calendar System (All Roles)
+Role: All Users (with role-specific features)
+Screen: Calendar/agenda views
+1. Admin-Specific Enhancements
+
+
+Location Filter: Filter appointments by practice locations
+Therapist Filter: Filter by individual therapists or view all
+Overall Practice View: Complete overview of all practice activities
+
+
+2. Advanced Search & Filtering
+
+
+Date Range Filter: Custom date selection
+Session Type Filter: Filter by therapy type (CBT, EMDR, Intake, etc.)
+Client Name Search: Real-time search for specific clients
+Combined Filtering: Multiple filters working together
+
+
+3. Enhanced Calendar Functionality
+A. Core Features
+
+
+Click-to-Add: Click any date/time to create new appointment
+Scrollable Calendar: Smooth navigation through dates
+Multiple View Options: Day, Week, Month, Year views
+
+
+B. Advanced Features
+
+
+Individual Therapist Schedules: Separate calendar view per therapist
+Status Tracking: In-office, out-of-office, vacation days
+External Calendar Sync: Google Calendar, Outlook integration
+Export Functionality: Calendar data export options
+
+
+C. Session Status Tracking
+
+
+✅ Completed: Session finished successfully
+❌ Cancelled: Appointment cancelled
+🚫 No Show: Client didn't attend
+📅 Scheduled: Upcoming appointment
+⏳ In Progress: Currently happening
+
+
+4. Frontend Integration
+
+
+"My Clients Today" Feature: Quick view for therapist's daily clients
+Cross-Platform Consistency: Same functionality across admin/therapist views
+
+
+5. Legend Repositioning
+
+
+Current: Legend at bottom
+New Position: Top of page or side panel
+Global Consistency: Apply same color coding throughout entire EPD system
+
+
+
+
+Authentication & Security (All Roles)
+Role: All Users
+Screen: Login and security
+1. Two-Factor Authentication (2FA)
+
+
+Mandatory for Professional Accounts: Therapists, admin, staff
+Methods: SMS, authenticator app, email verification, backup codes
+Enhanced Login Flow: Email + Password → 2FA Verification → Dashboard Access
+
+
+2. Google Login Integration
+
+
+Target: Client portal access
+Benefits: Simplified onboarding, reduced password management
+Implementation: OAuth integration alongside traditional login
+
+
+3. Enhanced Security Features
+
+
+Session Management: Automatic logout after inactivity
+Device Registration: Remember trusted devices
+Login Monitoring: Lock accounts after failed attempts
+reCAPTCHA: Prevent bot attacks
+Password Policies: Enforce strong passwords
+Audit Logging: Track all login attempts and security events
+
+
+4. Therapist Registration Enhancement
+
+
+Mandatory Information: All profile information required
+Security: reCAPTCHA and Authenticator for login
+Password Recovery: Enhanced forgot password functionality
+
+
+
+
+Global System Changes
+Role: System-wide
+Screen: All screens
+1. Notification Center
+Centralized notification system:
+
+
+Types: New client registrations, bookings/applications, expired invoices, expiring contracts, messages
+One-click Actions: Approve/deny bookings with automatic email
+Role-based Filtering: Different notifications for different roles
+
+
+2. Color-Coding Standardization
+Apply consistent color coding throughout entire system:
+
+
+Contract Status: Green (active), Blue (draft), White (none), Orange (expired), Red (invalid), Brown (ended)
+Payment Status: Green (paid), Yellow (partial), Orange (overdue), Red (collection), Black (legal), Blue (pending), Purple (suspended), White (processing)
+Client Status: White (new), Yellow (viewed), Blue (scheduled), Purple (starting), Green (active), Red (discontinued)
+Therapist Status: Green (available), Orange (vacation), Yellow (unavailable), Red (out of office), Blue (basic reimbursement)
+
+
+3. Enhanced Communication System
+Secure, centralized messaging:
+
+
+Therapist-to-client messaging
+Therapist-to-therapist chat
+Therapist-to-admin communication
+Features: Message tagging, unread filters, optional chatbot
+Status Coding: New, in progress, waiting on client, waiting on developer
+
+
+4. Contract Management System
+
+
+Visibility: Contract status in therapist dashboard
+Notifications: Renewal alerts and reminders
+Admin Overview: Complete contract management
+Color-coded Status: As defined in global color system
+
+
+Implementation Priority
+Phase 1 (High Priority)
+
+
+2FA for professional accounts
+Admin sidebar navigation restructure
+Color-coding standardization
+Enhanced calendar functionality
+
+
+Phase 2 (Medium Priority)
+
+
+Therapist profile management system
+Client management enhancements
+Financial management improvements
+Google login for clients
+
+
+Phase 3 (Lower Priority)
+
+
+Advanced filtering systems
+Modular dashboard customization
+External calendar integration
+Enhanced analytics and reporting
+
+
+This document provides comprehensive specifications for transforming the current demo into Natalie's vision of a complete healthcare practice management system.

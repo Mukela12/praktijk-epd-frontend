@@ -1,0 +1,281 @@
+/* UI Polish for Professional Appearance */
+
+/* Button refinements */
+.btn-premium-primary,
+.btn-premium-secondary,
+.btn-premium-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-premium-primary svg,
+.btn-premium-secondary svg,
+.btn-premium-ghost svg {
+  flex-shrink: 0;
+}
+
+/* Card hover effects */
+.card-premium {
+  transition: all 0.3s ease;
+}
+
+.card-premium:hover {
+  transform: translateY(-2px);
+}
+
+/* Metric cards polish */
+.card-metric {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-metric::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, rgba(0,0,0,0.02) 0%, transparent 100%);
+  border-radius: 50%;
+  transform: translate(30px, -30px);
+}
+
+/* Select and input refinements */
+.select-premium,
+.input-premium {
+  transition: all 0.2s ease;
+}
+
+.select-premium:focus,
+.input-premium:focus {
+  transform: translateY(-1px);
+}
+
+/* Status badge refinements */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Progress bar animations */
+.progress-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Empty state polish */
+.empty-state-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Table hover effects */
+.table-row-hover {
+  transition: all 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  transform: translateX(2px);
+}
+
+/* Icon consistency */
+.icon-sm { width: 1rem; height: 1rem; }
+.icon-md { width: 1.25rem; height: 1.25rem; }
+.icon-lg { width: 1.5rem; height: 1.5rem; }
+.icon-xl { width: 2rem; height: 2rem; }
+
+/* Text truncation */
+.line-clamp-1 { 
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-2 { 
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-3 { 
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Loading states */
+.skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dropdown positioning fix */
+.dropdown-menu {
+  z-index: 50;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Form field consistency */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Notification polish */
+.notification-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Chart container polish */
+.chart-container {
+  position: relative;
+  height: 300px;
+  padding: 1rem;
+}
+
+/* Responsive text */
+@media (max-width: 640px) {
+  .heading-primary { font-size: 1.5rem; }
+  .heading-section { font-size: 1.125rem; }
+  .text-body { font-size: 0.875rem; }
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .card-premium { box-shadow: none; border: 1px solid #e5e7eb; }
+}
+
+/* Accessibility improvements */
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Professional color consistency */
+:root {
+  --color-primary: #0891b2;
+  --color-secondary: #7c3aed;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Professional spacing */
+.space-y-professional > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Icon alignment fix */
+.icon-text-align {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Professional shadows */
+.shadow-professional {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.shadow-professional-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Text balance */
+.text-balance {
+  text-wrap: balance;
+}

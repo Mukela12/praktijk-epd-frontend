@@ -1,0 +1,2268 @@
+mukelakatungu@MacBookAir praktijk-epd-backend % node comprehensive-backend-test-full.js
+
+🚀 Starting Comprehensive Backend Test Suite for PraktijkEPD
+Complete version with ALL endpoints including new features
+Target: http://localhost:3000
+Time: 8/9/2025, 7:44:16 AM
+
+
+================================================================================
+AUTHENTICATING ALL USERS
+================================================================================
+
+------------------------------------------------------------
+Authenticating admin
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "0d43e43e-270a-455c-afae-31b80d33028f",
+    "email": "admin@praktijkepd.nl",
+    "role": "admin",
+    "status": "active",
+  ...
+✓ admin authenticated successfully
+
+------------------------------------------------------------
+Authenticating therapist
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+    "email": "emma.dejong@example.com",
+    "role": "therapist",
+    "status": "acti...
+✓ therapist authenticated successfully
+
+------------------------------------------------------------
+Authenticating client
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "email": "client@example.com",
+    "role": "client",
+    "status": "active",
+   ...
+✓ client authenticated successfully
+
+------------------------------------------------------------
+Authenticating assistant
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "07edcb29-2345-494e-b9d7-28a5b575b3da",
+    "email": "sophie.williams@example.com",
+    "role": "assistant",
+    "status": "...
+✓ assistant authenticated successfully
+
+------------------------------------------------------------
+Authenticating bookkeeper
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "fcb03049-42b2-4bff-b51a-4cc3db6b8d00",
+    "email": "lucas.martin@example.com",
+    "role": "bookkeeper",
+    "status": "ac...
+✓ bookkeeper authenticated successfully
+
+------------------------------------------------------------
+Authenticating substitute
+------------------------------------------------------------
+✓ POST /api/auth/login - Status: 200
+Response: {
+  "success": true,
+  "message": "Login successful",
+  "user": {
+    "id": "3243d445-b77e-4184-8a12-e3cfd2e19669",
+    "email": "olivia.janssen@example.com",
+    "role": "substitute",
+    "status": "...
+✓ substitute authenticated successfully
+
+================================================================================
+ADMIN ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Admin Dashboard
+------------------------------------------------------------
+✓ GET /api/admin/dashboard - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "kpis": {
+      "totalRevenue": 0,
+      "activeClients": 3,
+      "totalTherapists": 9,
+      "appointmentsToday": 2,
+      "waitingListSize": 14,
+      "overdueI...
+
+------------------------------------------------------------
+Get All Users
+------------------------------------------------------------
+✓ GET /api/admin/users - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "a8e36b1b-ed0b-4cb1-b9ae-105425fde2fc",
+        "email": "test.1754718222091@example.com",
+        "first_name": "Test",
+        "...
+
+------------------------------------------------------------
+Get Users with Pagination
+------------------------------------------------------------
+✓ GET /api/admin/users?page=1&limit=10 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "a8e36b1b-ed0b-4cb1-b9ae-105425fde2fc",
+        "email": "test.1754718222091@example.com",
+        "first_name": "Test",
+        "...
+
+------------------------------------------------------------
+Get Filtered Users
+------------------------------------------------------------
+✓ GET /api/admin/users?role=client&status=active - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440021",
+        "email": "jan.bakker@example.com",
+        "first_name": "Jan",
+        "last_name...
+
+------------------------------------------------------------
+Search Users
+------------------------------------------------------------
+✓ GET /api/admin/users?search=emma - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "users": [
+      {
+        "id": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+        "email": "emma.dejong@example.com",
+        "first_name": "Emma",
+        "last_na...
+
+------------------------------------------------------------
+Get All Clients
+------------------------------------------------------------
+✓ GET /api/admin/clients - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "clients": [
+      {
+        "id": "a8e36b1b-ed0b-4cb1-b9ae-105425fde2fc",
+        "email": "test.1754718222091@example.com",
+        "first_name": "Test",
+       ...
+
+------------------------------------------------------------
+Get Active Clients
+------------------------------------------------------------
+✓ GET /api/admin/clients?status=active - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "clients": [
+      {
+        "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+        "email": "client@example.com",
+        "first_name": "Test",
+        "last_name"...
+
+------------------------------------------------------------
+Get All Therapists
+------------------------------------------------------------
+✓ GET /api/admin/therapists - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "therapists": [
+      {
+        "id": "3243d445-b77e-4184-8a12-e3cfd2e19669",
+        "email": "olivia.janssen@example.com",
+        "first_name": "Olivia",
+      ...
+
+------------------------------------------------------------
+Get Waiting List
+------------------------------------------------------------
+✓ GET /api/admin/waiting-list - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "waitingList": [
+      {
+        "id": "211f4c76-a9f1-497f-922a-332275a2687f",
+        "status": "read",
+        "urgency_level": "urgent",
+        "reason_for_the...
+
+------------------------------------------------------------
+Get High Priority Waiting List
+------------------------------------------------------------
+✓ GET /api/admin/waiting-list?urgency=high - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "waitingList": [
+      {
+        "id": "d4362b02-6ecc-4c5c-8c8b-d6a4d067d0ce",
+        "status": "new",
+        "urgency_level": "high",
+        "reason_for_therap...
+
+------------------------------------------------------------
+Financial Overview
+------------------------------------------------------------
+✓ GET /api/admin/financial/overview - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "period": "month",
+    "dateRange": {
+      "start": "2025-07-31",
+      "end": "2025-08-09"
+    },
+    "revenue": {
+      "total": 0,
+      "breakdown": []
+    },...
+
+------------------------------------------------------------
+Get Address Change Requests
+------------------------------------------------------------
+✓ GET /api/admin/address-change-requests - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "addressChangeRequests": [
+      {
+        "id": "4b4bce77-6e98-40df-864e-ab977a6f7cf4",
+        "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+        "curr...
+
+------------------------------------------------------------
+Get Pending Address Changes
+------------------------------------------------------------
+✓ GET /api/admin/address-change-requests?status=pending - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "addressChangeRequests": [
+      {
+        "id": "4b4bce77-6e98-40df-864e-ab977a6f7cf4",
+        "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+        "curr...
+
+------------------------------------------------------------
+Create New User
+------------------------------------------------------------
+✓ POST /api/admin/users - Status: 201
+Response: {
+  "success": true,
+  "message": "User created successfully",
+  "data": {
+    "userId": "16b9ebbc-4bc6-40d7-9436-0d96d9db6ff3"
+  }
+}...
+
+------------------------------------------------------------
+Get Admin Reports
+------------------------------------------------------------
+✓ GET /api/admin/reports - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "general",
+    "period": {
+      "start": "2025-07-10T05:44:19.669Z",
+      "end": "2025-08-09T05:44:19.669Z"
+    },
+    "data": {
+      "summary": {...
+
+------------------------------------------------------------
+Get Therapist Performance Report
+------------------------------------------------------------
+✓ GET /api/admin/reports?reportType=therapist_performance - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "therapist_performance",
+    "period": {
+      "start": "2025-07-10T05:44:19.724Z",
+      "end": "2025-08-09T05:44:19.724Z"
+    },
+    "data": {
+    ...
+
+------------------------------------------------------------
+Get Revenue Report
+------------------------------------------------------------
+✓ GET /api/admin/reports?reportType=revenue_breakdown - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "revenue_breakdown",
+    "period": {
+      "start": "2025-07-10T05:44:19.778Z",
+      "end": "2025-08-09T05:44:19.778Z"
+    },
+    "data": {
+      "s...
+
+------------------------------------------------------------
+Get All Resources (Admin)
+------------------------------------------------------------
+✓ GET /api/resources?role=admin - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [
+      {
+        "id": "ae8e4404-cbd0-44ec-857f-3ef2bf31884e",
+        "title": "Understanding Anxiety",
+        "description": "A comprehensive guid...
+
+------------------------------------------------------------
+Get All Challenges (Admin)
+------------------------------------------------------------
+✓ GET /api/challenges?role=admin - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "fb72c2b2-4138-4200-96fc-fb79df68ea50",
+        "title": "7-Day Mindfulness Challenge",
+        "description": "Practice mind...
+
+------------------------------------------------------------
+Get All Surveys (Admin)
+------------------------------------------------------------
+✓ GET /api/surveys?role=admin - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "96f0a459-332a-4a16-9e95-3c49a73b8b87",
+        "title": "Weekly Progress Check-In - Updated",
+        "description": "Help us i...
+
+------------------------------------------------------------
+System Health Check
+------------------------------------------------------------
+✓ GET /api/admin/health - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "timestamp": "2025-08-09T05:44:20.043Z",
+    "checks": {
+      "database": {
+        "status": "up",
+        "responseTime": "< 10ms"
+    ...
+
+------------------------------------------------------------
+Create System Backup
+------------------------------------------------------------
+→ POST /api/admin/backup - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Import Data
+------------------------------------------------------------
+✓ POST /api/admin/import-data - Status: 200
+Response: {
+  "success": true,
+  "message": "Import completed",
+  "results": {
+    "total": 1,
+    "imported": 0,
+    "skipped": 0,
+    "errors": [
+      {
+        "item": {
+          "email": "imported@example...
+
+------------------------------------------------------------
+Get Audit Logs
+------------------------------------------------------------
+→ GET /api/admin/audit-logs - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Login Logs
+------------------------------------------------------------
+→ GET /api/admin/audit-logs?eventType=login - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get All Appointments
+------------------------------------------------------------
+✓ GET /api/admin/appointments - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointmentDate": "2025-09-14T22:00:00.000Z",
+        "appointmentTime": "...
+
+------------------------------------------------------------
+Get Scheduled Appointments
+------------------------------------------------------------
+✓ GET /api/admin/appointments?status=scheduled - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointmentDate": "2025-09-14T22:00:00.000Z",
+        "appointmentTime": "...
+
+------------------------------------------------------------
+Get Therapist Appointments
+------------------------------------------------------------
+✓ GET /api/admin/appointments?therapistId=c72893f4-287c-42d5-bb8d-aecc4a6ca0f9 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointmentDate": "2025-09-14T22:00:00.000Z",
+        "appointmentTime": "...
+
+------------------------------------------------------------
+Get Client Appointments
+------------------------------------------------------------
+✓ GET /api/admin/appointments?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointmentDate": "2025-09-14T22:00:00.000Z",
+        "appointmentTime": "...
+
+------------------------------------------------------------
+User Reports (501)
+------------------------------------------------------------
+→ GET /api/admin/reports/users - Status: 501 (Not Implemented)
+
+================================================================================
+THERAPIST ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Therapist Dashboard
+------------------------------------------------------------
+✓ GET /api/therapist/dashboard - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "profile": {
+      "name": "Emma de Jong",
+      "email": "emma.dejong@example.com",
+      "currentClients": 0,
+      "maxClients": 20,
+      "contractStatus": "ac...
+
+------------------------------------------------------------
+Get Profile
+------------------------------------------------------------
+✓ GET /api/therapist/profile - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "e3570b92-47f0-4a13-95b9-5439c037230e",
+    "email": "emma.dejong@example.com",
+    "first_name": "Emma",
+    "last_name": "de Jong",
+    "phone": "+31612000...
+
+------------------------------------------------------------
+Get Assigned Clients
+------------------------------------------------------------
+✓ GET /api/therapist/clients - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "clients": [
+      {
+        "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+        "email": "client@example.com",
+        "first_name": "Test",
+        "last_name"...
+
+------------------------------------------------------------
+Get Active Clients
+------------------------------------------------------------
+✓ GET /api/therapist/clients?status=active - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "clients": [
+      {
+        "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+        "email": "client@example.com",
+        "first_name": "Test",
+        "last_name"...
+
+------------------------------------------------------------
+Get Appointments
+------------------------------------------------------------
+✓ GET /api/therapist/appointments - Status: 200
+Response: {
+  "success": true,
+  "data": [
+    {
+      "id": "b37e3531-6450-4203-b0f1-3832f82fd698",
+      "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+      "therapist_id": "c72893f4-287c-42d5-bb8d-aec...
+
+------------------------------------------------------------
+Get Today's Appointments
+------------------------------------------------------------
+✓ GET /api/therapist/appointments?date=2025-08-08 - Status: 200
+Response: {
+  "success": true,
+  "data": []
+}...
+
+------------------------------------------------------------
+Update Profile
+------------------------------------------------------------
+✓ PUT /api/therapist/profile - Status: 200
+Response: {
+  "success": true,
+  "message": "Profile updated successfully"
+}...
+
+------------------------------------------------------------
+Create Appointment
+------------------------------------------------------------
+✗ POST /api/therapist/appointments - Status: 409 - Time slot conflicts with another appointment
+
+------------------------------------------------------------
+Get Therapist Documents
+------------------------------------------------------------
+✓ GET /api/therapist/documents - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "documents": [
+      {
+        "id": "d9ef149d-b303-466d-8a3f-b2257c9478ea",
+        "user_id": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+        "filename": "sessio...
+
+------------------------------------------------------------
+Upload Document
+------------------------------------------------------------
+✓ POST /api/therapist/documents - Status: 201
+Response: {
+  "success": true,
+  "message": "Document uploaded successfully",
+  "data": {
+    "id": "be717d99-784b-41da-8c5b-e3ec83d5c1f3",
+    "user_id": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+    "filename":...
+
+------------------------------------------------------------
+Send Message to Client
+------------------------------------------------------------
+→ POST /api/therapist/messages - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Therapist Statistics
+------------------------------------------------------------
+→ GET /api/therapist/statistics - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Client Progress
+------------------------------------------------------------
+✗ GET /api/therapist/clients/ab5740b4-0b57-4a51-9be7-9ab79de91938/progress - Status: 500 - Failed to retrieve client progress
+
+------------------------------------------------------------
+Get AI Insights
+------------------------------------------------------------
+✗ POST /api/therapist/ai/insights - Status: 500 - Failed to generate insights
+
+------------------------------------------------------------
+Get Schedule
+------------------------------------------------------------
+✓ GET /api/therapist/schedule - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "therapistId": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+    "period": {
+      "start": "2025-08-02T22:00:00.000Z",
+      "end": "2025-08-09T21:59:59.999Z"
+    },
+  ...
+
+------------------------------------------------------------
+Get Schedule for Date Range
+------------------------------------------------------------
+✓ GET /api/therapist/schedule?startDate=2025-08-09&endDate=2025-08-15 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "therapistId": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+    "period": {
+      "start": "2025-08-09T00:00:00.000Z",
+      "end": "2025-08-15T00:00:00.000Z"
+    },
+  ...
+
+------------------------------------------------------------
+Get Today's Appointments
+------------------------------------------------------------
+✓ GET /api/therapist/appointments/today - Status: 200
+Response: {
+  "success": true,
+  "data": [
+    {
+      "id": "b37e3531-6450-4203-b0f1-3832f82fd698",
+      "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+      "therapist_id": "c72893f4-287c-42d5-bb8d-aec...
+
+------------------------------------------------------------
+Get Upcoming Appointments
+------------------------------------------------------------
+✓ GET /api/therapist/appointments/upcoming - Status: 200
+Response: {
+  "success": true,
+  "data": [
+    {
+      "id": "b37e3531-6450-4203-b0f1-3832f82fd698",
+      "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+      "therapist_id": "c72893f4-287c-42d5-bb8d-aec...
+
+------------------------------------------------------------
+Get Availability
+------------------------------------------------------------
+✓ GET /api/therapist/availability - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "availability": [
+      {
+        "dayOfWeek": 1,
+        "startTime": "09:00",
+        "endTime": "17:00",
+        "isAvailable": true
+      },
+      {
+        "d...
+
+------------------------------------------------------------
+Set Availability
+------------------------------------------------------------
+✓ POST /api/therapist/availability - Status: 200
+Response: {
+  "success": true,
+  "message": "Availability updated successfully"
+}...
+
+================================================================================
+CLIENT ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Client Dashboard
+------------------------------------------------------------
+✓ GET /api/client/dashboard - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "profile": {
+      "first_name": "Test",
+      "last_name": "Client",
+      "email": "client@example.com",
+      "phone": "+31612345678",
+      "status": "active",...
+
+------------------------------------------------------------
+Get Profile
+------------------------------------------------------------
+✓ GET /api/client/profile - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "email": "client@example.com",
+    "first_name": "Test",
+    "last_name": "Client",
+    "phone": "+31612345678",
+...
+
+------------------------------------------------------------
+Get Appointments
+------------------------------------------------------------
+✓ GET /api/client/appointments - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointment_date": "2025-09-14T22:00:00.000Z",
+        "start_time": "16:0...
+
+------------------------------------------------------------
+Get Appointments with Pagination
+------------------------------------------------------------
+✓ GET /api/client/appointments?page=1&limit=5 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "2a431f60-98d1-4309-a37c-f097f16afd95",
+        "appointment_date": "2025-09-14T22:00:00.000Z",
+        "start_time": "16:0...
+
+------------------------------------------------------------
+Get Assigned Therapist
+------------------------------------------------------------
+✓ GET /api/client/therapist - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "c72893f4-287c-42d5-bb8d-aecc4a6ca0f9",
+    "first_name": "Emma",
+    "last_name": "de Jong",
+    "email": "emma.dejong@example.com",
+    "phone": "+31612000...
+
+------------------------------------------------------------
+Get Messages
+------------------------------------------------------------
+✓ GET /api/client/messages - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "08cb1e2d-d000-479c-9a07-b2967c6ddf8b",
+        "subject": "Appointment Reminder",
+        "content": "This is a test message f...
+
+------------------------------------------------------------
+Get Messages with Pagination
+------------------------------------------------------------
+✓ GET /api/client/messages?page=1&limit=10 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "08cb1e2d-d000-479c-9a07-b2967c6ddf8b",
+        "subject": "Appointment Reminder",
+        "content": "This is a test message f...
+
+------------------------------------------------------------
+Get Preferences
+------------------------------------------------------------
+✓ GET /api/client/preferences - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "preferred_language": "en",
+    "phone": "+31612345678",
+    "preferred_gender": null,
+    "notification_preferences": "{}"
+  }
+}...
+
+------------------------------------------------------------
+Update Profile with Bank Account
+------------------------------------------------------------
+✓ PUT /api/client/profile - Status: 200
+Response: {
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "email": "client@example.com",
+    "first_name": "Test",
+    "last_n...
+
+------------------------------------------------------------
+Request Address Change
+------------------------------------------------------------
+✓ PUT /api/client/profile - Status: 200
+Response: {
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "email": "client@example.com",
+    "first_name": "Test",
+    "last_n...
+
+------------------------------------------------------------
+Request Appointment
+------------------------------------------------------------
+✓ POST /api/client/appointments/request - Status: 201
+Response: {
+  "success": true,
+  "message": "Appointment request submitted successfully",
+  "data": {
+    "id": "572e13ec-fd40-4d42-811a-92c8511296d7",
+    "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+ ...
+
+------------------------------------------------------------
+Send Message
+------------------------------------------------------------
+✓ POST /api/client/messages - Status: 201
+Response: {
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "id": "c0565ad0-3a4d-4b0a-b6be-607d75b04e16",
+    "sender_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "recipient_id"...
+
+------------------------------------------------------------
+Submit Intake Form
+------------------------------------------------------------
+✓ POST /api/client/intake-form - Status: 200
+Response: {
+  "success": true,
+  "message": "Intake form submitted successfully"
+}...
+
+------------------------------------------------------------
+Get My Documents
+------------------------------------------------------------
+✓ GET /api/client/documents - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "documents": [
+      {
+        "id": "69b684c3-06f0-44a4-b813-bc5882e24320",
+        "filename": "medical-report.pdf",
+        "original_name": "Medical Report.pdf...
+
+------------------------------------------------------------
+Upload Document
+------------------------------------------------------------
+✓ POST /api/client/documents - Status: 201
+Response: {
+  "success": true,
+  "message": "Document uploaded successfully",
+  "data": {
+    "id": "551ff08d-ca55-44b6-86cf-e84b15be1a67",
+    "user_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "filename":...
+
+------------------------------------------------------------
+Get Payment Methods
+------------------------------------------------------------
+✓ GET /api/client/payment-methods - Status: 200
+Response: {
+  "success": true,
+  "data": []
+}...
+
+------------------------------------------------------------
+Add SEPA Payment Method
+------------------------------------------------------------
+✓ POST /api/client/payment-methods/sepa - Status: 201
+Response: {
+  "success": true,
+  "message": "SEPA payment method added. Please sign the mandate to activate.",
+  "data": {
+    "id": "pm_1754718262865",
+    "type": "sepa",
+    "is_default": false,
+    "mandate...
+
+------------------------------------------------------------
+Get My Invoices
+------------------------------------------------------------
+✓ GET /api/client/invoices - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "invoices": [
+      {
+        "id": "c36e5d11-e450-4f2b-b2d5-5c0f10f8669a",
+        "invoice_number": "INV-2025-0054",
+        "total_amount": "102.85",
+        "s...
+
+------------------------------------------------------------
+Get Unpaid Invoices
+------------------------------------------------------------
+✗ GET /api/client/invoices?status=unpaid - Status: 500 - Failed to retrieve invoices
+
+------------------------------------------------------------
+Get Session History
+------------------------------------------------------------
+✓ GET /api/client/session-history - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "sessions": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "totalPages": 0
+    }
+  }
+}...
+
+------------------------------------------------------------
+Get Assigned Resources
+------------------------------------------------------------
+✓ GET /api/client/resources - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "totalPages": 0
+    }
+  }
+}...
+
+------------------------------------------------------------
+Update Resource Progress
+------------------------------------------------------------
+✓ POST /api/client/resources/progress - Status: 200
+Response: {
+  "success": true,
+  "message": "Progress updated successfully"
+}...
+
+------------------------------------------------------------
+Get My Challenges
+------------------------------------------------------------
+✓ GET /api/challenges/client/assigned - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "fb72c2b2-4138-4200-96fc-fb79df68ea50",
+        "title": "7-Day Mindfulness Challenge",
+        "description": "Practice mind...
+
+------------------------------------------------------------
+Join Challenge
+------------------------------------------------------------
+✗ POST /api/challenges/client/join - Status: 500 - Failed to join challenge
+
+------------------------------------------------------------
+Get My Surveys
+------------------------------------------------------------
+✓ GET /api/surveys/client/assigned - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "96f0a459-332a-4a16-9e95-3c49a73b8b87",
+        "title": "Weekly Progress Check-In - Updated",
+        "description": "Help us i...
+
+------------------------------------------------------------
+Submit Survey Response
+------------------------------------------------------------
+✗ POST /api/surveys/client/responses - Status: 500 - Failed to submit survey response
+
+------------------------------------------------------------
+Export My Data
+------------------------------------------------------------
+✗ GET /api/users/export-data - Status: 403 - Access denied to this resource
+
+------------------------------------------------------------
+Get Therapy Notes (501)
+------------------------------------------------------------
+→ GET /api/client/notes - Status: 501 (Not Implemented)
+
+================================================================================
+ASSISTANT ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Assistant Dashboard
+------------------------------------------------------------
+✓ GET /api/assistant/dashboard - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "metrics": {
+      "clientsNeedingSupport": 20,
+      "todayAppointments": 2,
+      "pendingTasks": 0,
+      "urgentMessages": 0,
+      "waitingListCount": 14,
+   ...
+
+------------------------------------------------------------
+Get Support Tickets
+------------------------------------------------------------
+✓ GET /api/assistant/support-tickets - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "tickets": [
+      {
+        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "client_id": "6e46d997-66a8-462a-89e7-3d1444d42000",
+        "category": "techni...
+
+------------------------------------------------------------
+Get New Tickets
+------------------------------------------------------------
+✓ GET /api/assistant/support-tickets?status=new - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "tickets": [
+      {
+        "id": "188fd6ac-8f45-4b37-8f7a-e194a98b8387",
+        "client_id": "12ff8c79-f78f-49d0-b6ee-19547fd56348",
+        "category": "schedu...
+
+------------------------------------------------------------
+Get High Priority Tickets
+------------------------------------------------------------
+✓ GET /api/assistant/support-tickets?priority=high - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "tickets": [
+      {
+        "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "client_id": "6e46d997-66a8-462a-89e7-3d1444d42000",
+        "category": "techni...
+
+------------------------------------------------------------
+Get Appointments for Coordination
+------------------------------------------------------------
+✓ GET /api/assistant/appointments - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "e02e91eb-d4ff-445a-a17b-84b9992d05f6",
+        "appointment_date": "2025-08-08T22:00:00.000Z",
+        "start_time": "10:0...
+
+------------------------------------------------------------
+Get Waiting List
+------------------------------------------------------------
+✓ GET /api/assistant/waiting-list - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "waitingList": [
+      {
+        "id": "211f4c76-a9f1-497f-922a-332275a2687f",
+        "urgency_level": "urgent",
+        "status": "read",
+        "reason_for_the...
+
+------------------------------------------------------------
+Create Support Ticket
+------------------------------------------------------------
+✓ POST /api/assistant/support-tickets - Status: 201
+Response: {
+  "success": true,
+  "message": "Support ticket created successfully",
+  "data": {
+    "id": "19595711-5ae5-4e00-9479-eb7b076094be",
+    "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "ass...
+
+------------------------------------------------------------
+Send Message
+------------------------------------------------------------
+✓ POST /api/assistant/messages - Status: 201
+Response: {
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "id": "5a196804-3631-437f-913e-d9dd30ffbea7",
+    "sender_id": "07edcb29-2345-494e-b9d7-28a5b575b3da",
+    "recipient_id"...
+
+------------------------------------------------------------
+Update Support Ticket
+------------------------------------------------------------
+✓ PUT /api/assistant/support-tickets/b2c3d4e5-f6a7-8901-bcde-f12345678901 - Status: 200
+Response: {
+  "success": true,
+  "message": "Support ticket updated successfully",
+  "data": {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "client_id": "6e46d997-66a8-462a-89e7-3d1444d42000",
+    "ass...
+
+------------------------------------------------------------
+Get Today's Appointments
+------------------------------------------------------------
+✓ GET /api/assistant/appointments/today - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "appointments": [
+      {
+        "id": "e02e91eb-d4ff-445a-a17b-84b9992d05f6",
+        "appointment_date": "2025-08-08T22:00:00.000Z",
+        "start_time": "10:0...
+
+------------------------------------------------------------
+Schedule Appointment
+------------------------------------------------------------
+✓ POST /api/assistant/appointments - Status: 201
+Response: {
+  "success": true,
+  "message": "Appointment scheduled successfully",
+  "data": {
+    "id": "new-appointment-id",
+    "clientId": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "therapistId": "c72893f4...
+
+------------------------------------------------------------
+Search Clients
+------------------------------------------------------------
+✓ GET /api/assistant/clients/search?q=test - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "clients": [],
+    "total": 0
+  }
+}...
+
+------------------------------------------------------------
+Get All Therapists
+------------------------------------------------------------
+✓ GET /api/assistant/therapists - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "therapists": [
+      {
+        "id": "therapist-1",
+        "firstName": "Emma",
+        "lastName": "de Jong",
+        "specializations": [
+          "CBT",
+    ...
+
+------------------------------------------------------------
+Add to Waiting List
+------------------------------------------------------------
+✓ POST /api/assistant/waiting-list - Status: 201
+Response: {
+  "success": true,
+  "message": "Added to waiting list successfully",
+  "data": {
+    "id": "waiting-list-id",
+    "clientId": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "urgencyLevel": "medium",
+ ...
+
+------------------------------------------------------------
+Get All Clients (501)
+------------------------------------------------------------
+→ GET /api/assistant/clients - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Therapist Availability
+------------------------------------------------------------
+✓ GET /api/assistant/therapists/availability - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "requestedPeriod": {
+      "start": "2025-08-09T05:44:24.589Z",
+      "end": "2025-08-15T05:44:24.589Z"
+    },
+    "requestedDuration": 60,
+    "therapistAvailabil...
+
+------------------------------------------------------------
+Get Therapist Availability for Date
+------------------------------------------------------------
+✓ GET /api/assistant/therapists/availability?date=2025-08-09 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "requestedPeriod": {
+      "start": "2025-08-09T00:00:00.000Z",
+      "end": "2025-08-09T00:00:00.000Z"
+    },
+    "requestedDuration": 60,
+    "therapistAvailabil...
+
+------------------------------------------------------------
+Get Specific Therapist Availability
+------------------------------------------------------------
+✓ GET /api/assistant/therapists/availability?therapistId=c72893f4-287c-42d5-bb8d-aecc4a6ca0f9&duration=60 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "requestedPeriod": {
+      "start": "2025-08-09T05:44:24.715Z",
+      "end": "2025-08-15T05:44:24.715Z"
+    },
+    "requestedDuration": 60,
+    "therapistAvailabil...
+
+================================================================================
+BOOKKEEPER ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Bookkeeper Dashboard
+------------------------------------------------------------
+✓ GET /api/bookkeeper/dashboard - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "metrics": {
+      "totalRevenue": 102.85,
+      "thisMonthRevenue": 102.85,
+      "lastMonthRevenue": 0,
+      "revenueGrowth": 0,
+      "outstandingAmount": 0,
+ ...
+
+------------------------------------------------------------
+Get All Invoices
+------------------------------------------------------------
+✓ GET /api/bookkeeper/invoices - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "invoices": [
+      {
+        "id": "c36e5d11-e450-4f2b-b2d5-5c0f10f8669a",
+        "invoice_number": "INV-2025-0054",
+        "status": "draft",
+        "total_am...
+
+------------------------------------------------------------
+Get Paid Invoices
+------------------------------------------------------------
+✓ GET /api/bookkeeper/invoices?status=paid - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "invoices": [
+      {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "invoice_number": "INV-TEST-123",
+        "status": "paid",
+        "total_amou...
+
+------------------------------------------------------------
+Get Overdue Invoices
+------------------------------------------------------------
+✓ GET /api/bookkeeper/invoices?status=overdue - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "invoices": [],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "totalPages": 0,
+      "hasNext": false,
+      "hasPrev": false
+   ...
+
+------------------------------------------------------------
+Get Client Invoices
+------------------------------------------------------------
+✓ GET /api/bookkeeper/invoices?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "invoices": [
+      {
+        "id": "c36e5d11-e450-4f2b-b2d5-5c0f10f8669a",
+        "invoice_number": "INV-2025-0054",
+        "status": "draft",
+        "total_am...
+
+------------------------------------------------------------
+Revenue Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports?reportType=revenue - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "revenue",
+    "parameters": {
+      "groupBy": "month"
+    },
+    "data": [],
+    "generatedAt": "2025-08-09T05:44:25.105Z"
+  }
+}...
+
+------------------------------------------------------------
+Outstanding Payments Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports?reportType=outstanding - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "outstanding",
+    "parameters": {
+      "groupBy": "month"
+    },
+    "data": [],
+    "generatedAt": "2025-08-09T05:44:25.181Z"
+  }
+}...
+
+------------------------------------------------------------
+Client Analysis Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports?reportType=client_analysis - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "client_analysis",
+    "parameters": {
+      "groupBy": "month"
+    },
+    "data": [],
+    "generatedAt": "2025-08-09T05:44:25.239Z"
+  }
+}...
+
+------------------------------------------------------------
+Therapist Revenue Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports?reportType=therapist_revenue - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "therapist_revenue",
+    "parameters": {
+      "groupBy": "month"
+    },
+    "data": [],
+    "generatedAt": "2025-08-09T05:44:25.299Z"
+  }
+}...
+
+------------------------------------------------------------
+Create Invoice
+------------------------------------------------------------
+✓ POST /api/bookkeeper/invoices - Status: 201
+Response: {
+  "success": true,
+  "message": "Invoice created successfully",
+  "data": {
+    "id": "4b981c39-5ffe-4a2b-b3ee-b8837e284618",
+    "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+    "therapist_...
+
+------------------------------------------------------------
+Update Invoice Status
+------------------------------------------------------------
+✓ PUT /api/bookkeeper/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/status - Status: 200
+Response: {
+  "success": true,
+  "message": "Invoice status updated successfully",
+  "data": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "client_id": "6e46d997-66a8-462a-89e7-3d1444d42000",
+    "the...
+
+------------------------------------------------------------
+Send Payment Reminder
+------------------------------------------------------------
+✓ POST /api/bookkeeper/invoices/a1b2c3d4-e5f6-7890-abcd-ef1234567890/reminder - Status: 200
+Response: {
+  "success": true,
+  "message": "Payment reminder sent successfully",
+  "data": {
+    "invoiceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "reminderType": "email",
+    "sent": true
+  }
+}...
+
+------------------------------------------------------------
+Get Financial Overview
+------------------------------------------------------------
+✓ GET /api/bookkeeper/financial-overview - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "period": "month",
+    "totalRevenue": 25000,
+    "totalPaid": 20000,
+    "totalOutstanding": 5000,
+    "invoiceCount": 50,
+    "averagePaymentTime": 14
+  }
+}...
+
+------------------------------------------------------------
+Get Monthly Overview
+------------------------------------------------------------
+✓ GET /api/bookkeeper/financial-overview?period=month - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "period": "month",
+    "totalRevenue": 25000,
+    "totalPaid": 20000,
+    "totalOutstanding": 5000,
+    "invoiceCount": 50,
+    "averagePaymentTime": 14
+  }
+}...
+
+------------------------------------------------------------
+Get All Payments
+------------------------------------------------------------
+→ GET /api/bookkeeper/payments - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Completed Payments
+------------------------------------------------------------
+→ GET /api/bookkeeper/payments?status=completed - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Process Payment
+------------------------------------------------------------
+→ POST /api/bookkeeper/payments - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Client Balances
+------------------------------------------------------------
+→ GET /api/bookkeeper/clients/balances - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get All Client Balances
+------------------------------------------------------------
+→ GET /api/bookkeeper/clients/balances?includeZero=true - Status: 501 (Not Implemented)
+
+------------------------------------------------------------
+Get Revenue Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports/revenue - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "revenue",
+    "generatedAt": "2025-08-09T05:44:25.987Z",
+    "data": []
+  }
+}...
+
+------------------------------------------------------------
+Get Outstanding Payments
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports/outstanding - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "outstanding",
+    "generatedAt": "2025-08-09T05:44:26.047Z",
+    "data": []
+  }
+}...
+
+------------------------------------------------------------
+Get Tax Report
+------------------------------------------------------------
+✓ GET /api/bookkeeper/reports/tax - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "reportType": "tax",
+    "generatedAt": "2025-08-09T05:44:26.110Z",
+    "data": []
+  }
+}...
+
+------------------------------------------------------------
+Export Invoices CSV
+------------------------------------------------------------
+✓ GET /api/bookkeeper/export/invoices?format=csv - Status: 200
+Response: "invoice_number,client,amount,status,date\n"...
+
+------------------------------------------------------------
+Export Payments CSV
+------------------------------------------------------------
+✓ GET /api/bookkeeper/export/payments?format=csv - Status: 200
+Response: "payment_id,invoice_number,amount,method,date\n"...
+
+------------------------------------------------------------
+Revenue Trends (501)
+------------------------------------------------------------
+→ GET /api/bookkeeper/analytics/revenue-trends - Status: 501 (Not Implemented)
+
+================================================================================
+RESOURCES ENDPOINTS TEST (NEW FEATURE)
+================================================================================
+
+------------------------------------------------------------
+Creating Resources (Therapist)
+------------------------------------------------------------
+✓ POST /api/resources - Status: 201
+Response: {
+  "success": true,
+  "message": "Resource created successfully",
+  "data": {
+    "id": "bcad9a66-3568-4b1e-b363-dd679c2a5c85",
+    "title": "Understanding Anxiety",
+    "description": "A comprehensi...
+✓ POST /api/resources - Status: 201
+Response: {
+  "success": true,
+  "message": "Resource created successfully",
+  "data": {
+    "id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+    "title": "Meditation Basics",
+    "description": "Introduction to m...
+
+------------------------------------------------------------
+Get All Resources
+------------------------------------------------------------
+✓ GET /api/resources - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [
+      {
+        "id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+        "title": "Meditation Basics",
+        "description": "Introduction to meditati...
+
+------------------------------------------------------------
+Get Anxiety Resources
+------------------------------------------------------------
+✓ GET /api/resources?category=anxiety - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [
+      {
+        "id": "bcad9a66-3568-4b1e-b363-dd679c2a5c85",
+        "title": "Understanding Anxiety",
+        "description": "A comprehensive guid...
+
+------------------------------------------------------------
+Get Video Resources
+------------------------------------------------------------
+✓ GET /api/resources?type=video - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [
+      {
+        "id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+        "title": "Meditation Basics",
+        "description": "Introduction to meditati...
+
+------------------------------------------------------------
+Get Assigned Resources
+------------------------------------------------------------
+✓ GET /api/resources?assignedToMe=true - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "resources": [
+      {
+        "id": "ae8e4404-cbd0-44ec-857f-3ef2bf31884e",
+        "title": "Understanding Anxiety",
+        "description": "A comprehensive guid...
+
+------------------------------------------------------------
+Get Resource Details
+------------------------------------------------------------
+✓ GET /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+    "title": "Meditation Basics",
+    "description": "Introduction to meditation techniques",
+    "short_description"...
+
+------------------------------------------------------------
+Assign Resource to Client
+------------------------------------------------------------
+✓ POST /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Resource assigned successfully",
+  "data": {
+    "id": "53b4b62f-d14e-4c03-8497-c70ed40ccaa8",
+    "resource_id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+    "client...
+
+------------------------------------------------------------
+Track Resource View
+------------------------------------------------------------
+✓ POST /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3/engagement - Status: 200
+Response: {
+  "success": true,
+  "message": "Engagement tracked successfully"
+}...
+
+------------------------------------------------------------
+Bookmark Resource
+------------------------------------------------------------
+✓ POST /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3/engagement - Status: 200
+Response: {
+  "success": true,
+  "message": "Engagement tracked successfully"
+}...
+
+------------------------------------------------------------
+Get Resource Assignments
+------------------------------------------------------------
+✗ GET /api/resources/assignments - Status: 500 - Failed to retrieve assignments
+
+------------------------------------------------------------
+Get Client Resource Assignments
+------------------------------------------------------------
+✗ GET /api/resources/assignments?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 500 - Failed to retrieve assignments
+
+------------------------------------------------------------
+Update Resource
+------------------------------------------------------------
+✓ PUT /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3 - Status: 200
+Response: {
+  "success": true,
+  "message": "Resource updated successfully",
+  "data": {
+    "id": "1f737eb2-ad37-40a7-b379-4126428bfcf3",
+    "title": "Understanding Anxiety - Updated",
+    "description": "Int...
+
+------------------------------------------------------------
+Delete Resource
+------------------------------------------------------------
+✓ DELETE /api/resources/1f737eb2-ad37-40a7-b379-4126428bfcf3 - Status: 200
+Response: {
+  "success": true,
+  "message": "Resource deleted successfully"
+}...
+
+================================================================================
+CHALLENGES ENDPOINTS TEST (NEW FEATURE)
+================================================================================
+
+------------------------------------------------------------
+Creating Challenges (Therapist)
+------------------------------------------------------------
+✓ POST /api/challenges - Status: 201
+Response: {
+  "success": true,
+  "message": "Challenge created successfully",
+  "data": {
+    "id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+    "title": "7-Day Mindfulness Challenge",
+    "description": "Practi...
+✓ POST /api/challenges - Status: 201
+Response: {
+  "success": true,
+  "message": "Challenge created successfully",
+  "data": {
+    "id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "title": "30-Day Fitness Journey",
+    "description": "Complete ph...
+
+------------------------------------------------------------
+Get All Challenges
+------------------------------------------------------------
+✓ GET /api/challenges - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+        "title": "30-Day Fitness Journey",
+        "description": "Complete physical ...
+
+------------------------------------------------------------
+Get Mindfulness Challenges
+------------------------------------------------------------
+✓ GET /api/challenges?category=mindfulness - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+        "title": "7-Day Mindfulness Challenge",
+        "description": "Practice mind...
+
+------------------------------------------------------------
+Get Beginner Challenges
+------------------------------------------------------------
+✓ GET /api/challenges?difficulty=beginner - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+        "title": "7-Day Mindfulness Challenge",
+        "description": "Practice mind...
+
+------------------------------------------------------------
+Get Assigned Challenges
+------------------------------------------------------------
+✓ GET /api/challenges?assignedToMe=true - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "challenges": [
+      {
+        "id": "fb72c2b2-4138-4200-96fc-fb79df68ea50",
+        "title": "7-Day Mindfulness Challenge",
+        "description": "Practice mind...
+
+------------------------------------------------------------
+Get Challenge Details
+------------------------------------------------------------
+✓ GET /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "title": "30-Day Fitness Journey",
+    "description": "Complete physical exercise for 30 days",
+    "short_descri...
+
+------------------------------------------------------------
+Assign Challenge to Client
+------------------------------------------------------------
+✓ POST /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Challenge assigned successfully",
+  "data": {
+    "id": "98971dc3-4e33-4339-b184-2d57c7b212de",
+    "challenge_id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "clie...
+
+------------------------------------------------------------
+Join Challenge
+------------------------------------------------------------
+✓ POST /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71/join - Status: 201
+Response: {
+  "success": true,
+  "message": "Successfully joined the challenge",
+  "data": {
+    "id": "795da867-68bd-4ede-a468-8e6307bad649",
+    "challenge_id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "cl...
+
+------------------------------------------------------------
+Update Challenge Progress
+------------------------------------------------------------
+✓ POST /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71/progress - Status: 200
+Response: {
+  "success": true,
+  "message": "Progress updated successfully",
+  "data": {
+    "id": "795da867-68bd-4ede-a468-8e6307bad649",
+    "challenge_id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "client...
+
+------------------------------------------------------------
+Get Challenge Assignments
+------------------------------------------------------------
+✓ GET /api/challenges/assignments - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "assignments": [
+      {
+        "id": "98971dc3-4e33-4339-b184-2d57c7b212de",
+        "challenge_id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+        "client_id":...
+
+------------------------------------------------------------
+Get Client Challenge Assignments
+------------------------------------------------------------
+✓ GET /api/challenges/assignments?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "assignments": [
+      {
+        "id": "98971dc3-4e33-4339-b184-2d57c7b212de",
+        "challenge_id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+        "client_id":...
+
+------------------------------------------------------------
+Update Challenge
+------------------------------------------------------------
+✓ PUT /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71 - Status: 200
+Response: {
+  "success": true,
+  "message": "Challenge updated successfully",
+  "data": {
+    "id": "5ebab690-ac8f-4df6-85a0-23310e286e71",
+    "title": "7-Day Mindfulness Challenge - Enhanced",
+    "descriptio...
+
+------------------------------------------------------------
+Delete Challenge
+------------------------------------------------------------
+✓ DELETE /api/challenges/5ebab690-ac8f-4df6-85a0-23310e286e71 - Status: 200
+Response: {
+  "success": true,
+  "message": "Challenge deleted successfully"
+}...
+
+================================================================================
+SURVEYS ENDPOINTS TEST (NEW FEATURE)
+================================================================================
+
+------------------------------------------------------------
+Creating Surveys (Therapist)
+------------------------------------------------------------
+✓ POST /api/surveys - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey created successfully",
+  "data": {
+    "id": "5519a401-fc27-4b87-96be-6288d6ccc142",
+    "title": "Weekly Progress Check-In",
+    "description": "A brief surv...
+✓ POST /api/surveys - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey created successfully",
+  "data": {
+    "id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+    "title": "Client Satisfaction Survey",
+    "description": "Help us im...
+
+------------------------------------------------------------
+Get All Surveys
+------------------------------------------------------------
+✓ GET /api/surveys - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+        "title": "Client Satisfaction Survey",
+        "description": "Help us improve o...
+
+------------------------------------------------------------
+Get Progress Surveys
+------------------------------------------------------------
+✓ GET /api/surveys?type=progress - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "5519a401-fc27-4b87-96be-6288d6ccc142",
+        "title": "Weekly Progress Check-In",
+        "description": "A brief survey to t...
+
+------------------------------------------------------------
+Get Published Surveys
+------------------------------------------------------------
+✓ GET /api/surveys?status=published - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+        "title": "Client Satisfaction Survey",
+        "description": "Help us improve o...
+
+------------------------------------------------------------
+Get Assigned Surveys
+------------------------------------------------------------
+✓ GET /api/surveys?assignedToMe=true - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "surveys": [
+      {
+        "id": "96f0a459-332a-4a16-9e95-3c49a73b8b87",
+        "title": "Weekly Progress Check-In - Updated",
+        "description": "Help us i...
+
+------------------------------------------------------------
+Get Survey Details
+------------------------------------------------------------
+✓ GET /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+    "title": "Client Satisfaction Survey",
+    "description": "Help us improve our services",
+    "type": "satisfacti...
+
+------------------------------------------------------------
+Assign Survey to Client
+------------------------------------------------------------
+✓ POST /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey assigned successfully",
+  "data": {
+    "id": "434e3118-827a-45d0-9571-1c53f2dabd3e",
+    "survey_id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+    "client_id"...
+
+------------------------------------------------------------
+Submit Survey Response
+------------------------------------------------------------
+✓ POST /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed/respond - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey response submitted successfully",
+  "data": {
+    "id": "ffeeac34-0700-4f30-9b85-43860d7221da",
+    "survey_id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+    "...
+
+------------------------------------------------------------
+Get Survey Responses
+------------------------------------------------------------
+✓ GET /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed/responses - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "responses": [
+      {
+        "id": "ffeeac34-0700-4f30-9b85-43860d7221da",
+        "survey_id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+        "assignment_id": ...
+
+------------------------------------------------------------
+Get Survey Assignments
+------------------------------------------------------------
+✓ GET /api/surveys/assignments - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "assignments": [
+      {
+        "id": "434e3118-827a-45d0-9571-1c53f2dabd3e",
+        "survey_id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+        "client_id": "a...
+
+------------------------------------------------------------
+Get Client Survey Assignments
+------------------------------------------------------------
+✓ GET /api/surveys/assignments?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "assignments": [
+      {
+        "id": "434e3118-827a-45d0-9571-1c53f2dabd3e",
+        "survey_id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+        "client_id": "a...
+
+------------------------------------------------------------
+Update Survey
+------------------------------------------------------------
+✓ PUT /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed - Status: 200
+Response: {
+  "success": true,
+  "message": "Survey updated successfully",
+  "data": {
+    "id": "fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed",
+    "title": "Weekly Progress Check-In - Updated",
+    "description": "He...
+
+------------------------------------------------------------
+Delete Survey
+------------------------------------------------------------
+✓ DELETE /api/surveys/fb87c8fc-8545-4f25-bc5c-f54d97a8a9ed - Status: 200
+Response: {
+  "success": true,
+  "message": "Survey deleted successfully"
+}...
+
+================================================================================
+SECURITY ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Change Password
+------------------------------------------------------------
+✗ PUT /api/users/change-password - Status: 403 - Access denied to this resource
+
+------------------------------------------------------------
+Get Active Sessions
+------------------------------------------------------------
+✗ GET /api/users/sessions - Status: 403 - Access denied to this resource
+
+------------------------------------------------------------
+Restore Original Password
+------------------------------------------------------------
+✗ PUT /api/users/change-password - Status: 403 - Access denied to this resource
+
+================================================================================
+AUTHENTICATION ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Register New User
+------------------------------------------------------------
+✓ POST /api/auth/register - Status: 201
+Response: {
+  "success": true,
+  "message": "Registration successful. Please check your email to verify your account.",
+  "user": {
+    "id": "6fc6f170-b4be-4aec-880b-ee7acdbfd737",
+    "email": "test.175471827...
+
+------------------------------------------------------------
+Forgot Password
+------------------------------------------------------------
+✓ POST /api/auth/forgot-password - Status: 200
+Response: {
+  "success": true,
+  "message": "If an account with that email exists, a password reset link has been sent."
+}...
+
+------------------------------------------------------------
+Logout User
+------------------------------------------------------------
+✓ POST /api/auth/logout - Status: 200
+Response: {
+  "success": true,
+  "message": "Logged out successfully"
+}...
+
+================================================================================
+SHARED ENDPOINTS TEST
+================================================================================
+
+------------------------------------------------------------
+Health Check
+------------------------------------------------------------
+✓ GET /health - Status: 200
+Response: {
+  "status": "OK",
+  "timestamp": "2025-08-09T05:44:44.095Z",
+  "uptime": 93.131441583,
+  "environment": "development"
+}...
+
+------------------------------------------------------------
+Get Messages
+------------------------------------------------------------
+✓ GET /api/messages - Status: 200
+Response: {
+  "success": true,
+  "data": {
+    "messages": [
+      {
+        "id": "5a196804-3631-437f-913e-d9dd30ffbea7",
+        "sender_id": "07edcb29-2345-494e-b9d7-28a5b575b3da",
+        "recipient_id": "a...
+
+------------------------------------------------------------
+Mark Message Read
+------------------------------------------------------------
+✗ PUT /api/messages/msg-test-001/read - Status: 500 - Failed to update message
+
+------------------------------------------------------------
+Download Document
+------------------------------------------------------------
+✗ GET /api/documents/doc-test-001/download - Status: 500 - Failed to download document
+
+------------------------------------------------------------
+Share Document
+------------------------------------------------------------
+✗ POST /api/documents/doc-test-001/share - Status: 400 - Validation failed
+
+------------------------------------------------------------
+Delete Document
+------------------------------------------------------------
+✗ DELETE /api/documents/doc-test-001 - Status: 500 - Failed to delete document
+
+================================================================================
+CROSS-ROLE INTERACTION TEST
+================================================================================
+
+------------------------------------------------------------
+Complete Therapy Flow with New Features
+------------------------------------------------------------
+1. Client requests appointment...
+✓ POST /api/client/appointments/request - Status: 201
+Response: {
+  "success": true,
+  "message": "Appointment request submitted successfully",
+  "data": {
+    "id": "6c99e608-8ad3-4a7e-b23f-e7a2f2e55252",
+    "client_id": "ab5740b4-0b57-4a51-9be7-9ab79de91938",
+ ...
+2. Therapist assigns preparatory resources...
+✓ POST /api/resources/bcad9a66-3568-4b1e-b363-dd679c2a5c85/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Resource assigned successfully",
+  "data": {
+    "id": "1007151c-1704-4744-9074-dc4f675c18c4",
+    "resource_id": "bcad9a66-3568-4b1e-b363-dd679c2a5c85",
+    "client...
+3. Therapist assigns intake survey...
+✓ POST /api/surveys/5519a401-fc27-4b87-96be-6288d6ccc142/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey assigned successfully",
+  "data": {
+    "id": "da693b3f-3b10-48bd-b982-8e2f443f1805",
+    "survey_id": "5519a401-fc27-4b87-96be-6288d6ccc142",
+    "client_id"...
+4. Client completes survey...
+✓ POST /api/surveys/5519a401-fc27-4b87-96be-6288d6ccc142/respond - Status: 201
+Response: {
+  "success": true,
+  "message": "Survey response submitted successfully",
+  "data": {
+    "id": "d58d91e9-34ab-4d61-a37d-bf261f0c625e",
+    "survey_id": "5519a401-fc27-4b87-96be-6288d6ccc142",
+    "...
+5. Therapist assigns therapeutic challenge...
+✓ POST /api/challenges/da6ffba0-b2e2-405a-a010-a1d91b2225dd/assign - Status: 201
+Response: {
+  "success": true,
+  "message": "Challenge assigned successfully",
+  "data": {
+    "id": "c4df9871-29ed-4f9f-9946-ceca778e13e4",
+    "challenge_id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+    "clie...
+6. Client joins challenge and updates progress...
+✓ POST /api/challenges/da6ffba0-b2e2-405a-a010-a1d91b2225dd/join - Status: 201
+Response: {
+  "success": true,
+  "message": "Successfully joined the challenge",
+  "data": {
+    "id": "67dc49ea-91c6-463c-8aae-e8584212f57c",
+    "challenge_id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+    "cl...
+✓ POST /api/challenges/da6ffba0-b2e2-405a-a010-a1d91b2225dd/progress - Status: 200
+Response: {
+  "success": true,
+  "message": "Progress updated successfully",
+  "data": {
+    "id": "67dc49ea-91c6-463c-8aae-e8584212f57c",
+    "challenge_id": "da6ffba0-b2e2-405a-a010-a1d91b2225dd",
+    "client...
+
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+
+Total Tests: 188
+Successful: 158
+Failed: 30
+Success Rate: 84.04%
+Duration: 38.66 seconds
+
+Results by Status Code:
+  200: 129
+  201: 29
+  400: 1
+  403: 4
+  409: 1
+  500: 10
+  501: 14
+
+Results by Role:
+  admin: 30/34 (88.24%)
+  therapist: 36/43 (83.72%)
+  client: 48/53 (90.57%)
+  assistant: 18/19 (94.74%)
+  bookkeeper: 20/26 (76.92%)
+  substitute: 1/1 (100.00%)
+  security: 0/3 (0.00%)
+  auth: 3/3 (100.00%)
+  shared: 2/6 (33.33%)
+
+Failed Endpoints (excluding 501):
+  POST /api/therapist/appointments - Status: 409 - Time slot conflicts with another appointment
+  GET /api/therapist/clients/ab5740b4-0b57-4a51-9be7-9ab79de91938/progress - Status: 500 - Failed to retrieve client progress
+  POST /api/therapist/ai/insights - Status: 500 - Failed to generate insights
+  GET /api/client/invoices?status=unpaid - Status: 500 - Failed to retrieve invoices
+  POST /api/challenges/client/join - Status: 500 - Failed to join challenge
+  POST /api/surveys/client/responses - Status: 500 - Failed to submit survey response
+  GET /api/users/export-data - Status: 403 - Access denied to this resource
+  GET /api/resources/assignments - Status: 500 - Failed to retrieve assignments
+  GET /api/resources/assignments?clientId=ab5740b4-0b57-4a51-9be7-9ab79de91938 - Status: 500 - Failed to retrieve assignments
+  PUT /api/users/change-password - Status: 403 - Access denied to this resource
+  GET /api/users/sessions - Status: 403 - Access denied to this resource
+  PUT /api/users/change-password - Status: 403 - Access denied to this resource
+  PUT /api/messages/msg-test-001/read - Status: 500 - Failed to update message
+  GET /api/documents/doc-test-001/download - Status: 500 - Failed to download document
+  POST /api/documents/doc-test-001/share - Status: 400 - Validation failed
+  DELETE /api/documents/doc-test-001 - Status: 500 - Failed to delete document
+
+Not Implemented Endpoints (501): 14
+
+⚠️  30 tests failed
+mukelakatungu@MacBookAir praktijk-epd-backend % 

@@ -45,13 +45,69 @@ const checkRateLimit = (endpoint: string, limit: number = 5, windowMs: number = 
   return true;
 };
 
+// Token refresh tracking
+let isRefreshingToken = false;
+let refreshTokenPromise: Promise<string> | null = null;
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     console.log('[API] Request:', config.method?.toUpperCase(), config.url);
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    
+    // Skip auth for auth endpoints
+    const skipAuthEndpoints = [
+      '/auth/login',
+      '/auth/register',
+      '/auth/refresh-token',
+      '/auth/verify-email',
+      '/auth/resend-verification',
+      '/health'
+    ];
+    
+    const isSkipEndpoint = skipAuthEndpoints.some(endpoint => 
+      config.url?.includes(endpoint)
+    );
+    
+    if (!isSkipEndpoint) {
+      let token = localStorage.getItem('accessToken');
+      
+      // Check if token is expired or about to expire (within 5 minutes)
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const expirationTime = payload.exp * 1000; // Convert to milliseconds
+          const currentTime = Date.now();
+          const timeUntilExpiry = expirationTime - currentTime;
+          
+          // If token expires within 5 minutes, refresh it
+          if (timeUntilExpiry < 300000) { // 5 minutes = 300000ms
+            console.log('[API] Token expires soon, refreshing...');
+            
+            if (!isRefreshingToken) {
+              isRefreshingToken = true;
+              refreshTokenPromise = refreshAccessToken();
+            }
+            
+            if (refreshTokenPromise) {
+              token = await refreshTokenPromise;
+            }
+          }
+        } catch (error) {
+          console.warn('[API] Could not parse token:', error);
+          // Token is malformed, try to refresh
+          if (!isRefreshingToken) {
+            isRefreshingToken = true;
+            refreshTokenPromise = refreshAccessToken();
+            if (refreshTokenPromise) {
+              token = await refreshTokenPromise;
+            }
+          }
+        }
+      }
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     
     // Add timestamp to prevent caching
@@ -75,6 +131,39 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Helper function to refresh access token
+const refreshAccessToken = async (): Promise<string> => {
+  try {
+    console.log('[API] Refreshing access token...');
+    const response = await api.post('/auth/refresh-token');
+    
+    if (response.data.success && response.data.accessToken) {
+      const newToken = response.data.accessToken;
+      localStorage.setItem('accessToken', newToken);
+      
+      // Update user data if provided
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      console.log('[API] Token refreshed successfully');
+      return newToken;
+    } else {
+      throw new Error('Token refresh failed');
+    }
+  } catch (error) {
+    console.error('[API] Token refresh failed:', error);
+    // Clear tokens and redirect to login
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    window.location.href = '/auth/login';
+    throw error;
+  } finally {
+    isRefreshingToken = false;
+    refreshTokenPromise = null;
+  }
+};
 
 // Response interceptor for error handling and token refresh
 api.interceptors.response.use(
@@ -103,6 +192,12 @@ api.interceptors.response.use(
         });
       }
       
+      return Promise.reject(error);
+    }
+    
+    // Handle 403 Forbidden errors - don't try to refresh token for these
+    if (error.response?.status === 403) {
+      console.warn('403 Forbidden - Access denied');
       return Promise.reject(error);
     }
     

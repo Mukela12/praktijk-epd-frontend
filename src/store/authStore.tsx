@@ -79,6 +79,8 @@ interface AuthStore extends AuthState {
   complete2FALogin: (twoFactorCode: string) => Promise<boolean>;
   disable2FA: (code: string) => Promise<boolean>;
   clearAuth: () => void;
+  startTokenRefreshTimer: () => void;
+  stopTokenRefreshTimer: () => void;
   
   // State management with new state machine
   setAuthenticationState: (state: AuthenticationState) => void;
@@ -99,6 +101,9 @@ interface AuthStore extends AuthState {
   getDisplayName: () => string;
   getRoleColor: () => string;
 }
+
+// Token refresh timer
+let tokenRefreshTimer: NodeJS.Timeout | null = null;
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -205,6 +210,15 @@ export const useAuthStore = create<AuthStore>()(
               twoFactorSetupRequired: false
             });
             
+            // Manually store in localStorage to ensure persistence
+            if (response.accessToken) {
+              localStorage.setItem('accessToken', response.accessToken);
+            }
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            // Start token refresh timer
+            get().startTokenRefreshTimer();
+            
             PremiumNotifications.auth.loginSuccess(user.first_name);
             return true;
           }
@@ -245,8 +259,8 @@ export const useAuthStore = create<AuthStore>()(
             requiresTwoFactor: false
           });
           
-          PremiumNotifications.auth.loginFailed(errorMessage);
-          return false;
+          // Re-throw the error so it can be caught by the form
+          throw error;
         }
       },
 
@@ -273,12 +287,16 @@ export const useAuthStore = create<AuthStore>()(
           const message = error.response?.data?.message || 'Registration failed';
           PremiumNotifications.error(message, { title: 'Registration Error' });
           set({ isLoading: false });
-          return false;
+          // Re-throw the error so it can be caught by the form
+          throw error;
         }
       },
 
       logout: async (): Promise<void> => {
         try {
+          // Stop token refresh timer first
+          get().stopTokenRefreshTimer();
+          
           await authApi.logout();
         } catch (error) {
           console.error('Logout error:', error);
@@ -336,6 +354,10 @@ export const useAuthStore = create<AuthStore>()(
               requiresTwoFactor: false,
               twoFactorSetupRequired: true
             });
+            
+            // Manually store in localStorage to ensure persistence
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('accessToken', token);
           } else {
             // Complete authentication
             set({
@@ -350,6 +372,13 @@ export const useAuthStore = create<AuthStore>()(
               requiresTwoFactor: false,
               twoFactorSetupRequired: false
             });
+            
+            // Manually store in localStorage to ensure persistence
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('accessToken', token);
+            
+            // Start token refresh timer
+            get().startTokenRefreshTimer();
           }
         } catch (error) {
           console.error('Auth refresh failed:', error);
@@ -423,6 +452,9 @@ export const useAuthStore = create<AuthStore>()(
             localStorage.setItem('accessToken', response.accessToken);
             localStorage.setItem('user', JSON.stringify(response.user));
             localStorage.removeItem('pendingLogin'); // Clean up
+            
+            // Start token refresh timer
+            get().startTokenRefreshTimer();
             
             PremiumNotifications.auth.loginSuccess(response.user.first_name);
             console.log('[AuthStore] Auth state updated successfully');
@@ -580,6 +612,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       clearAuth: (): void => {
+        // Stop token refresh timer
+        get().stopTokenRefreshTimer();
+        
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         localStorage.removeItem('tempToken');
@@ -596,6 +631,35 @@ export const useAuthStore = create<AuthStore>()(
           requiresTwoFactor: false,
           twoFactorSetupRequired: false
         });
+      },
+
+      startTokenRefreshTimer: (): void => {
+        // Clear existing timer
+        if (tokenRefreshTimer) {
+          clearInterval(tokenRefreshTimer);
+        }
+        
+        // Set up periodic token refresh (every 10 minutes)
+        tokenRefreshTimer = setInterval(async () => {
+          const token = localStorage.getItem('accessToken');
+          if (token) {
+            try {
+              console.log('[AuthStore] Periodic token refresh check');
+              await get().refreshAuth();
+            } catch (error) {
+              console.error('[AuthStore] Periodic token refresh failed:', error);
+              // If refresh fails, clear auth to force re-login
+              get().clearAuth();
+            }
+          }
+        }, 10 * 60 * 1000); // 10 minutes
+      },
+
+      stopTokenRefreshTimer: (): void => {
+        if (tokenRefreshTimer) {
+          clearInterval(tokenRefreshTimer);
+          tokenRefreshTimer = null;
+        }
       },
 
       // New state management methods
@@ -688,6 +752,7 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        authenticationState: state.authenticationState,
         isAuthenticated: state.isAuthenticated,
         // Persist 2FA states to maintain them across refreshes
         requiresTwoFactor: state.requiresTwoFactor,
@@ -721,6 +786,8 @@ export const useAuth = () => {
     verify2FA: store.verify2FA,
     complete2FALogin: store.complete2FALogin,
     disable2FA: store.disable2FA,
+    startTokenRefreshTimer: store.startTokenRefreshTimer,
+    stopTokenRefreshTimer: store.stopTokenRefreshTimer,
     // State management
     setAuthenticationState: store.setAuthenticationState,
     setError: store.setError,
