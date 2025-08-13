@@ -529,6 +529,19 @@ export const bookkeeperApi = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  // Messages
+  messages: {
+    getAll: async (): Promise<ApiResponse<{ messages: Message[] }>> => {
+      const response = await api.get('/bookkeeper/messages');
+      return response.data;
+    },
+
+    send: async (messageData: any): Promise<ApiResponse<Message>> => {
+      const response = await api.post('/bookkeeper/messages', messageData);
+      return response.data;
+    }
   }
 };
 

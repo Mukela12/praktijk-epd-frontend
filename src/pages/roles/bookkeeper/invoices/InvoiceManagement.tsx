@@ -284,7 +284,7 @@ const InvoiceManagement: React.FC = () => {
       
       if (response.success) {
         success('Invoice created successfully');
-        setInvoices([...invoices, { ...invoiceData, id: response.data.id }]);
+        setInvoices([...invoices, { ...invoiceData, id: response.data.id, payment_method: invoiceData.payment_method as Invoice['payment_method'] }]);
         setShowCreateForm(false);
         resetForm();
       } else {
@@ -313,7 +313,7 @@ const InvoiceManagement: React.FC = () => {
       if (response.success) {
         success('Invoice updated successfully');
         setInvoices(invoices.map(inv => 
-          inv.id === editingInvoice.id ? { ...invoiceData, id: editingInvoice.id } : inv
+          inv.id === editingInvoice.id ? { ...invoiceData, id: editingInvoice.id, payment_method: invoiceData.payment_method as Invoice['payment_method'] } : inv
         ));
         setEditingInvoice(null);
         resetForm();

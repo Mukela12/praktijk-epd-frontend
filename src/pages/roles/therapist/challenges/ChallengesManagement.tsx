@@ -200,7 +200,7 @@ const TherapistChallengesManagement: React.FC = () => {
     }
 
     // Type filter
-    if (filters.type !== 'all' && challenge.challengeType !== filters.type) return false;
+    if (filters.type !== 'all' && (challenge.type || challenge.challengeType) !== filters.type) return false;
     
     // Difficulty filter
     if (filters.difficulty !== 'all' && challenge.difficultyLevel !== filters.difficulty) return false;
@@ -371,8 +371,8 @@ const TherapistChallengesManagement: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {filteredChallenges.map((challenge) => {
-            const Icon = getChallengeIcon(challenge.challengeType);
-            const IconSolid = getChallengeIconSolid(challenge.challengeType);
+            const Icon = getChallengeIcon(challenge.type || challenge.challengeType);
+            const IconSolid = getChallengeIconSolid(challenge.type || challenge.challengeType);
             const isMyChallenge = challenge.created_by === user?.id;
             
             return (
@@ -381,7 +381,7 @@ const TherapistChallengesManagement: React.FC = () => {
                 className="hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${getTypeColor(challenge.challengeType)}`}>
+                  <div className={`p-3 rounded-lg ${getTypeColor(challenge.type || challenge.challengeType)}`}>
                     <IconSolid className="w-6 h-6" />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -499,13 +499,13 @@ const TherapistChallengesManagement: React.FC = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center">
-                  <div className={`p-3 rounded-lg mr-4 ${getTypeColor(selectedChallenge.type)}`}>
-                    {React.createElement(getChallengeIconSolid(selectedChallenge.type), { className: 'w-6 h-6' })}
+                  <div className={`p-3 rounded-lg mr-4 ${getTypeColor(selectedChallenge.type || selectedChallenge.challengeType)}`}>
+                    {React.createElement(getChallengeIconSolid(selectedChallenge.type || selectedChallenge.challengeType), { className: 'w-6 h-6' })}
                   </div>
                   <div>
                     <h2 className="heading-section">{selectedChallenge.title}</h2>
                     <p className="text-body-sm text-gray-600 mt-1">
-                      {selectedChallenge.type} challenge • {selectedChallenge.durationDays} days
+                      {selectedChallenge.type || selectedChallenge.challengeType} challenge • {selectedChallenge.durationDays} days
                     </p>
                   </div>
                 </div>
@@ -552,7 +552,7 @@ const TherapistChallengesManagement: React.FC = () => {
                     <h3 className="font-semibold text-gray-900 mb-2">Target Goal</h3>
                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
                       <p className="text-lg font-medium text-gray-900">
-                        {selectedChallenge.targetValue} {selectedChallenge.targetUnit}
+                        {selectedChallenge.targetValue || selectedChallenge.goals?.targetValue} {selectedChallenge.targetUnit || selectedChallenge.goals?.targetUnit}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">Complete within {selectedChallenge.durationDays} days</p>
                     </div>
@@ -589,7 +589,7 @@ const TherapistChallengesManagement: React.FC = () => {
                             )}
                           </div>
                           <span className="text-sm text-gray-500">
-                            Day {milestone.day}
+                            Day {milestone.dueDay || milestone.day}
                           </span>
                         </div>
                       ))}

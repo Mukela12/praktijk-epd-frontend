@@ -607,7 +607,7 @@ const SurveysManagementInline: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleMoveQuestion(index, 'down')}
-                          disabled={index === formData.questions.length - 1}
+                          disabled={index === (formData.questions?.length || 0) - 1}
                           className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                         >
                           <ChevronDownIcon className="w-4 h-4" />

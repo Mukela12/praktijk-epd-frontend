@@ -90,12 +90,12 @@ const ClientInvoices: React.FC = () => {
       acc.totalInvoices++;
       
       if (invoice.status === 'paid') {
-        acc.paidAmount += invoice.total_amount;
+        acc.paidAmount += Number(invoice.total_amount);
       } else if (invoice.status === 'overdue') {
-        acc.overdueAmount += invoice.total_amount;
-        acc.unpaidAmount += invoice.total_amount;
+        acc.overdueAmount += Number(invoice.total_amount);
+        acc.unpaidAmount += Number(invoice.total_amount);
       } else if (invoice.status === 'sent') {
-        acc.unpaidAmount += invoice.total_amount;
+        acc.unpaidAmount += Number(invoice.total_amount);
       }
       
       return acc;
@@ -335,7 +335,7 @@ const ClientInvoices: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-caption mb-1">Amount</p>
-                        <p className="text-lg font-semibold text-gray-900">{formatCurrency(invoice.total_amount)}</p>
+                        <p className="text-lg font-semibold text-gray-900">{formatCurrency(Number(invoice.total_amount))}</p>
                       </div>
                     </div>
 
@@ -484,7 +484,7 @@ const ClientInvoices: React.FC = () => {
                     <tfoot>
                       <tr>
                         <td colSpan={3} className="pt-4 text-right font-semibold">Total</td>
-                        <td className="pt-4 text-right text-lg font-bold text-gray-900">{formatCurrency(selectedInvoice.total_amount)}</td>
+                        <td className="pt-4 text-right text-lg font-bold text-gray-900">{formatCurrency(Number(selectedInvoice.total_amount))}</td>
                       </tr>
                     </tfoot>
                   </table>

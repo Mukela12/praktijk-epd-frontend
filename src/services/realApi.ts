@@ -1015,6 +1015,29 @@ export const realApiService = {
     }
   },
 
+  // Messages endpoints
+  messages: {
+    getAll: async (): Promise<ApiResponse<{ messages: Message[] }>> => {
+      const response = await api.get('/messages');
+      return response.data;
+    },
+
+    getInbox: async (userId: string): Promise<ApiResponse<{ messages: Message[] }>> => {
+      const response = await api.get(`/messages/inbox/${userId}`);
+      return response.data;
+    },
+
+    send: async (messageData: any): Promise<ApiResponse<Message>> => {
+      const response = await api.post('/messages', messageData);
+      return response.data;
+    },
+
+    markAsRead: async (messageId: string): Promise<ApiResponse> => {
+      const response = await api.put(`/messages/${messageId}/read`);
+      return response.data;
+    }
+  },
+
   // Common endpoints available to all authenticated users
   common: {
     // Health check

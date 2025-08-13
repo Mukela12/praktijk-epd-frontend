@@ -52,7 +52,7 @@ const AssistantDashboard: React.FC = () => {
         }
 
         if (messagesResponse.success && messagesResponse.data) {
-          setMessages(messagesResponse.data);
+          setMessages(messagesResponse.data.messages || []);
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);

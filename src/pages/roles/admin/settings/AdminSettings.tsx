@@ -43,6 +43,29 @@ interface SystemSettings {
   password_expiry_days: number;
 }
 
+// Extended company settings type for the backend response
+interface ExtendedCompanySettings {
+  company_name: string;
+  address: string | { street: string; house_number: string; postal_code: string; city: string; country: string; };
+  phone: string;
+  email: string;
+  website?: string;
+  timezone?: string;
+  currency?: string;
+  default_language?: string;
+  session_duration?: number;
+  max_clients_per_therapist?: number;
+  appointment_buffer_minutes?: number;
+  appointment_reminders_enabled?: boolean;
+  email_notifications_enabled?: boolean;
+  sms_notifications_enabled?: boolean;
+  backup_frequency?: string;
+  data_retention_days?: number;
+  two_factor_required?: boolean;
+  password_expiry_days?: number;
+  integrations?: IntegrationSettings;
+}
+
 interface IntegrationSettings {
   calendar_sync: boolean;
   email_provider: string;
@@ -106,32 +129,37 @@ const AdminSettings: React.FC = () => {
         
         if (response.success && response.data) {
           // Map backend data to our settings structure
+          const data = response.data as ExtendedCompanySettings;
+          const addressString = typeof data.address === 'object' 
+            ? `${data.address.street} ${data.address.house_number}, ${data.address.postal_code} ${data.address.city}` 
+            : data.address || defaultSettings.practice_address;
+            
           const backendSettings: SystemSettings = {
-            practice_name: response.data.company_name || defaultSettings.practice_name,
-            practice_address: response.data.address || defaultSettings.practice_address,
-            practice_phone: response.data.phone || defaultSettings.practice_phone,
-            practice_email: response.data.email || defaultSettings.practice_email,
-            website: response.data.website || defaultSettings.website,
-            time_zone: response.data.timezone || defaultSettings.time_zone,
-            currency: response.data.currency || defaultSettings.currency,
-            language: response.data.default_language || defaultSettings.language,
-            session_duration: response.data.session_duration || defaultSettings.session_duration,
-            max_clients_per_therapist: response.data.max_clients_per_therapist || defaultSettings.max_clients_per_therapist,
-            appointment_buffer: response.data.appointment_buffer_minutes || defaultSettings.appointment_buffer,
-            auto_reminders: response.data.appointment_reminders_enabled ?? defaultSettings.auto_reminders,
-            email_notifications: response.data.email_notifications_enabled ?? defaultSettings.email_notifications,
-            sms_notifications: response.data.sms_notifications_enabled ?? defaultSettings.sms_notifications,
-            backup_frequency: response.data.backup_frequency || defaultSettings.backup_frequency,
-            data_retention_days: response.data.data_retention_days || defaultSettings.data_retention_days,
-            two_factor_required: response.data.two_factor_required ?? defaultSettings.two_factor_required,
-            password_expiry_days: response.data.password_expiry_days || defaultSettings.password_expiry_days
+            practice_name: data.company_name || defaultSettings.practice_name,
+            practice_address: addressString,
+            practice_phone: data.phone || defaultSettings.practice_phone,
+            practice_email: data.email || defaultSettings.practice_email,
+            website: data.website || defaultSettings.website,
+            time_zone: data.timezone || defaultSettings.time_zone,
+            currency: data.currency || defaultSettings.currency,
+            language: data.default_language || defaultSettings.language,
+            session_duration: data.session_duration || defaultSettings.session_duration,
+            max_clients_per_therapist: data.max_clients_per_therapist || defaultSettings.max_clients_per_therapist,
+            appointment_buffer: data.appointment_buffer_minutes || defaultSettings.appointment_buffer,
+            auto_reminders: data.appointment_reminders_enabled ?? defaultSettings.auto_reminders,
+            email_notifications: data.email_notifications_enabled ?? defaultSettings.email_notifications,
+            sms_notifications: data.sms_notifications_enabled ?? defaultSettings.sms_notifications,
+            backup_frequency: data.backup_frequency || defaultSettings.backup_frequency,
+            data_retention_days: data.data_retention_days || defaultSettings.data_retention_days,
+            two_factor_required: data.two_factor_required ?? defaultSettings.two_factor_required,
+            password_expiry_days: data.password_expiry_days || defaultSettings.password_expiry_days
           };
           
           setSettings(backendSettings);
           
           // Set integrations if available
-          if (response.data.integrations) {
-            setIntegrations(response.data.integrations);
+          if (data.integrations) {
+            setIntegrations(data.integrations);
           } else {
             setIntegrations(defaultIntegrations);
           }
@@ -200,7 +228,7 @@ const AdminSettings: React.FC = () => {
         integrations: integrations
       };
       
-      const response = await adminApi.updateCompanySettings(settingsToSave);
+      const response = await adminApi.updateCompanySettings(settingsToSave as any);
       
       if (response.success) {
         success('Settings saved successfully');
@@ -227,31 +255,36 @@ const AdminSettings: React.FC = () => {
         
         if (response.success && response.data) {
           // Map backend data to our settings structure
+          const data = response.data as ExtendedCompanySettings;
+          const addressString = typeof data.address === 'object' 
+            ? `${data.address.street} ${data.address.house_number}, ${data.address.postal_code} ${data.address.city}` 
+            : data.address || defaultSettings.practice_address;
+            
           const backendSettings: SystemSettings = {
-            practice_name: response.data.company_name || defaultSettings.practice_name,
-            practice_address: response.data.address || defaultSettings.practice_address,
-            practice_phone: response.data.phone || defaultSettings.practice_phone,
-            practice_email: response.data.email || defaultSettings.practice_email,
-            website: response.data.website || defaultSettings.website,
-            time_zone: response.data.timezone || defaultSettings.time_zone,
-            currency: response.data.currency || defaultSettings.currency,
-            language: response.data.default_language || defaultSettings.language,
-            session_duration: response.data.session_duration || defaultSettings.session_duration,
-            max_clients_per_therapist: response.data.max_clients_per_therapist || defaultSettings.max_clients_per_therapist,
-            appointment_buffer: response.data.appointment_buffer_minutes || defaultSettings.appointment_buffer,
-            auto_reminders: response.data.appointment_reminders_enabled ?? defaultSettings.auto_reminders,
-            email_notifications: response.data.email_notifications_enabled ?? defaultSettings.email_notifications,
-            sms_notifications: response.data.sms_notifications_enabled ?? defaultSettings.sms_notifications,
-            backup_frequency: response.data.backup_frequency || defaultSettings.backup_frequency,
-            data_retention_days: response.data.data_retention_days || defaultSettings.data_retention_days,
-            two_factor_required: response.data.two_factor_required ?? defaultSettings.two_factor_required,
-            password_expiry_days: response.data.password_expiry_days || defaultSettings.password_expiry_days
+            practice_name: data.company_name || defaultSettings.practice_name,
+            practice_address: addressString,
+            practice_phone: data.phone || defaultSettings.practice_phone,
+            practice_email: data.email || defaultSettings.practice_email,
+            website: data.website || defaultSettings.website,
+            time_zone: data.timezone || defaultSettings.time_zone,
+            currency: data.currency || defaultSettings.currency,
+            language: data.default_language || defaultSettings.language,
+            session_duration: data.session_duration || defaultSettings.session_duration,
+            max_clients_per_therapist: data.max_clients_per_therapist || defaultSettings.max_clients_per_therapist,
+            appointment_buffer: data.appointment_buffer_minutes || defaultSettings.appointment_buffer,
+            auto_reminders: data.appointment_reminders_enabled ?? defaultSettings.auto_reminders,
+            email_notifications: data.email_notifications_enabled ?? defaultSettings.email_notifications,
+            sms_notifications: data.sms_notifications_enabled ?? defaultSettings.sms_notifications,
+            backup_frequency: data.backup_frequency || defaultSettings.backup_frequency,
+            data_retention_days: data.data_retention_days || defaultSettings.data_retention_days,
+            two_factor_required: data.two_factor_required ?? defaultSettings.two_factor_required,
+            password_expiry_days: data.password_expiry_days || defaultSettings.password_expiry_days
           };
           
           setSettings(backendSettings);
           
-          if (response.data.integrations) {
-            setIntegrations(response.data.integrations);
+          if (data.integrations) {
+            setIntegrations(data.integrations);
           } else {
             setIntegrations(defaultIntegrations);
           }

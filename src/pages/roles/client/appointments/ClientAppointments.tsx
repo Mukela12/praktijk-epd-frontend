@@ -216,9 +216,9 @@ const ClientAppointments: React.FC = () => {
       const appointmentData = {
         preferredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next week
         preferredTime: '10:00',
-        reason: 'Regular therapy session',
-        sessionType: 'regular',
-        urgency: 'normal'
+        therapyType: 'regular',
+        urgencyLevel: 'normal',
+        reason: 'Regular therapy session'
       };
 
       console.log('Requesting appointment:', appointmentData);

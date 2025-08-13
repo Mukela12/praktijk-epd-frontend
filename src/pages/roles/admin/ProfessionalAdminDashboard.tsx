@@ -60,10 +60,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const navigate = useNavigate();
   
   return (
-    <PremiumCard 
-      className="relative overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group"
+    <div 
+      className="cursor-pointer"
       onClick={() => link && navigate(link)}
     >
+      <PremiumCard 
+        className="relative overflow-hidden hover:shadow-lg transition-all duration-300 group"
+      >
       <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8">
         <div className={`w-full h-full ${iconColor} opacity-10 rounded-full`} />
       </div>
@@ -108,6 +111,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         )}
       </div>
     </PremiumCard>
+    </div>
   );
 };
 
@@ -134,10 +138,13 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   const navigate = useNavigate();
   
   return (
-    <PremiumCard 
-      className="relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1"
+    <div 
+      className="cursor-pointer"
       onClick={() => navigate(link)}
     >
+      <PremiumCard 
+        className="relative overflow-hidden hover:shadow-xl transition-all duration-300 group transform hover:-translate-y-1"
+      >
       {isNew && (
         <div className="absolute top-4 right-4">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -171,6 +178,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         </div>
       </div>
     </PremiumCard>
+    </div>
   );
 };
 

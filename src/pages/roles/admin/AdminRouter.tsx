@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProfessionalDashboardLayout } from '@/components/layout/ProfessionalDashboardLayout';
+import ProfessionalDashboardLayout from '@/components/layout/ProfessionalDashboardLayout';
 
 // Dashboard Components
 import ProfessionalAdminDashboard from './ProfessionalAdminDashboard';
@@ -125,7 +125,7 @@ const adminNavigation = [
 
 const AdminRouter: React.FC = () => {
   return (
-    <ProfessionalDashboardLayout navigation={adminNavigation} role="admin">
+    <ProfessionalDashboardLayout>
       <Routes>
         {/* Dashboard Routes */}
         <Route path="/" element={<ProfessionalAdminDashboard />} />

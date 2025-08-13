@@ -102,7 +102,10 @@ const ChallengesManagement: React.FC = () => {
 
     // Count by type and difficulty
     challengesData.forEach(challenge => {
-      stats.byType[challenge.challengeType] = (stats.byType[challenge.challengeType] || 0) + 1;
+      const challengeType = challenge.type || challenge.challengeType;
+      if (challengeType) {
+        stats.byType[challengeType] = (stats.byType[challengeType] || 0) + 1;
+      }
       stats.byDifficulty[challenge.difficultyLevel] = (stats.byDifficulty[challenge.difficultyLevel] || 0) + 1;
     });
 
@@ -188,7 +191,7 @@ const ChallengesManagement: React.FC = () => {
     }
 
     // Type filter
-    if (filters.type !== 'all' && challenge.challengeType !== filters.type) return false;
+    if (filters.type !== 'all' && (challenge.type || challenge.challengeType) !== filters.type) return false;
     
     // Difficulty filter
     if (filters.difficulty !== 'all' && challenge.difficultyLevel !== filters.difficulty) return false;
@@ -415,8 +418,8 @@ const ChallengesManagement: React.FC = () => {
       ) : (
         <div className="grid-content-flexible gap-6">
           {filteredChallenges.map((challenge) => {
-            const Icon = getChallengeIcon(challenge.challengeType);
-            const IconSolid = getChallengeIconSolid(challenge.challengeType);
+            const Icon = getChallengeIcon(challenge.type || challenge.challengeType);
+            const IconSolid = getChallengeIconSolid(challenge.type || challenge.challengeType);
             
             return (
               <div
@@ -425,7 +428,7 @@ const ChallengesManagement: React.FC = () => {
               >
                 <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${getTypeColor(challenge.challengeType)}`}>
+                  <div className={`p-3 rounded-lg ${getTypeColor(challenge.type || challenge.challengeType)}`}>
                     <IconSolid className="w-6 h-6" />
                   </div>
                   <div className="flex items-center space-x-2">

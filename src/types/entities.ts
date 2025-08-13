@@ -121,7 +121,7 @@ export interface Invoice extends BaseEntity {
   tax_amount: number;
   subtotal: number;
   currency: string;
-  payment_method?: string;
+  payment_method?: 'insurance' | 'bank_transfer' | 'credit_card' | 'cash' | string;
   items: InvoiceItem[];
   notes?: string;
   client?: Client;
@@ -281,6 +281,21 @@ export interface DashboardMetrics {
   upcomingAppointments: number;
   overdueInvoices: number;
   clientSatisfactionScore?: number;
+  appointmentsToday?: number;
+  newClientsThisMonth?: number;
+  sessionsToday?: number;
+  pendingAddressChanges?: number;
+  totalAddressChanges?: number;
+  activeChallenges?: number;
+  challengeParticipants?: number;
+  totalResources?: number;
+  resourceAssignments?: number;
+  activeSurveys?: number;
+  surveyResponses?: number;
+  totalUsers?: number;
+  activeIntegrations?: number;
+  unreadNotifications?: number;
+  criticalWaitingList?: number;
 }
 
 // Financial overview
@@ -289,6 +304,7 @@ export interface FinancialOverview {
   outstandingAmount: number;
   paidThisMonth: number;
   projectedRevenue: number;
+  revenueGrowth?: number;
   revenueByTherapist: {
     therapist_id: string;
     therapist_name: string;

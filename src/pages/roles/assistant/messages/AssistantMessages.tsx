@@ -73,7 +73,7 @@ const AssistantMessages: React.FC = () => {
 
         if (messagesResponse.success && messagesResponse.data) {
           // Transform API messages to match our local Message interface
-          const transformedMessages = messagesResponse.data.map((msg: any) => ({
+          const transformedMessages = (messagesResponse.data.messages || []).map((msg: any) => ({
             id: msg.id,
             sender_id: msg.sender_id,
             sender_name: msg.sender_name,

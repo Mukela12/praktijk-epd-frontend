@@ -96,21 +96,26 @@ export interface Challenge {
   id: string;
   title: string;
   description: string;
-  challengeType: ChallengeType;
+  type: ChallengeType;
+  challengeType?: ChallengeType; // Deprecated, use 'type'
   category: string;
   difficultyLevel: ChallengeDifficulty;
   durationDays: number;
+  targetValue?: number;
+  targetUnit?: string;
   goals: {
     targetValue: number;
     targetUnit: string;
     description: string;
   };
+  rules?: string[];
   milestones?: {
     id: string;
     title: string;
     description: string;
     targetValue: number;
     dueDay: number;
+    day?: number; // Alternative property name
     achieved?: boolean;
   }[];
   status: ChallengeStatus;
@@ -128,6 +133,7 @@ export type QuestionType = 'scale' | 'multiple_choice' | 'text' | 'boolean';
 export interface SurveyQuestion {
   id: string;
   text: string;
+  description?: string;
   type: QuestionType;
   required: boolean;
   options?: string[];
@@ -137,6 +143,7 @@ export interface SurveyQuestion {
     minLabel: string;
     maxLabel: string;
   };
+  allowMultiple?: boolean;
   order?: number;
 }
 

@@ -63,9 +63,9 @@ const BookkeeperMessages: React.FC = () => {
     const loadMessages = async () => {
       try {
         const data = await getMessages({ page: 1, limit: 50 });
-        if (data && data.messages && Array.isArray(data.messages)) {
+        if (data && (data as any).messages && Array.isArray((data as any).messages)) {
           // Map API data to message format
-          const mappedMessages = data.messages.map(msg => ({
+          const mappedMessages = (data as any).messages.map((msg: any) => ({
             id: msg.id || msg.message_id,
             sender_name: msg.sender_name || msg.from_name || 'Unknown',
             sender_role: msg.sender_role || 'admin',
@@ -82,7 +82,7 @@ const BookkeeperMessages: React.FC = () => {
           setMessages(mappedMessages);
         } else if (Array.isArray(data)) {
           // Handle case where data is directly an array
-          const mappedMessages = data.map(msg => ({
+          const mappedMessages = data.map((msg: any) => ({
             id: msg.id || msg.message_id,
             sender_name: msg.sender_name || msg.from_name || 'Unknown',
             sender_role: msg.sender_role || 'admin',
@@ -490,8 +490,8 @@ const BookkeeperMessages: React.FC = () => {
                             setComposeData({ to: '', subject: '', message: '' });
                             // Reload messages
                             const data = await getMessages({ page: 1, limit: 50 });
-                            if (data && data.messages) {
-                              setMessages(data.messages);
+                            if (data && (data as any).messages) {
+                              setMessages((data as any).messages);
                             }
                           } catch (error) {
                             warning('Failed to send message');

@@ -229,8 +229,8 @@ const AdminDashboard: React.FC = () => {
           <MetricCard
             title="Today's Appointments"
             value={metrics?.appointmentsToday || 0}
-            change={metrics && metrics.appointmentsToday > 0 ? "scheduled" : "No appointments"}
-            changeType={metrics && metrics.appointmentsToday > 0 ? "positive" : "neutral"}
+            change={metrics && (metrics.appointmentsToday || 0) > 0 ? "scheduled" : "No appointments"}
+            changeType={metrics && (metrics.appointmentsToday || 0) > 0 ? "positive" : "neutral"}
             icon={CalendarIcon}
             iconColor="bg-purple-600"
             link="/admin/agenda"

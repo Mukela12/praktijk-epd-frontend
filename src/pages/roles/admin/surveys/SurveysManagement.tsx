@@ -586,7 +586,7 @@ const SurveysManagement: React.FC = () => {
                 <div>
                   <h2 className="heading-section">Survey Preview</h2>
                   <p className="text-body-sm text-gray-600 mt-1">
-                    {selectedSurvey.type === 'anonymous' ? 'Anonymous Survey' : 'Identified Survey'}
+                    {selectedSurvey.isAnonymous ? 'Anonymous Survey' : 'Identified Survey'}
                   </p>
                 </div>
                 <button
@@ -640,15 +640,15 @@ const SurveysManagement: React.FC = () => {
                       {question.type === 'scale' && question.scale && (
                         <div className="ml-11">
                           <div className="flex items-center justify-between max-w-md">
-                            <span className="text-sm text-gray-500">{question.scale.minLabel || question.scale.min}</span>
+                            <span className="text-sm text-gray-500">{question.scale?.minLabel || question.scale?.min || ''}</span>
                             <div className="flex space-x-2 mx-4">
-                              {Array.from({ length: question.scale.max - question.scale.min + 1 }, (_, i) => (
+                              {question.scale && Array.from({ length: question.scale.max - question.scale.min + 1 }, (_, i) => (
                                 <div key={i} className="w-10 h-10 border-2 border-gray-300 rounded-full flex items-center justify-center hover:border-teal-500 cursor-pointer">
-                                  <span className="text-sm text-gray-700">{question.scale.min + i}</span>
+                                  <span className="text-sm text-gray-700">{(question.scale?.min || 0) + i}</span>
                                 </div>
                               ))}
                             </div>
-                            <span className="text-sm text-gray-500">{question.scale.maxLabel || question.scale.max}</span>
+                            <span className="text-sm text-gray-500">{question.scale?.maxLabel || question.scale?.max || ''}</span>
                           </div>
                         </div>
                       )}

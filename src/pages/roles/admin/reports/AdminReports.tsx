@@ -72,13 +72,14 @@ const AdminReports: React.FC = () => {
         const data = await getStats();
         if (data) {
           // Only use real data from backend
+          const reportData = data as any;
           setMetrics({
-            total_clients: data.total_clients || 0,
-            active_therapists: data.active_therapists || 0,
-            sessions_this_month: data.sessions_this_month || 0,
-            revenue_this_month: data.revenue_this_month || 0,
-            completion_rate: data.completion_rate || 0,
-            average_session_duration: data.average_session_duration || 0
+            total_clients: reportData.total_clients || 0,
+            active_therapists: reportData.active_therapists || 0,
+            sessions_this_month: reportData.sessions_this_month || 0,
+            revenue_this_month: reportData.revenue_this_month || 0,
+            completion_rate: reportData.completion_rate || 0,
+            average_session_duration: reportData.average_session_duration || 0
           });
         }
         // Reports will be empty until backend provides them

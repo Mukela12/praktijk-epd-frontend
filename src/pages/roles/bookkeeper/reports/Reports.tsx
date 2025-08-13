@@ -100,16 +100,10 @@ const Reports: React.FC = () => {
         
         // Load data with period filters
         const [invoicesResponse, clientsResponse, therapistsResponse, appointmentsResponse] = await Promise.all([
-          realApiService.bookkeeper.getInvoices({
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-          }),
+          realApiService.bookkeeper.getInvoices({}),
           realApiService.clients.getAll(),
           realApiService.therapists.getAll(),
-          realApiService.appointments.getAll({
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-          })
+          realApiService.appointments.getAll()
         ]);
 
         if (invoicesResponse.success && invoicesResponse.data) {
