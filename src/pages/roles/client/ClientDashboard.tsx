@@ -185,29 +185,29 @@ const ClientDashboard: React.FC = () => {
   // Quick actions
   const quickActions = [
     {
-      title: 'Book Appointment',
-      description: 'Schedule your next therapy session',
+      title: t('dashboard.bookAppointment'),
+      description: t('dashboard.scheduleTherapySession'),
       icon: CalendarIcon,
       link: '/client/appointments/new',
       color: 'bg-blue-600'
     },
     {
-      title: 'Message Therapist',
-      description: 'Send a secure message to your therapist',
+      title: t('dashboard.messageTherapist'),
+      description: t('dashboard.sendSecureMessage'),
       icon: ChatBubbleLeftIcon,
       link: '/client/messages/new',
       color: 'bg-green-600'
     },
     {
-      title: 'View Resources',
-      description: 'Access helpful materials and exercises',
+      title: t('dashboard.viewResources'),
+      description: t('dashboard.accessMaterials'),
       icon: DocumentTextIcon,
       link: '/client/resources',
       color: 'bg-purple-600'
     },
     {
-      title: 'Progress Tracking',
-      description: 'Monitor your therapy journey',
+      title: t('dashboard.progressTracking'),
+      description: t('dashboard.monitorJourney'),
       icon: ChartBarIcon,
       link: '/client/progress',
       color: 'bg-orange-600'
@@ -222,15 +222,15 @@ const ClientDashboard: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold">
-                Welcome back, {user?.first_name}!
+                {t('dashboard.welcome')}, {user?.first_name}!
               </h1>
               <p className="text-blue-100 mt-1">
-                Your wellness journey continues here
+                {t('dashboard.yourWellnessJourney')}
               </p>
             </div>
             {nextAppointment && (
               <div className="mt-4 md:mt-0 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3">
-                <p className="text-sm text-blue-100">Next appointment</p>
+                <p className="text-sm text-blue-100">{t('dashboard.nextAppointment')}</p>
                 <p className="font-semibold">
                   {new Date(nextAppointment.appointment_date).toLocaleDateString()} at{' '}
                   {nextAppointment.start_time}
@@ -246,16 +246,16 @@ const ClientDashboard: React.FC = () => {
             <div className="flex items-start">
               <ExclamationCircleIcon className="w-6 h-6 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-amber-900 mb-1">Complete Your Intake Form</h3>
+                <h3 className="font-semibold text-amber-900 mb-1">{t('dashboard.completeIntakeForm')}</h3>
                 <p className="text-body-sm text-amber-800 mb-3">
-                  Please complete your intake form to help your therapist understand your needs better and provide personalized care.
+                  {t('dashboard.intakeFormMessage')}
                 </p>
                 <Link
                   to="/client/intake-form"
                   className="btn-premium-primary inline-flex items-center space-x-2 text-sm"
                 >
                   <DocumentTextIcon className="w-4 h-4" />
-                  <span>Complete Intake Form</span>
+                  <span>{t('dashboard.completeIntakeForm')}</span>
                 </Link>
               </div>
             </div>
@@ -271,23 +271,23 @@ const ClientDashboard: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h2 className="font-semibold text-gray-900">
-                  Your Therapist: {therapist.first_name} {therapist.last_name}
+                  {t('nav.myTherapist')}: {therapist.first_name} {therapist.last_name}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Specializations: {therapist.specializations?.join(', ') || 'General therapy'}
+                  {t('client.specializations') || 'Specializations'}: {therapist.specializations?.join(', ') || t('client.generalTherapy') || 'General therapy'}
                 </p>
                 <div className="flex items-center space-x-4 mt-2">
                   <Link 
                     to="/client/therapist" 
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    View profile
+                    {t('action.view')} {t('nav.profile').toLowerCase()}
                   </Link>
                   <Link 
                     to="/client/messages/new" 
                     className="text-sm text-green-600 hover:text-green-700 font-medium"
                   >
-                    Send message
+                    {t('nav.sendMessage') || 'Send message'}
                   </Link>
                 </div>
               </div>
@@ -298,28 +298,28 @@ const ClientDashboard: React.FC = () => {
         {/* Progress Overview */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <ProgressCard
-            title="Sessions Completed"
+            title={t('dashboard.sessionsCompleted')}
             value={metrics.completedSessions}
             total={metrics.totalSessions}
             icon={CalendarIcon}
             color="text-blue-600"
           />
           <ProgressCard
-            title="Treatment Goals"
+            title={t('dashboard.treatmentGoals')}
             value={metrics.treatmentProgress}
             total={100}
             icon={TrophyIcon}
             color="text-yellow-600"
           />
           <ProgressCard
-            title="Wellness Score"
+            title={t('dashboard.wellnessScore')}
             value={metrics.wellnessScore}
             total={100}
             icon={HeartIcon}
             color="text-red-600"
           />
           <ProgressCard
-            title="Resources Completed"
+            title={t('dashboard.resourcesCompleted')}
             value={metrics.resourcesCompleted}
             total={metrics.totalResources}
             icon={ClipboardDocumentCheckIcon}
@@ -329,7 +329,7 @@ const ClientDashboard: React.FC = () => {
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action) => (
               <QuickAction key={action.title} {...action} />
@@ -341,12 +341,12 @@ const ClientDashboard: React.FC = () => {
           {/* Upcoming Appointments */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.upcomingAppointments')}</h2>
               <Link 
                 to="/client/appointments" 
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                View all
+                {t('dashboard.viewAll')}
               </Link>
             </div>
             
@@ -380,12 +380,12 @@ const ClientDashboard: React.FC = () => {
             ) : (
               <div className="text-center py-8">
                 <CalendarIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">No upcoming appointments</p>
+                <p className="text-gray-500">{t('client.noUpcomingAppointments') || 'No upcoming appointments'}</p>
                 <Link 
                   to="/client/appointments/new"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 inline-block"
                 >
-                  Book an appointment
+                  {t('dashboard.bookAppointment')}
                 </Link>
               </div>
             )}
@@ -395,7 +395,7 @@ const ClientDashboard: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Messages
+                {t('nav.messages')}
                 {unreadMessages.length > 0 && (
                   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     {unreadMessages.length} new

@@ -119,10 +119,11 @@ const LoginPage: React.FC = () => {
       {/* Header */}
       <div className="text-center mb-8 animate-fadeInUp">
         <div className="relative inline-flex items-center justify-center mb-6">
-          <div className="w-20 h-20 gradient-healthcare rounded-2xl flex items-center justify-center shadow-premium">
-            <ShieldCheckIcon className="w-10 h-10 text-white" />
-          </div>
-          <div className="absolute -inset-2 gradient-healthcare rounded-2xl blur-xl opacity-25 animate-pulse"></div>
+          <img 
+            src="https://res.cloudinary.com/dizbrnm2l/image/upload/v1755154310/Logo_van_PraktijkEPD-3_3_xyr2pg.png"
+            alt="PraktijkEPD Logo"
+            className="h-24 w-auto"
+          />
         </div>
         <h1 className="heading-primary text-gray-900 mb-2">
           {t('twofa.welcomeBack')}
@@ -226,7 +227,7 @@ const LoginPage: React.FC = () => {
           {requiresTwoFactor && (
             <div className="card-premium bg-blue-50 border-blue-200 p-4">
               <label htmlFor="twoFactorCode" className="label-premium">
-                Two-Factor Authentication Code
+                {t('twofa.twoFactorCode')}
               </label>
               <input
                 {...register('twoFactorCode')}
@@ -249,7 +250,7 @@ const LoginPage: React.FC = () => {
               )}
               <p className="mt-2 text-sm text-gray-600 flex items-center">
                 <ShieldCheckIcon className="w-4 h-4 mr-2 text-blue-500" />
-                Enter the 6-digit code from your authenticator app
+                {t('twofa.enterCode')}
               </p>
             </div>
           )}

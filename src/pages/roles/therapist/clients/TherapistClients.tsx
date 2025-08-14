@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useClients } from '@/hooks/useApi';
+import { useTherapistClients } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumListItem } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -41,7 +41,7 @@ interface Client {
 const TherapistClients: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
-  const { getAll: getClients, isLoading } = useClients();
+  const { clients: apiClients, getClients, isLoading } = useTherapistClients();
   const { success, info, warning } = useAlert();
 
   // State
@@ -52,116 +52,33 @@ const TherapistClients: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'last_session' | 'next_appointment' | 'priority'>('name');
   const [showAddClient, setShowAddClient] = useState(false);
 
-  // Mock client data with realistic information
-  const mockClients: Client[] = [
-    {
-      id: '1',
-      name: 'Maria Jansen',
-      email: 'maria.jansen@email.com',
-      phone: '+31 6 12345678',
-      date_of_birth: '1985-03-15',
-      status: 'active',
-      last_session: '2024-07-30',
-      next_appointment: '2024-08-02T14:00:00',
-      sessions_completed: 8,
-      total_sessions: 12,
-      diagnosis: 'Anxiety Disorder',
-      priority: 'normal',
-      notes: 'Making good progress with CBT techniques'
-    },
-    {
-      id: '2',
-      name: 'Peter de Vries',
-      email: 'peter.devries@email.com',
-      phone: '+31 6 87654321',
-      date_of_birth: '1978-11-22',
-      status: 'active',
-      last_session: '2024-07-28',
-      next_appointment: '2024-08-05T10:30:00',
-      sessions_completed: 15,
-      total_sessions: 20,
-      diagnosis: 'Depression, PTSD',
-      priority: 'high',
-      notes: 'Requires careful monitoring, trauma-focused therapy'
-    },
-    {
-      id: '3',
-      name: 'Lisa van Berg',
-      email: 'lisa.vanberg@email.com',
-      phone: '+31 6 11223344',
-      date_of_birth: '1992-07-08',
-      status: 'active',
-      last_session: '2024-07-31',
-      next_appointment: '2024-08-03T16:00:00',
-      sessions_completed: 3,
-      total_sessions: 10,
-      diagnosis: 'Social Anxiety',
-      priority: 'normal',
-      notes: 'New client, building therapeutic rapport'
-    },
-    {
-      id: '4',
-      name: 'Jan Bakker',
-      email: 'jan.bakker@email.com',
-      phone: '+31 6 55667788',
-      date_of_birth: '1970-12-03',
-      status: 'completed',
-      last_session: '2024-07-25',
-      sessions_completed: 16,
-      total_sessions: 16,
-      diagnosis: 'Burnout Recovery',
-      priority: 'low',
-      notes: 'Successfully completed treatment program'
-    },
-    {
-      id: '5',
-      name: 'Sophie Hendricks',
-      email: 'sophie.hendricks@email.com',
-      phone: '+31 6 99887766',
-      date_of_birth: '1995-05-18',
-      status: 'waiting',
-      sessions_completed: 0,
-      total_sessions: 0,
-      diagnosis: 'Initial Assessment Pending',
-      priority: 'urgent',
-      notes: 'Urgent referral from GP, needs immediate attention'
-    }
-  ];
-
   // Load clients data
   useEffect(() => {
-    const loadClients = async () => {
-      try {
-        const data = await getClients();
-        if (Array.isArray(data) && data.length > 0) {
-          // Map API data to client format
-          const mappedClients = data.map(client => ({
-            id: client.id || client.client_id,
-            name: client.name || client.first_name + ' ' + client.last_name,
-            email: client.email,
-            phone: client.phone,
-            date_of_birth: client.date_of_birth,
-            status: client.status || 'active',
-            last_session: client.last_session_date,
-            next_appointment: client.next_appointment_date,
-            sessions_completed: client.sessions_completed || 0,
-            total_sessions: client.total_sessions || 10,
-            diagnosis: client.diagnosis,
-            priority: client.priority || 'normal',
-            notes: client.notes
-          }));
-          setClients(mappedClients);
-        } else {
-          setClients(mockClients);
-        }
-      } catch (error) {
-        console.error('Failed to load clients:', error);
-        setClients(mockClients);
-      }
-    };
+    getClients({ status: 'active' });
+  }, []);
 
-    loadClients();
-  }, []); // Remove getClients dependency to prevent infinite loop
+  // Update local state when API data changes
+  useEffect(() => {
+    if (apiClients && apiClients.length > 0) {
+      // Map API data to client format
+      const mappedClients = apiClients.map((client: any) => ({
+        id: client.id,
+        name: `${client.first_name} ${client.last_name}`,
+        email: client.email,
+        phone: client.phone,
+        date_of_birth: client.date_of_birth,
+        status: client.client_status || 'active',
+        last_session: client.last_appointment_date,
+        next_appointment: client.next_appointment_date,
+        sessions_completed: parseInt(client.completed_appointments) || 0,
+        total_sessions: parseInt(client.total_appointments) || 0,
+        diagnosis: client.therapy_goals || 'Not specified',
+        priority: client.priority_level || 'normal',
+        notes: client.notes || ''
+      }));
+      setClients(mappedClients);
+    }
+  }, [apiClients]);
 
   // Filter and sort clients
   const filteredAndSortedClients = clients

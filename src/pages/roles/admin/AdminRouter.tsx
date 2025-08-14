@@ -10,6 +10,7 @@ import EnhancedDashboard from './EnhancedDashboard';
 // Client Management
 import AllClients from './client-management/AllClients';
 import EnhancedClientList from './client-management/EnhancedClientList';
+import ClientManagementInline from './client-management/ClientManagementInline';
 
 // Therapist Management
 import AllTherapists from './therapist-management/AllTherapists';
@@ -134,10 +135,9 @@ const AdminRouter: React.FC = () => {
         <Route path="/dashboard-enhanced" element={<EnhancedDashboard />} />
         
         {/* Client Management */}
-        <Route path="/clients" element={<AllClients />} />
+        <Route path="/clients" element={<ClientManagementInline />} />
         <Route path="/clients/enhanced" element={<EnhancedClientList />} />
-        <Route path="/clients/:id" element={<div>Client Detail Page (To be implemented)</div>} />
-        <Route path="/clients/new" element={<div>New Client Page (To be implemented)</div>} />
+        <Route path="/clients/legacy" element={<AllClients />} />
         
         {/* Therapist Management */}
         <Route path="/therapists" element={<AllTherapists />} />

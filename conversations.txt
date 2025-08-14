@@ -1,0 +1,523 @@
+Natalie Spierings
+SaaS CRM Development for Healthcare Booking & Payment System (EU Netherland)
+Wednesday, Jun 18
+Rahul Kumar 4:06 PM
+Healthcare SaaS platforms require balancing complex patient data privacy with seamless user experience - most solutions either compromise security or create friction that healthcare providers abandon
+
+
+
+We're Rahul and Mukela, and we've built healthcare management systems that handle the exact challenges you're facing. Your Netherlands healthcare SaaS needs developers who understand both the technical complexity and regulatory requirements of medical software.
+
+
+
+Direct Healthcare SaaS Experience
+
+
+
+Hospital Management System (https://hospital-appointment-booking.netlify.app/)
+- Complete healthcare platform with patient booking, staff management, and appointment scheduling
+- Multi-department architecture supporting different healthcare specialties
+- Patient portal with secure authentication and data management
+- Real-time notification system for appointment updates and medical alerts
+- Role-based access control for healthcare staff, patients, and administrators
+- HIPAA-compliant architecture with secure patient data handling
+
+
+
+Relevant SaaS Infrastructure
+
+
+
+NurseNest HealthCare platform https://nurse-nest.lovable.app/
+Tech Stack :- React.js , Supabase , Lovable , node.js , stripe
+
+
+
+Nurse Nest is a comprehensive platform designed to connect nursing professionals with those seeking nursing care. The system facilitates matching qualified nurses with clients (individuals and families), handling job postings, contracts, timecards, and payments while ensuring compliance with healthcare regulations while super admin have whole control of the application regarding users, dispute management , payment system .
+
+
+
+I integrated Supabase as the backend for the NurseNest platform, handling user authentication, real-time database operations, role-based access control, and secure data management. The platform connects nurses with clients and manages job postings, contracts, timecards, and payments—leveraging Supabase’s PostgreSQL, Auth, and Storage features to ensure scalability, performance, and HIPAA-conscious compliance.
+
+
+
+Note: You can create a new NurseNest account.
+
+
+
+Technical Architecture for Netherlands Healthcare
+
+
+
+Core Platform Components:
+- Patient CRM: Comprehensive patient relationship management with medical history
+- Booking System: Multi-provider scheduling with availability management
+- Payment Processing: European payment gateways (iDEAL, SEPA) integration
+- Bookkeeping Integration: Automated invoicing and financial reporting
+- Compliance Framework: GDPR compliance with Dutch healthcare regulations
+
+
+
+European Compliance Approach:
+- GDPR Implementation: Data privacy controls, consent management, right to deletion
+- Medical Data Security: End-to-end encryption for patient information
+- Audit Trails: Complete logging for regulatory compliance
+- Data Localization: EU server hosting for data sovereignty requirements
+
+
+
+Healthcare-Specific Features:
+- Multi-language support (Dutch, English)
+- Integration with Dutch healthcare insurance systems
+- Medical appointment scheduling with provider availability
+- Patient portal with secure messaging and document sharing
+- Automated compliance reporting for healthcare authorities
+
+
+
+Development Approach
+
+
+
+Phase 1: Core Platform (Weeks 1-3)
+- Patient management and CRM foundation
+- Basic booking system with calendar integration
+- User authentication and role management
+- GDPR compliance framework
+
+
+
+Phase 2: Payments & Compliance (Weeks 4-7)
+- Dutch payment gateway integration (iDEAL, SEPA)
+- Bookkeeping and invoicing automation
+- Healthcare regulation compliance features
+- Financial reporting and audit trails
+
+
+
+Phase 3: Enhancement & Integration (Weeks 8-11)
+- Advanced booking features and provider management
+- Patient portal and communication systems
+- Analytics and performance reporting
+- Third-party healthcare system integrations
+
+
+
+Regulatory Considerations
+While we have strong healthcare software experience, Dutch healthcare regulations would require research and collaboration with local compliance experts to ensure full regulatory adherence.
+
+
+
+GitHub Profiles:
+- Mukela: https://github.com/Mukela12
+- Rahul: https://github.com/Rahulkumarhavit
+
+
+
+Key questions for requirements clarity:
+- What specific Dutch healthcare regulations need integration?
+- Are there preferred payment gateways or bookkeeping standards?
+- What healthcare provider types will use the system?
+
+
+
+Ready to build a healthcare SaaS that serves Dutch medical providers with full compliance and excellent user experience.
+
+
+
+Rahul & Mukela
+
+View details
+modern-seaside-stay
+Lovable Generated Project
+Mukela12 - Overview
+Mukela12 has 44 repositories available. Follow their code on GitHub.
+GitHub
+Rahulkumarhavit - Overview
+FastApi, Python , Nest.js, Express.js, TypeORM, MongoDB, MySQL, React, Recoil - Rahulkumarhavit
+GitHub
+10 files 
+nurse-nest-3.png
+84 kB
+hospital+3.png
+244 kB
+nurse-nest-1.png
+93 kB
+hospital+5.png
+260 kB
+nurse-nest-2.png
+110 kB
+hospital+6.png
+271 kB
+nurse-nest-4.png
+82 kB
+hospital+1.png
+824 kB
+hospital+2.png
+185 kB
+hospital+4.png
+89 kB
+NS
+Natalie Spierings 4:06 PM
+Hello,
+
+
+
+I have reviewed your proposal. When are you available for a meeting?
+
+Rahul Kumar 4:43 PM
+Hey Natalie, Can we have a meeting tomorrow. When you are free.
+
+Rahul Kumar 5:31 PM
+Hey Natalie, we are now both free now till 7pm you prefer to have a meeting right now, otherwise we can do tomorrow
+
+NS
+Natalie Spierings 6:43 PM
+Yes, I can meet tomorrow. I will come back and message you
+
+Rahul Kumar 6:46 PM
+Sure.
+
+Thursday, Jun 19
+Rahul Kumar 9:01 AM
+Hey Natalie, we are free. We can schedule a meeting when you are available.
+
+NS
+Natalie Spierings 12:20 PM
+Hello, sorry had I some sessions going on. I have time now
+
+Rahul Kumar 12:21 PM
+So are you available now
+
+NS
+Natalie Spierings 12:21 PM
+yes I am
+
+Rahul Kumar 12:23 PM
+Yeah then we can create a zoom meeting now
+
+NS
+Natalie Spierings 12:23 PM
+oke
+
+Rahul Kumar wants to schedule a 45-minute meeting
+
+ 12:24 PM
+Waiting for Natalie to pick a date and time. Preview what your booking page looks like.
+
+Preview booking page
+NS
+Natalie Spierings 12:25 PM
+normally I get a direct zoom link, why is this one different
+
+Rahul Kumar wants to schedule a 45-minute meeting
+
+ 12:25 PM
+Waiting for Natalie to pick a date and time. Preview what your booking page looks like.
+
+Preview booking page
+You can share the link directly
+
+okay
+
+https://us04web.zoom.us/j/5729910284?pwd=vNJtnMLjNGFYS3WO2FkOr2ycLkmSpv.1
+
+NS
+Natalie Spierings 1:00 PM
+Exact Online
+Moneybird
+e-Boekhouden.nl
+Exact Globe / Synergy
+Twinfield
+AFAS Software
+SnelStart
+Silvasoft
+Reeleezee
+InformerOnline - rompslomp - Jortt
+
+e-Boekhouden.nl | Eenvoudig online boekhouden en factureren
+Ook online boekhouden met het meest gebruikte boekhoudprogramma van Nederland? Probeer NU zelf gratis en vrijblijvend. (meer dan 500.000 gingen u voor)
+Rahul Kumar 1:04 PM
+Hey Natalie, can you also provide us with the software your current CRM is hosted on to help us better understand a better custom solution as well as some automation ideas you had in mind.
+
+NS
+Natalie Spierings 1:20 PM
+yes, that is mijndiad.nl
+
+ᐅ Praktijksoftware | Agenda, facturatie, uitgaven & dossiers | MijnDiAd.nl
+Probeer nu gratis de gebruiksvriendelijkste praktijksoftware! Ontwikkeld in samenspraak met therapeuten en daardoor maatwerk voor jouw praktijk.
+MijnDiAd
+Rahul Kumar 3:28 PM
+CLIENT SUMMARY FOR NATALIE.pdf 
+CLIENT SUMMARY FOR NATALIE.pdf
+86 kB
+Saturday, Jun 21
+Rahul Kumar 10:06 AM
+Hey Natalie, let me know once you have gone through the summary pdf
+
+Monday, Jun 23
+NS
+Natalie Spierings 12:50 PM
+Hello Rahul, I have gone brought the summary. And I wanted to check of we are on the same page regarding functionalities. So, I tried to make a document with what I need: https://docs.google.com/document/d/1zVpxYOEMsHm9KgqPpn0hiFdR3S09U89IlEsF9PrRpG4/edit?usp=sharing
+
+Rahul Kumar 1:29 PM
+hey Natalie, I am going through the docs. i will get back to you soon.
+
+Rahul Kumar 2:22 PM
+Hi Natalie,
+Thanks for sharing the document — I’ve reviewed it, and everything looks clear. Yes, we’re on the same page regarding the functionalities. I’m confident I can complete the project as per your requirements. Let’s move forward!
+
+NS
+Natalie Spierings 7:20 PM
+Okey, i do want to agree a fixed price for enterprice before starting
+
+
+
+I prefere to start with a (figma) design. Lets use the google doc to track the project. Highlight green when steps are finished.
+
+
+
+Hosting Will Be on a dutch platform; transip.
+
+Rahul Kumar 7:48 PM
+Of course we can set a fixed price for the whole project we usually charge about $1,700 for such a comprehensive project because of multiple service integrations and the comprehensive testing etc. We can complete the entire project for $1,500 but it will be in milestones this means we can setup three phases the first is the $850 to complete a MVP with only the core features without the payment systems, the next phase (milestone) will include the other features which will run up to $400 and the last milestone will be $250 for UI polishing and payment system integration.
+
+Tuesday, Jun 24
+NS
+Natalie Spierings 8:55 AM
+So I have done project before via upwards. I feel better if we have 4 milestones. the first the half of 850 at the start and then the second half of 850 upon completion of mvp. And then the rest of the milestones as you suggested
+
+Rahul Kumar 10:06 AM
+Sure we can do that
+
+When do you want us to start development?
+
+and do you want to have a meeting before we begin?
+
+NS
+Natalie Spierings 3:33 PM
+It is fine to start when you guys can start. First I will start the contract and do the first payment. I also will create an account of the current paid software we are working in, to you can get more insights. I am going to buy the domain today, anything else I need to do?
+
+Rahul Kumar 4:24 PM
+Yeah you can start the contract. We will start the work.
+
+Rahul Kumar 5:46 PM
+Hey Natalie, we discussed the project in detail and here is a document describing what we have agreed so far let us know if we are clear and accurate before we can begin development.
+
+Project Documentation & Implementation Plan.pdf 
+Project Documentation & Implementation Plan.pdf
+153 kB
+NS
+Natalie Spierings 6:57 PM
+I went trough the document. I have a few questions. Post project: why are these prices so high? (POST-MVP EXPANSION OPTIONS
+If the MVP meets your needs and you want to expand, future phases could include:
+Additional user roles and permissions ($2,000-3,000)
+Mobile application development ($3,000-5,000)
+Advanced analytics and reporting ($2,000-3,000)
+AI chatbot integration ($1,500-2,500)
+Multiple accounting software integrations ($1,000 per integration)
+
+And for me as a admin, the therapist management is really important. Regarding therapist management: there contract, are the working or on a holiday, overview of the therapies and expertise. And good visual design of the overview and search filters regarding invoices and payments. I cant see if this in the scope of your document?
+
+Rahul Kumar 7:54 PM
+Hello Natalie, the main reason is because we were making the MVP fit your budget. The web app is too comprehensive and will take up about 2 to 3 months to fully develop so we just want to make sure a minimal project functions well before we can make any expansions
+
+The idea is that we will build the MVP first then we can talk about the future MVP expansions keep in mind those prices are not fully accurate we can discuss how many future features you will need later and include them
+
+It would take longer than 3 months if we developed the whole web app in one go
+
+Wednesday, Jun 25
+Rahul Kumar 5:00 AM
+We will include in the scope
+
+NS
+Natalie Spierings
+Jun 24, 2025 | 7:01 PM
+And for me as a admin, the therapist management is really important. Regarding therapist management: there contract, are the working or on a holiday, overview of the therapies and expertise. And good visual design of the overview and search filters regarding invoices and payments. I cant see if this in the scope of your document?
+
+Show more
+NS
+Natalie Spierings 8:15 AM
+okey I am making the steps today. So for the vps plan, according to my hosting there is blade and a better one: https://www.transip.nl/vps/#packages. Package v1. is dat okey as well?
+
+VPS - Een Virtual Private Server voor elk project / TransIP
+Een VPS voor elk idee ✓ Virtual Private Server met ✓ Snelle configuratie ✓ Makkelijk op- en neerschalen ✓ Veilig in Nederlandse Datacenters.
+Rahul Kumar 8:20 AM
+yes. currently better for development.
+
+NS
+Natalie Spierings updated an offer
+
+ 8:37 AM
+We are seeking an experienced developer to create a SaaS CRM, booking, and payment system tailored for the healthcare sector in the Netherlands. The solution should include various bookkeeping add-ons to ensure compliance and efficiency. The ideal candidate will have a strong background in healthcare software development and be familiar with European regulations. If you have a passion for enhancing patient experiences through technology, we would love to hear from you.
+
+
+
+We are working according to agreed documents attached below
+
+Est. Budget: $1,500.00
+
+Milestone 1: Design
+
+Project funds: $375.00
+
+View offer
+2 files 
+CLIENT SUMMARY FOR NATALIE.pdf
+86 kB
+SAAS.pdf
+309 kB
+Rahul Kumar accepted an offer
+
+ 8:42 AM
+View contract
+NS
+Natalie Spierings 9:35 AM
+I see we can start. I think it would be easier to have a whatsapp group for easy communication, is that okey? The domain name and vps in ready
+
+Rahul Kumar 9:36 AM
+Yes
+
+NS
+Natalie Spierings 10:48 AM
+my number is 0031 614062970. what information do you need to start?
+
+Rahul Kumar 10:50 AM
+On is 00 your area code?
+
+Because i can’t see your account on WhatsApp
+
+Our lines are: +260771699187
+
+And +91 73669 36275
+
+You can create the group
+
+Wednesday, Jul 09
+NS
+Natalie Spierings approved the milestone
+
+ 9:18 AM
+Milestone 1: "Design"
+
+View details
+Natalie Spierings activated the milestone
+
+ 9:18 AM
+Milestone 2: "Start mvp"
+
+Amount: $375.00
+
+View details          [11:30, 25/06/2025] +31 6 14062970: Hello, so i have Created a groupapp. Somehow i cant add your friend.
+[11:31, 25/06/2025] +31 6 14062970: Do you mind adding your friend?
+[14:59, 25/06/2025] +31 6 14062970: What is the next step so you guys can get started?
+[15:21, 25/06/2025] Katungu Mukela: Hello Natalie, Sorry for the late reply. For now, we will start by initializing and setting up the project then we will begin the milestone 1. From the document we provided last time you can see the requirements we need throughout the development phase
+[15:21, 25/06/2025] Katungu Mukela: I have added Rahul
+[15:27, 25/06/2025] Katungu Mukela: Since Milestone 1 requires designing the the CRM in figma we were thinking we can just show you a demo design that we can build before Sunday and show you by then
+[15:27, 25/06/2025] Katungu Mukela: Is that okay
+[15:28, 25/06/2025] Katungu Mukela: The demo will be a react.js website that will have some of the functionalities discussed of the MVP. You can judge the design and layout and let us know what you think then we can continue development from there
+[15:28, 25/06/2025] Katungu Mukela: Is that fine with you?
+[07:25, 26/06/2025] +31 6 14062970: Yes thats fine
+[07:26, 26/06/2025] +31 6 14062970: Okey
+[10:48, 27/06/2025] +31 6 14062970: Goodmorning, would ik be helpfull if i add/make a profile wihtin our current crm/epd system for inspiration or something?
+[10:49, 27/06/2025] Katungu Mukela: Yes that would definitely help
+[17:51, 27/06/2025] +31 6 14062970: What e-mail can i use?
+[01:54, 28/06/2025] Katungu Mukela: codelibrary21@gmail.com
+[01:58, 28/06/2025] Katungu Mukela: We will be starting development on Monday, if you can get us an account by the weekend to analyze what we have to do that would be great!
+[08:18, 28/06/2025] +31 6 14062970: Okey i will do it now. Under witch first and lastname?
+[10:09, 28/06/2025] +31 6 14062970: Added
+[12:15, 28/06/2025] +31 6 14062970: I have a question, the HomePage and other Pages to showcase the product, do i need to add wordpress option within hosting. Or is it via a different way?
+[12:19, 28/06/2025] Katungu Mukela: We will host everything together
+[12:19, 28/06/2025] Katungu Mukela: So the homepage will have a login that takes you to the dashboard
+[12:29, 28/06/2025] Katungu Mukela: Logged in, we are going through it today and get back to you with a design
+[12:32, 28/06/2025] Katungu Mukela: Btw, Natalie. Can we get a document with all the roles we should have and what each role does? last time you mentioned you wanted a certain number of roles
+[13:01, 28/06/2025] +31 6 14062970: Yes will do now
+[13:02, 28/06/2025] +31 6 14062970: Okey. Mijndiad is a overall Okey design. But it is missing al lot of quick and good overview of to many steps
+[13:03, 28/06/2025] +31 6 14062970: Also you see the therapist dashboard. It is overal the same as admin dashboard. Only admin had a bit more rights
+Here is an overview of roles. The bad thing about this system, that you can not choose everything. Checkboxes are to limited
+This is my full view of admin
+[13:11, 28/06/2025] Katungu Mukela: Yes that will help us alot
+[13:15, 28/06/2025] Katungu Mukela: Okay i see, you can also include that in the document and let us know what abilities the checkboxes allow and what else. Keep in mind that it would help to be more detailed so we can get a clear understanding of how you want it to work because it’s going to be custom to these requirements you want
+[13:17, 28/06/2025] +31 6 14062970: okey, i will. I think it is easy to do it in figma so i can add notes. Or canva?
+[13:26, 28/06/2025] +31 6 14062970: Let me know your preference
+[13:41, 28/06/2025] Katungu Mukela: Figma would be better
+[16:58, 28/06/2025] +31 6 14062970: https://www.figma.com/design/ChMZftBIkoEieOg7mIweca/PraktijkEPD.nl?node-id=0-1&m=dev&t=bCrOXkpO4eG5utaD-1
+[16:59, 28/06/2025] +31 6 14062970: Okey i only uploaded the dashboard admin yet
+[08:27, 29/06/2025] +31 6 14062970: I have added more pages. But it takes time to do all. My design is awfull!
+[09:55, 29/06/2025] Katungu Mukela: Alright, i we will go through it and let you know when we can show you a design we have in mind
+[09:58, 29/06/2025] +31 6 14062970: Okey
+[16:08, 30/06/2025] Katungu Mukela: Hey @+31 6 14062970 , can you give us access to the figma project you created
+[16:09, 30/06/2025] +31 6 14062970: https://www.figma.com/design/ChMZftBIkoEieOg7mIweca/PraktijkEPD.nl?node-id=0-1&t=32WI2ytIFJRXR3gR-1
+[16:10, 30/06/2025] +31 6 14062970: does the link work?
+[16:11, 30/06/2025] +31 6 14062970: zvbg8i,nlm ,;
+[16:11, 30/06/2025] +31 6 14062970: w,13v
+[16:11, 30/06/2025] +31 6 14062970: '[
+[16:11, 30/06/2025] +31 6 14062970: sorry laptop typed wierd thing
+[16:14, 30/06/2025] Katungu Mukela: yes this one works
+[16:14, 30/06/2025] Katungu Mukela: no problem
+[16:22, 30/06/2025] Rahul: Hey @+31 6 14062970  I just send you the request for figma file
+[16:29, 30/06/2025] +31 6 14062970: approved
+[16:39, 30/06/2025] +31 6 14062970: It is a lot of work and time to visualize all pages. So i still working on that
+[17:00, 01/07/2025] Katungu Mukela: Hey @+31 6 14062970 , I created an HTML that you can open on your laptop browser to view a demo. Please go through it and take screenshots of the screens you want a design change for or a feature that you don't want.
+[17:01, 01/07/2025] Katungu Mukela: you can down that and open it on your computer
+[17:07, 01/07/2025] Katungu Mukela: You can add the screenshots to figma and comment what you don't like ans what you like. Keep in mind this is just the demo to make sure we understand your design
+[18:07, 01/07/2025] +31 6 14062970: Okey, quick look looks good! I do miss the client portal? And not all the sections were clickable right?
+
+I do love the ai therapist pairing and invoice pairing! 
+
+So if give feedback via figma, do i need the add the features that are in our google docs?
+[18:38, 01/07/2025] Katungu Mukela: The AI therapist pairing isn’t going to be in the MVP because it’s hard to implement and may cost alot because of LLM pricing the MVP will have the features we discussed and the automations and customizations you mentioned
+[18:38, 01/07/2025] Katungu Mukela: Yes i will add the client portal later
+[18:39, 01/07/2025] Katungu Mukela: Yes it’s not fully interactive just want to see if we have the design correct and layout
+[18:41, 01/07/2025] Katungu Mukela: There some features that we will leave open to be developed later on after the initial MVP
+[18:42, 01/07/2025] Katungu Mukela: You can mention what features you would like to be in the initial MVP which are essential right now the rest will be added after the MVP incrementally
+[20:08, 01/07/2025] +31 6 14062970: Okey, so it is a lot of work. I just posted the therapist dashboard in figma. I tried to add info for the google doc therapist dashboard section as well.
+[20:11, 01/07/2025] Katungu Mukela: Sure, you can let us know when you have.
+[20:12, 01/07/2025] Katungu Mukela: I still need to work on showing you the client portal design
+[20:12, 01/07/2025] +31 6 14062970: Therapist dashboard is finished. You can check that that
+[20:12, 01/07/2025] Katungu Mukela: I will get back on that
+[20:12, 01/07/2025] Katungu Mukela: Okay
+[12:10, 02/07/2025] +31 6 14062970: So i have added almost all the pages to figma and added comments. I just need to do one more page, the admin dashboard
+Hey Natalie you can go through the demo to see the client portal
+[15:39, 03/07/2025] Katungu Mukela: once you have added all to figma you can let us know
+[15:40, 03/07/2025] Katungu Mukela: We will go through the figma and get back with our implementation plan then we can move to the next milestone
+[16:13, 03/07/2025] +31 6 14062970: okey, i am working on it. Added a few already.
+[16:27, 03/07/2025] +31 6 14062970: Page 11: is that the financiel overview of therapist only right?
+[16:30, 03/07/2025] Katungu Mukela: Yes only for Therapist
+[16:30, 03/07/2025] Katungu Mukela: Viewed from the bookkeeper or Admin side
+[19:31, 03/07/2025] +31 6 14062970: Okey i am done. I tried to add item from the google docs, but i a not sure. Also A few pages are not in the demo, but that is because it is only for design right?
+[09:05, 04/07/2025] Katungu Mukela: Yes
+[09:06, 04/07/2025] Katungu Mukela: Okay, did you put it in the figma?
+[09:09, 04/07/2025] Katungu Mukela: Okay i can see it, i will go through your comments in figma and get back to you
+[09:56, 04/07/2025] +31 6 14062970: Yes
+[11:09, 07/07/2025] +31 6 14062970: Goodmorning, i hope you guys had a good weekend. i was wandering when and what the next step is going to be
+[12:31, 07/07/2025] Katungu Mukela: Hello Natalie, sorry for the delay i’m still converting the comments into changes and send you the final demo for you to approve then you can approve the milestone
+[12:43, 07/07/2025] +31 6 14062970: Okey thank you for the update. Is it possible for me the check the progress? Just because i am curious
+[13:05, 07/07/2025] Katungu Mukela: You can take a look at this
+[13:12, 07/07/2025] Katungu Mukela: Let me know if the design and layout is accurate with your comments on figma
+[13:13, 07/07/2025] +31 6 14062970: Is it correct that i only see page 1,2,3 and 16?
+[13:14, 07/07/2025] Katungu Mukela: you can by clicking the next and previous button
+[13:17, 07/07/2025] Katungu Mukela: or you can go back to the role screen to see other dashboards
+[13:19, 07/07/2025] +31 6 14062970: oke thank you
+[18:15, 08/07/2025] Katungu Mukela: Hello @+31 6 14062970, Ho are you doing? just wanted to find out if there is any update
+[18:22, 08/07/2025] +31 6 14062970: Sorry, i did not know that i had to give an update. What would you like to know?
+[18:31, 08/07/2025] Katungu Mukela: Just this
+[18:33, 08/07/2025] Katungu Mukela: We are supposed to begin development soon so you can complete the first milestone if you don’t have any changes
+[18:33, 08/07/2025] Katungu Mukela: Then we can start the next Milestone on upwork
+[18:34, 08/07/2025] +31 6 14062970: Okey i did not know this design needed comments. I will start and finish tomorrow
+[18:36, 08/07/2025] Katungu Mukela: no need for comments
+[18:36, 08/07/2025] Katungu Mukela: just approve the design to see if we have done what you want
+[18:37, 08/07/2025] Katungu Mukela: Then we can start development
+[18:56, 08/07/2025] +31 6 14062970: Okey. So i need to approve to overal design right? So we dont need all the pages in figma and this demo, and not all the items/comments are implementeend yet right?
+[18:57, 08/07/2025] Katungu Mukela: Yes, but the key changes have been made to show you the overall organization of each portal based on your comments
+[19:32, 08/07/2025] +31 6 14062970: Okey, the overall new layout looks good. Colour coded, lots of filters. I am exited to see how the automated features are working. A few questions - is it just as easy for you if the layout of admin dashboard and therapist dashboard are in modules, so each therapist can adjust own layout? And the pages that were not in the demo, how would do we provide the feedback at the beginning of the proces? And last question, the main colour be #0097B2, as the overal look of the SAAS.
+[19:47, 08/07/2025] Katungu Mukela: We can’t customize the layout right now because that will take up alot more time since for now we want to make sure we have a working MVP then we can plan the other features.
+[19:49, 08/07/2025] Katungu Mukela: So the pages that weren’t in the demo were pages you didn’t have issues with in the first demo so i never included them and the other pages you can’t click on are following the same design and layout of the platform you showed us
+[19:49, 08/07/2025] Katungu Mukela: Sure we can use #0097B2 as the main colour
+[19:50, 08/07/2025] Katungu Mukela: Also during development we will be showing you what we have done so far so you can provide feedback
+[19:53, 08/07/2025] +31 6 14062970: Okey i understand. Just the therapist profile (so not the main dashboard) is quick different and not visible on the platform i have have shown. It is in canva however.
+[19:53, 08/07/2025] +31 6 14062970: Great
+[21:00, 08/07/2025] Katungu Mukela: Okay, you mean figma or canva?
+[21:01, 08/07/2025] Katungu Mukela: Awesome
+[09:16, 09/07/2025] +31 6 14062970: Sorry for the confusion, in figma (i made in in canva)
+[11:00, 09/07/2025] Katungu Mukela: Okay, i will update you as we begin MVP development        

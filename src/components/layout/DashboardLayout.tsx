@@ -347,9 +347,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
               <Link to={getDashboardPath()} className="flex items-center space-x-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getLogoColorClass(user?.role || UserRole.CLIENT)}`}>
-                  <span className="text-white font-bold text-sm">P</span>
-                </div>
+                <img 
+                  src="https://res.cloudinary.com/dizbrnm2l/image/upload/v1755154559/PraktijkEPD-3-logoo_jlagdx.svg"
+                  alt="PraktijkEPD Logo"
+                  className="w-8 h-8"
+                />
                 <span className="text-lg font-semibold text-gray-900">PraktijkEPD</span>
               </Link>
               <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -411,9 +413,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="flex min-h-0 flex-1 flex-col bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-6 border-b border-gray-200">
             <Link to={getDashboardPath()} className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getLogoColorClass(user?.role || UserRole.CLIENT)}`}>
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
+              <img 
+                src="https://res.cloudinary.com/dizbrnm2l/image/upload/v1755154559/PraktijkEPD-3-logoo_jlagdx.svg"
+                alt="PraktijkEPD Logo"
+                className="w-8 h-8"
+              />
               <span className="text-lg font-semibold text-gray-900">PraktijkEPD</span>
             </Link>
           </div>

@@ -16,7 +16,8 @@ import {
   TrophyIcon,
   SparklesIcon,
   PaperAirplaneIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { 
   StarIcon as StarSolidIcon, 
@@ -62,11 +63,12 @@ const ClientTherapist: React.FC = () => {
         // Get dashboard data for progress
         const dashboardResponse = await realApiService.client.getDashboard();
         if (dashboardResponse.success && dashboardResponse.data) {
+          const metrics = dashboardResponse.data.metrics;
           setProgress({
-            sessions_completed: dashboardResponse.data.completedSessions || 0,
-            total_sessions: dashboardResponse.data.totalSessions || 0,
-            treatment_progress: dashboardResponse.data.treatmentProgress || 0,
-            next_appointment: dashboardResponse.data.nextAppointment || null
+            sessions_completed: metrics?.completedSessions || 0,
+            total_sessions: metrics?.totalSessions || 0,
+            treatment_progress: metrics?.totalSessions > 0 ? Math.round((metrics?.completedSessions || 0) / metrics.totalSessions * 100) : 0,
+            next_appointment: metrics?.nextAppointment || null
           });
         }
       } catch (error: any) {

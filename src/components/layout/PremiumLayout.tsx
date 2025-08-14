@@ -98,7 +98,7 @@ export const PremiumMetric: React.FC<PremiumMetricProps> = ({
 // Premium Status Badge
 interface StatusBadgeProps {
   status: string;
-  type?: 'new' | 'viewed' | 'scheduled' | 'starting' | 'active' | 'discontinued' | 'paid' | 'partial' | 'overdue' | 'collection' | 'legal' | 'pending' | 'suspended' | 'processing' | 'general' | 'waiting_list';
+  type?: 'new' | 'viewed' | 'scheduled' | 'starting' | 'active' | 'discontinued' | 'paid' | 'partial' | 'overdue' | 'collection' | 'legal' | 'pending' | 'suspended' | 'processing' | 'general' | 'waiting_list' | 'client';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -129,7 +129,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     suspended: 'bg-purple-500 text-white',
     processing: 'bg-white text-gray-800 border border-gray-300',
     general: 'bg-gray-100 text-gray-800',
-    waiting_list: 'bg-amber-100 text-amber-800'
+    waiting_list: 'bg-amber-100 text-amber-800',
+    client: 'bg-blue-100 text-blue-800'
   };
 
   return (

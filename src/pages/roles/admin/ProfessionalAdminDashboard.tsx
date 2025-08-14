@@ -65,7 +65,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
       onClick={() => link && navigate(link)}
     >
       <PremiumCard 
-        className="relative overflow-hidden hover:shadow-lg transition-all duration-300 group"
+        className="relative overflow-hidden hover:shadow-lg transition-all duration-300 group card-hover-lift"
       >
       <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8">
         <div className={`w-full h-full ${iconColor} opacity-10 rounded-full`} />
@@ -143,7 +143,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
       onClick={() => navigate(link)}
     >
       <PremiumCard 
-        className="relative overflow-hidden hover:shadow-xl transition-all duration-300 group transform hover:-translate-y-1"
+        className="relative overflow-hidden hover:shadow-xl transition-all duration-300 group transform hover:-translate-y-1 card-hover-lift animate-fade-in"
       >
       {isNew && (
         <div className="absolute top-4 right-4">
@@ -260,95 +260,95 @@ const ProfessionalAdminDashboard: React.FC = () => {
   // Management modules
   const managementModules = [
     {
-      title: 'Client Management',
-      description: 'Manage client profiles, sessions, and treatment plans',
+      title: t('nav.clients'),
+      description: t('dashboard.clientManagementDesc') || 'Manage client profiles, sessions, and treatment plans',
       icon: UserGroupIcon,
       color: 'bg-blue-600',
       link: '/admin/clients',
       stats: [
-        { label: 'Active Clients', value: metrics?.activeClients || 0 },
-        { label: 'New This Month', value: metrics?.newClientsThisMonth || 0 }
+        { label: t('dashboard.activeClients'), value: metrics?.activeClients || 0 },
+        { label: t('dashboard.newThisMonth'), value: metrics?.newClientsThisMonth || 0 }
       ]
     },
     {
-      title: 'Therapist Management',
-      description: 'Manage therapist profiles, schedules, and assignments',
+      title: t('nav.therapists'),
+      description: t('dashboard.therapistManagementDesc') || 'Manage therapist profiles, schedules, and assignments',
       icon: UsersIcon,
       color: 'bg-purple-600',
       link: '/admin/therapists',
       stats: [
-        { label: 'Active Therapists', value: metrics?.therapistCount || 0 },
-        { label: 'Sessions Today', value: metrics?.sessionsToday || 0 }
+        { label: t('dashboard.activeTherapists'), value: metrics?.therapistCount || 0 },
+        { label: t('dashboard.sessionsToday') || 'Sessions Today', value: metrics?.sessionsToday || 0 }
       ]
     },
     {
-      title: 'Financial Overview',
-      description: 'Track revenue, invoices, and payment status',
+      title: t('nav.financial'),
+      description: t('dashboard.financialOverviewDesc') || 'Track revenue, invoices, and payment status',
       icon: CurrencyEuroIcon,
       color: 'bg-green-600',
       link: '/admin/financial',
       stats: [
-        { label: 'Monthly Revenue', value: `€${financial?.totalRevenue?.toLocaleString() || '0'}` },
-        { label: 'Outstanding', value: `€${financial?.outstandingAmount?.toLocaleString() || '0'}` }
+        { label: t('dashboard.monthlyRevenue'), value: `€${financial?.totalRevenue?.toLocaleString() || '0'}` },
+        { label: t('dashboard.outstanding') || 'Outstanding', value: `€${financial?.outstandingAmount?.toLocaleString() || '0'}` }
       ]
     },
     {
-      title: 'Address Changes',
-      description: 'Review and approve client address change requests',
+      title: t('nav.addressChanges'),
+      description: t('dashboard.addressChangesDesc') || 'Review and approve client address change requests',
       icon: HomeIcon,
       color: 'bg-indigo-600',
       link: '/admin/address-changes',
       stats: [
-        { label: 'Pending', value: metrics?.pendingAddressChanges || 0 },
-        { label: 'Total Requests', value: metrics?.totalAddressChanges || 0 }
+        { label: t('status.pending'), value: metrics?.pendingAddressChanges || 0 },
+        { label: t('dashboard.totalRequests') || 'Total Requests', value: metrics?.totalAddressChanges || 0 }
       ],
       isNew: true
     },
     {
-      title: 'Challenges',
-      description: 'Create and manage therapeutic challenges',
+      title: t('nav.challenges'),
+      description: t('dashboard.challengesDesc') || 'Create and manage therapeutic challenges',
       icon: TrophyIcon,
       color: 'bg-emerald-600',
       link: '/admin/challenges',
       stats: [
-        { label: 'Active', value: metrics?.activeChallenges || 0 },
-        { label: 'Participants', value: metrics?.challengeParticipants || 0 }
+        { label: t('status.active'), value: metrics?.activeChallenges || 0 },
+        { label: t('dashboard.participants') || 'Participants', value: metrics?.challengeParticipants || 0 }
       ],
       isNew: true
     },
     {
-      title: 'Resources',
-      description: 'Manage therapeutic resources and materials',
+      title: t('nav.resources'),
+      description: t('dashboard.resourcesDesc') || 'Manage therapeutic resources and materials',
       icon: BookOpenIcon,
       color: 'bg-blue-600',
       link: '/admin/resources',
       stats: [
-        { label: 'Resources', value: metrics?.totalResources || 0 },
-        { label: 'Assignments', value: metrics?.resourceAssignments || 0 }
+        { label: t('nav.resources'), value: metrics?.totalResources || 0 },
+        { label: t('dashboard.assignments') || 'Assignments', value: metrics?.resourceAssignments || 0 }
       ],
       isNew: true
     },
     {
-      title: 'Surveys',
-      description: 'Create and manage client feedback surveys',
+      title: t('nav.surveys'),
+      description: t('dashboard.surveysDesc') || 'Create and manage client feedback surveys',
       icon: ClipboardDocumentCheckIcon,
       color: 'bg-teal-600',
       link: '/admin/surveys',
       stats: [
-        { label: 'Active Surveys', value: metrics?.activeSurveys || 0 },
-        { label: 'Responses', value: metrics?.surveyResponses || 0 }
+        { label: t('dashboard.activeSurveys') || 'Active Surveys', value: metrics?.activeSurveys || 0 },
+        { label: t('dashboard.responses') || 'Responses', value: metrics?.surveyResponses || 0 }
       ],
       isNew: true
     },
     {
-      title: 'System Settings',
-      description: 'Configure practice settings and integrations',
+      title: t('nav.settings'),
+      description: t('dashboard.systemSettingsDesc') || 'Configure practice settings and integrations',
       icon: Cog6ToothIcon,
       color: 'bg-gray-600',
       link: '/admin/settings',
       stats: [
-        { label: 'Users', value: metrics?.totalUsers || 0 },
-        { label: 'Integrations', value: metrics?.activeIntegrations || 0 }
+        { label: t('dashboard.users') || 'Users', value: metrics?.totalUsers || 0 },
+        { label: t('dashboard.integrations') || 'Integrations', value: metrics?.activeIntegrations || 0 }
       ]
     }
   ];
@@ -362,10 +362,10 @@ const ProfessionalAdminDashboard: React.FC = () => {
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold flex items-center">
                 <ShieldCheckIcon className="w-10 h-10 mr-3" />
-                Admin Dashboard
+                {t('nav.dashboard')}
               </h1>
               <p className="text-indigo-100 mt-2 text-lg">
-                Welcome back, {user?.first_name || 'Administrator'}
+                {t('dashboard.welcome')}, {user?.first_name || t('role.admin')}
               </p>
               <p className="text-indigo-200 mt-1">
                 {formatFullDate(new Date())}
@@ -374,17 +374,17 @@ const ProfessionalAdminDashboard: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-3">
               <PremiumButton
                 onClick={() => navigate('/admin/reports')}
-                className="bg-white/20 border border-white/30 text-white hover:bg-white/30"
+                className="bg-white/20 border border-white/30 text-white hover:bg-white/30 btn-enhanced"
                 icon={DocumentChartBarIcon}
               >
-                View Reports
+                {t('nav.reports')}
               </PremiumButton>
               <PremiumButton
                 onClick={() => navigate('/admin/notifications')}
-                className="bg-white text-indigo-600 hover:bg-gray-100"
+                className="bg-white text-indigo-600 hover:bg-gray-100 btn-enhanced"
                 icon={BellIcon}
               >
-                Notifications
+                {t('nav.notifications') || 'Notifications'}
                 {metrics?.unreadNotifications && metrics.unreadNotifications > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                     {metrics.unreadNotifications}
@@ -398,78 +398,78 @@ const ProfessionalAdminDashboard: React.FC = () => {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            title="Active Clients"
+            title={t('dashboard.activeClients') || 'Active Clients'}
             value={metrics?.activeClients || 0}
-            change={`${metrics?.newClientsThisMonth || 0} new this month`}
+            change={`${metrics?.newClientsThisMonth || 0} ${t('dashboard.newThisMonth') || 'new this month'}`}
             changeType={metrics?.newClientsThisMonth ? "positive" : "neutral"}
             icon={UsersIcon}
             iconColor="bg-blue-600"
             link="/admin/clients"
             isLoading={isLoading}
-            description="Total active client accounts"
+            description={t('dashboard.totalActiveClientAccounts') || "Total active client accounts"}
           />
           <MetricCard
-            title="Monthly Revenue"
+            title={t('dashboard.monthlyRevenue')}
             value={`€${financial?.totalRevenue?.toLocaleString() || '0'}`}
-            change={financial?.revenueGrowth ? `${financial.revenueGrowth}% growth` : "YTD"}
+            change={financial?.revenueGrowth ? `${financial.revenueGrowth}% ${t('dashboard.growth') || 'growth'}` : "YTD"}
             changeType={financial?.revenueGrowth && financial.revenueGrowth > 0 ? "positive" : "neutral"}
             icon={CurrencyEuroIcon}
             iconColor="bg-green-600"
             link="/admin/financial"
             isLoading={isLoading}
-            description="Total revenue this month"
+            description={t('dashboard.totalRevenueThisMonth') || "Total revenue this month"}
           />
           <MetricCard
-            title="Today's Appointments"
+            title={t('dashboard.todayAppointments') || "Today's Appointments"}
             value={metrics?.appointmentsToday || 0}
-            change={`${metrics?.upcomingAppointments || 0} upcoming`}
+            change={`${metrics?.upcomingAppointments || 0} ${t('dashboard.upcoming') || 'upcoming'}`}
             changeType={metrics?.appointmentsToday ? "positive" : "neutral"}
             icon={CalendarIcon}
             iconColor="bg-purple-600"
             link="/admin/agenda"
             isLoading={isLoading}
-            description="Scheduled for today"
+            description={t('dashboard.scheduledForToday') || "Scheduled for today"}
           />
           <MetricCard
-            title="Waiting List"
+            title={t('nav.waitingList')}
             value={metrics?.waitingListCount || 0}
-            change={metrics?.criticalWaitingList ? `${metrics.criticalWaitingList} critical` : "Normal"}
+            change={metrics?.criticalWaitingList ? `${metrics.criticalWaitingList} ${t('dashboard.critical') || 'critical'}` : t('dashboard.normal') || "Normal"}
             changeType={metrics?.criticalWaitingList ? "negative" : "neutral"}
             icon={ClockIcon}
             iconColor="bg-orange-600"
             link="/admin/waiting-list"
             isLoading={isLoading}
-            description="Pending applications"
+            description={t('dashboard.pendingApplications') || "Pending applications"}
           />
         </div>
 
         {/* Quick Actions */}
         <PremiumCard>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">{t('dashboard.quickActions')}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <QuickAction
                 icon={UserGroupIcon}
-                label="Add New Client"
+                label={t('dashboard.addNewClient')}
                 onClick={() => navigate('/admin/clients/new')}
                 color="bg-gradient-to-br from-blue-600 to-blue-700"
               />
               <QuickAction
                 icon={CalendarIcon}
-                label="View Schedule"
+                label={t('dashboard.viewSchedule')}
                 onClick={() => navigate('/admin/agenda')}
                 color="bg-gradient-to-br from-green-600 to-green-700"
                 badge={metrics?.appointmentsToday}
               />
               <QuickAction
                 icon={BanknotesIcon}
-                label="Create Invoice"
+                label={t('dashboard.createInvoice')}
                 onClick={() => navigate('/admin/financial/invoices/new')}
                 color="bg-gradient-to-br from-purple-600 to-purple-700"
               />
               <QuickAction
                 icon={InboxIcon}
-                label="Waiting List"
+                label={t('nav.waitingList')}
                 onClick={() => navigate('/admin/waiting-list')}
                 color="bg-gradient-to-br from-orange-600 to-orange-700"
                 badge={metrics?.waitingListCount}
@@ -480,7 +480,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
 
         {/* Management Modules */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Management Modules</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('dashboard.managementModules')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {managementModules.map((module, index) => (
               <ModuleCard key={index} {...module} />
@@ -494,12 +494,12 @@ const ProfessionalAdminDashboard: React.FC = () => {
           <PremiumCard>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Applications</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.recentApplications')}</h3>
                 <Link 
                   to="/admin/waiting-list" 
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
                 >
-                  View all
+                  {t('dashboard.viewAll')}
                   <ArrowRightIcon className="w-4 h-4 ml-1" />
                 </Link>
               </div>
@@ -517,7 +517,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                           {application.first_name} {application.last_name}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Applied {formatDate(application.created_at)}
+                          {t('dashboard.applied')} {formatDate(application.created_at)}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -536,7 +536,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
               ) : (
                 <div className="text-center py-8">
                   <ClockIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No pending applications</p>
+                  <p className="text-gray-500">{t('dashboard.noPendingApplications')}</p>
                 </div>
               )}
             </div>
@@ -546,12 +546,12 @@ const ProfessionalAdminDashboard: React.FC = () => {
           <PremiumCard>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Financial Insights</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.financialInsights')}</h3>
                 <Link 
                   to="/admin/financial" 
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
                 >
-                  View details
+                  {t('dashboard.viewDetails')}
                   <ArrowRightIcon className="w-4 h-4 ml-1" />
                 </Link>
               </div>
@@ -564,7 +564,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 font-medium">Total Revenue (MTD)</span>
+                      <span className="text-gray-700 font-medium">{t('dashboard.totalRevenueMTD')}</span>
                       <span className="text-xl font-bold text-green-600">
                         €{financial?.totalRevenue?.toLocaleString() || '0'}
                       </span>
@@ -573,7 +573,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                   
                   <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 font-medium">Outstanding Amount</span>
+                      <span className="text-gray-700 font-medium">{t('dashboard.outstandingAmount')}</span>
                       <span className="text-xl font-bold text-orange-600">
                         €{financial?.outstandingAmount?.toLocaleString() || '0'}
                       </span>
@@ -582,7 +582,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                   
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 font-medium">Paid This Month</span>
+                      <span className="text-gray-700 font-medium">{t('dashboard.paidThisMonth')}</span>
                       <span className="text-xl font-bold text-blue-600">
                         €{financial?.paidThisMonth?.toLocaleString() || '0'}
                       </span>
@@ -591,7 +591,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                   
                   <div className="pt-4 mt-4 border-t border-gray-200">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-800">Projected Revenue</span>
+                      <span className="font-semibold text-gray-800">{t('dashboard.projectedRevenue')}</span>
                       <span className="text-2xl font-bold text-gray-900">
                         €{financial?.projectedRevenue?.toLocaleString() || '0'}
                       </span>
@@ -604,7 +604,7 @@ const ProfessionalAdminDashboard: React.FC = () => {
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        {Math.round((financial?.paidThisMonth || 0) / (financial?.projectedRevenue || 1) * 100)}% of projected revenue achieved
+                        {Math.round((financial?.paidThisMonth || 0) / (financial?.projectedRevenue || 1) * 100)}% {t('dashboard.ofProjectedRevenueAchieved')}
                       </p>
                     </div>
                   </div>

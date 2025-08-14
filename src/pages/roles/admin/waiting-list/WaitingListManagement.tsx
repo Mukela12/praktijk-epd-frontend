@@ -16,7 +16,7 @@ import {
   MapPinIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useWaitingList } from '@/hooks/useApi';
+import { useAdminWaitingList } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumListItem, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -42,7 +42,7 @@ interface WaitingListItem {
 
 const WaitingListManagement: React.FC = () => {
   const { t } = useTranslation();
-  const { getAll, update, assign, isLoading } = useWaitingList();
+  const { getWaitingList, waitingList: apiWaitingList, updateEntry, isLoading } = useAdminWaitingList();
   const { success, error, info } = useAlert();
 
   // State
@@ -59,25 +59,33 @@ const WaitingListManagement: React.FC = () => {
 
   // Load data
   useEffect(() => {
-    const loadWaitingList = async () => {
-      try {
-        const data = await getAll();
-        const formattedData = Array.isArray(data) ? data.map(item => ({
-          ...item,
-          urgency: item.urgency || 'medium',
-          status: item.status || 'new'
-        })) : [];
-        setWaitingList(formattedData);
-        setFilteredList(formattedData);
-      } catch (err) {
-        console.error('Failed to load waiting list:', err);
-        setWaitingList([]);
-        setFilteredList([]);
-      }
-    };
+    getWaitingList();
+  }, []);
 
-    loadWaitingList();
-  }, [getAll]);
+  // Update local state when API data changes
+  useEffect(() => {
+    if (apiWaitingList && apiWaitingList.length > 0) {
+      const formattedData = apiWaitingList.map(item => ({
+        id: item.id,
+        client_name: `${item.first_name} ${item.last_name}`,
+        email: item.email,
+        phone: item.phone,
+        age: item.age,
+        gender: item.gender,
+        registration_date: item.created_at,
+        therapy_type: item.therapy_type || 'General',
+        urgency: item.urgency_level || 'medium',
+        status: item.status || 'new',
+        preferred_therapist_gender: item.preferred_therapist_gender,
+        preferred_language: item.preferred_language,
+        notes: item.notes,
+        insurance_type: item.insurance_type,
+        location_preference: item.location_preference
+      }));
+      setWaitingList(formattedData);
+      setFilteredList(formattedData);
+    }
+  }, [apiWaitingList]);
 
   // Apply filters
   useEffect(() => {
@@ -140,13 +148,15 @@ const WaitingListManagement: React.FC = () => {
   // Handle status update
   const handleStatusUpdate = async (itemId: string, newStatus: string) => {
     try {
-      await update(itemId, { status: newStatus });
+      await updateEntry(itemId, { status: newStatus });
       setWaitingList(prev =>
         prev.map(item =>
           item.id === itemId ? { ...item, status: newStatus as any } : item
         )
       );
       success(`Status updated to ${newStatus}`);
+      // Reload data to get fresh updates
+      getWaitingList();
     } catch (err) {
       error('Failed to update status');
     }

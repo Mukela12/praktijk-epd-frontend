@@ -151,28 +151,28 @@ const BookkeeperDashboard: React.FC = () => {
                 {t('dashboard.welcome')}, {getDisplayName()}
               </h1>
               <p className="text-emerald-100 mt-2 text-lg">
-                Complete financial management and invoice tracking
+                {t('bookkeeper.dashboardSubtitle') || 'Complete financial management and invoice tracking'}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200">
                   <DocumentTextIcon className="w-5 h-5 mr-2" />
-                  <span className="font-medium">New Invoice</span>
+                  <span className="font-medium">{t('action.create')} {t('nav.invoices').slice(0, -1)}</span>
                 </button>
                 <button className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200">
                   <ChartBarIcon className="w-5 h-5 mr-2" />
-                  <span className="font-medium">Generate Report</span>
+                  <span className="font-medium">{t('financial.generateReport')}</span>
                 </button>
                 <button className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-all duration-200">
                   <BanknotesIcon className="w-5 h-5 mr-2" />
-                  <span className="font-medium">Payment Reminder</span>
+                  <span className="font-medium">{t('bookkeeper.paymentReminder') || 'Payment Reminder'}</span>
                 </button>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/20">
-                <p className="text-sm text-emerald-100">Current Period</p>
+                <p className="text-sm text-emerald-100">{t('bookkeeper.currentPeriod') || 'Current Period'}</p>
                 <p className="text-2xl font-bold mt-1">{new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
-                <p className="text-sm text-emerald-200 mt-2">Last updated: {formatRelativeTime(new Date())}</p>
+                <p className="text-sm text-emerald-200 mt-2">{t('bookkeeper.lastUpdated') || 'Last updated'}: {formatRelativeTime(new Date())}</p>
               </div>
             </div>
           </div>
@@ -195,9 +195,9 @@ const BookkeeperDashboard: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">{t('financial.totalRevenue')}</p>
               <p className="text-3xl font-extrabold text-gray-900">{formatCurrency(totalRevenue)}</p>
-              <p className="text-xs text-gray-500 mt-2">vs last month</p>
+              <p className="text-xs text-gray-500 mt-2">{t('bookkeeper.vsLastMonth') || 'vs last month'}</p>
             </div>
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-br from-green-200 to-emerald-200 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
           </div>
@@ -217,9 +217,9 @@ const BookkeeperDashboard: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Outstanding</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">{t('dashboard.outstanding')}</p>
               <p className="text-3xl font-extrabold text-gray-900">{formatCurrency(outstandingAmount)}</p>
-              <p className="text-xs text-gray-500 mt-2">{invoices.filter(inv => ['sent', 'overdue'].includes(inv.status)).length} invoices</p>
+              <p className="text-xs text-gray-500 mt-2">{invoices.filter(inv => ['sent', 'overdue'].includes(inv.status)).length} {t('nav.invoices').toLowerCase()}</p>
             </div>
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200 to-amber-200 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
           </div>
@@ -239,9 +239,9 @@ const BookkeeperDashboard: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Overdue</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">{t('bookkeeper.overdue') || 'Overdue'}</p>
               <p className="text-3xl font-extrabold text-gray-900">{overdueInvoices.length}</p>
-              <p className="text-xs text-gray-500 mt-2">Require attention</p>
+              <p className="text-xs text-gray-500 mt-2">{t('bookkeeper.requireAttention') || 'Require attention'}</p>
             </div>
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-br from-red-200 to-rose-200 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
           </div>

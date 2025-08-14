@@ -220,10 +220,10 @@ const TherapistDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {user?.first_name}
+                {t('dashboard.welcome')}, {user?.first_name}
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Here's your practice overview for today
+                {t('therapist.dashboardSubtitle')}
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -231,7 +231,7 @@ const TherapistDashboard: React.FC = () => {
                 to="/therapist/appointments/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Schedule Appointment
+                {t('therapist.scheduleAppointment')}
               </Link>
             </div>
           </div>
@@ -240,7 +240,7 @@ const TherapistDashboard: React.FC = () => {
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            title="Active Clients"
+            title={t('therapist.myClients')}
             value={metrics.totalClients}
             icon={UsersIcon}
             iconColor="bg-blue-600"
@@ -248,7 +248,7 @@ const TherapistDashboard: React.FC = () => {
             isLoading={isLoading}
           />
           <MetricCard
-            title="Today's Appointments"
+            title={t('therapist.todayAppointments')}
             value={metrics.todayAppointments}
             subtitle={`${todayAppointments.length} scheduled`}
             icon={CalendarIcon}
@@ -257,16 +257,16 @@ const TherapistDashboard: React.FC = () => {
             isLoading={isLoading}
           />
           <MetricCard
-            title="This Week"
+            title={t('dashboard.thisWeek') || 'This Week'}
             value={metrics.weeklyAppointments}
-            subtitle="appointments"
+            subtitle={t('nav.appointments').toLowerCase()}
             icon={ClockIcon}
             iconColor="bg-purple-600"
             link="/therapist/calendar"
             isLoading={isLoading}
           />
           <MetricCard
-            title="Monthly Revenue"
+            title={t('therapist.monthlyRevenue')}
             value={`€${metrics.monthlyRevenue.toLocaleString()}`}
             icon={CurrencyEuroIcon}
             iconColor="bg-orange-600"
@@ -279,12 +279,12 @@ const TherapistDashboard: React.FC = () => {
           {/* Today's Schedule */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Today's Schedule</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('therapist.todaySchedule')}</h2>
               <Link 
                 to="/therapist/appointments" 
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                View all
+                {t('dashboard.viewAll')}
               </Link>
             </div>
             
@@ -299,19 +299,19 @@ const TherapistDashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">No appointments scheduled for today</p>
+              <p className="text-gray-500 text-center py-8">{t('therapist.noAppointmentsToday')}</p>
             )}
           </div>
 
           {/* Recent Activity */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.recentActivity')}</h2>
               <Link 
                 to="/therapist/activity" 
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                View all
+                {t('dashboard.viewAll')}
               </Link>
             </div>
             

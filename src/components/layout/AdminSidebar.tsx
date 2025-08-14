@@ -38,89 +38,89 @@ const AdminSidebar: React.FC = () => {
 
   const menuItems: MenuItem[] = [
     {
-      label: 'Dashboard',
+      label: t('nav.dashboard'),
       icon: HomeIcon,
       path: '/admin/dashboard'
     },
     {
-      label: 'Agenda',
+      label: t('nav.calendar'),
       icon: CalendarIcon,
       children: [
-        { label: 'My Agenda', icon: CalendarIcon, path: '/admin/agenda/my' },
-        { label: 'Full Practice Agenda', icon: CalendarIcon, path: '/admin/agenda/full' }
+        { label: t('nav.myAgenda') || 'My Agenda', icon: CalendarIcon, path: '/admin/agenda/my' },
+        { label: t('nav.fullPracticeAgenda') || 'Full Practice Agenda', icon: CalendarIcon, path: '/admin/agenda/full' }
       ]
     },
     {
-      label: 'Client Management',
+      label: t('nav.clients'),
       icon: UsersIcon,
       children: [
-        { label: 'Status of New Applications', icon: ClipboardDocumentListIcon, path: '/admin/waiting-list' },
-        { label: 'Add Client', icon: UsersIcon, path: '/admin/clients/new' },
-        { label: 'All Clients', icon: UsersIcon, path: '/admin/clients' },
-        { label: 'Client Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/clients/settings' },
-        { label: 'Client Invoices', icon: DocumentTextIcon, path: '/admin/clients/invoices' },
-        { label: 'Client Agreement Forms', icon: DocumentTextIcon, path: '/admin/clients/agreements' },
-        { label: 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/clients/dashboard-settings' },
-        { label: 'Statistics', icon: ChartBarIcon, path: '/admin/clients/statistics' }
+        { label: t('nav.statusNewApplications') || 'Status of New Applications', icon: ClipboardDocumentListIcon, path: '/admin/waiting-list' },
+        { label: t('nav.addClient') || 'Add Client', icon: UsersIcon, path: '/admin/clients/new' },
+        { label: t('nav.allClients') || 'All Clients', icon: UsersIcon, path: '/admin/clients' },
+        { label: t('nav.clientDashboardSettings') || 'Client Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/clients/settings' },
+        { label: t('nav.clientInvoices') || 'Client Invoices', icon: DocumentTextIcon, path: '/admin/clients/invoices' },
+        { label: t('nav.clientAgreementForms') || 'Client Agreement Forms', icon: DocumentTextIcon, path: '/admin/clients/agreements' },
+        { label: t('nav.dashboardSettings') || 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/clients/dashboard-settings' },
+        { label: t('nav.statistics') || 'Statistics', icon: ChartBarIcon, path: '/admin/clients/statistics' }
       ]
     },
     {
-      label: 'Therapist Management',
+      label: t('nav.therapists'),
       icon: UserGroupIcon,
       children: [
-        { label: 'Status of In/Out Offices', icon: BuildingOfficeIcon, path: '/admin/therapists/status' },
-        { label: 'All Therapists', icon: UserGroupIcon, path: '/admin/therapists' },
-        { label: 'Add Therapist', icon: UserGroupIcon, path: '/admin/therapists/new' },
-        { label: 'Therapist Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/therapists/settings' },
-        { label: 'Therapist Invoices', icon: DocumentTextIcon, path: '/admin/therapists/invoices' },
-        { label: 'Therapist Contracts', icon: DocumentTextIcon, path: '/admin/therapists/contracts' },
-        { label: 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/therapists/dashboard-settings' },
-        { label: 'Statistics', icon: ChartBarIcon, path: '/admin/therapists/statistics' }
+        { label: t('nav.statusInOutOffices') || 'Status of In/Out Offices', icon: BuildingOfficeIcon, path: '/admin/therapists/status' },
+        { label: t('nav.allTherapists') || 'All Therapists', icon: UserGroupIcon, path: '/admin/therapists' },
+        { label: t('nav.addTherapist') || 'Add Therapist', icon: UserGroupIcon, path: '/admin/therapists/new' },
+        { label: t('nav.therapistDashboardSettings') || 'Therapist Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/therapists/settings' },
+        { label: t('nav.therapistInvoices') || 'Therapist Invoices', icon: DocumentTextIcon, path: '/admin/therapists/invoices' },
+        { label: t('nav.therapistContracts') || 'Therapist Contracts', icon: DocumentTextIcon, path: '/admin/therapists/contracts' },
+        { label: t('nav.dashboardSettings') || 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/therapists/dashboard-settings' },
+        { label: t('nav.statistics') || 'Statistics', icon: ChartBarIcon, path: '/admin/therapists/statistics' }
       ]
     },
     {
-      label: 'Financial Management',
+      label: t('nav.financial'),
       icon: CurrencyEuroIcon,
       children: [
-        { label: 'Total Revenue Dashboard', icon: ChartBarIcon, path: '/admin/financial' },
-        { label: 'Total Client Revenue', icon: CurrencyEuroIcon, path: '/admin/financial/client-revenue' },
-        { label: 'Total Therapist Cost', icon: CurrencyEuroIcon, path: '/admin/financial/therapist-cost' },
-        { label: 'All Unpaid Invoices', icon: DocumentTextIcon, path: '/admin/financial/unpaid-invoices' },
-        { label: 'Invoice Settings', icon: Cog6ToothIcon, path: '/admin/financial/invoice-settings' },
-        { label: 'Settings', icon: Cog6ToothIcon, path: '/admin/financial/settings' },
-        { label: 'Statistics', icon: ChartBarIcon, path: '/admin/financial/statistics' }
+        { label: t('nav.totalRevenueDashboard') || 'Total Revenue Dashboard', icon: ChartBarIcon, path: '/admin/financial' },
+        { label: t('nav.totalClientRevenue') || 'Total Client Revenue', icon: CurrencyEuroIcon, path: '/admin/financial/client-revenue' },
+        { label: t('nav.totalTherapistCost') || 'Total Therapist Cost', icon: CurrencyEuroIcon, path: '/admin/financial/therapist-cost' },
+        { label: t('nav.allUnpaidInvoices') || 'All Unpaid Invoices', icon: DocumentTextIcon, path: '/admin/financial/unpaid-invoices' },
+        { label: t('nav.invoiceSettings') || 'Invoice Settings', icon: Cog6ToothIcon, path: '/admin/financial/invoice-settings' },
+        { label: t('nav.settings'), icon: Cog6ToothIcon, path: '/admin/financial/settings' },
+        { label: t('nav.statistics') || 'Statistics', icon: ChartBarIcon, path: '/admin/financial/statistics' }
       ]
     },
     {
-      label: 'Message Center',
+      label: t('nav.messageCenter') || 'Message Center',
       icon: ChatBubbleLeftRightIcon,
       children: [
-        { label: 'My Messages', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/my' },
-        { label: 'Full Messages', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/all' },
-        { label: 'Send Message', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/new' },
-        { label: 'Send E-mail', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/email' },
-        { label: 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/messages/settings' }
+        { label: t('nav.myMessages') || 'My Messages', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/my' },
+        { label: t('nav.fullMessages') || 'Full Messages', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/all' },
+        { label: t('nav.sendMessage') || 'Send Message', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/new' },
+        { label: t('nav.sendEmail') || 'Send E-mail', icon: ChatBubbleLeftRightIcon, path: '/admin/messages/email' },
+        { label: t('nav.dashboardSettings') || 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/messages/settings' }
       ]
     },
     {
-      label: 'Phonebook',
+      label: t('nav.phonebook') || 'Phonebook',
       icon: PhoneIcon,
       children: [
-        { label: 'Add Contacts', icon: PhoneIcon, path: '/admin/phonebook/add' },
-        { label: 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/phonebook/settings' }
+        { label: t('nav.addContacts') || 'Add Contacts', icon: PhoneIcon, path: '/admin/phonebook/add' },
+        { label: t('nav.dashboardSettings') || 'Dashboard Settings', icon: Cog6ToothIcon, path: '/admin/phonebook/settings' }
       ]
     },
     {
-      label: 'Educational Resources',
+      label: t('nav.educationalResources') || 'Educational Resources',
       icon: BookOpenIcon,
       children: [
-        { label: 'Resource Library', icon: BookOpenIcon, path: '/admin/resources' },
-        { label: 'Challenges', icon: PuzzlePieceIcon, path: '/admin/challenges' },
-        { label: 'Surveys', icon: ClipboardDocumentCheckIcon, path: '/admin/surveys' }
+        { label: t('nav.resourceLibrary') || 'Resource Library', icon: BookOpenIcon, path: '/admin/resources' },
+        { label: t('nav.challenges'), icon: PuzzlePieceIcon, path: '/admin/challenges' },
+        { label: t('nav.surveys'), icon: ClipboardDocumentCheckIcon, path: '/admin/surveys' }
       ]
     },
     {
-      label: 'Admin Company Settings',
+      label: t('nav.adminCompanySettings') || 'Admin Company Settings',
       icon: Cog6ToothIcon,
       path: '/admin/company-settings'
     }
@@ -199,9 +199,16 @@ const AdminSidebar: React.FC = () => {
   return (
     <aside className="w-64 bg-white shadow-sm h-full overflow-y-auto">
       <div className="p-4">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900">PraktijkEPD</h2>
-          <p className="text-sm text-gray-600">Admin Portal</p>
+        <div className="mb-8 flex items-center space-x-3">
+          <img 
+            src="https://res.cloudinary.com/dizbrnm2l/image/upload/v1755154559/PraktijkEPD-3-logoo_jlagdx.svg"
+            alt="PraktijkEPD Logo"
+            className="w-10 h-10"
+          />
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">{t('company.name')}</h2>
+            <p className="text-sm text-gray-600">{t('dashboard.adminPortal') || 'Admin Portal'}</p>
+          </div>
         </div>
         
         <nav className="space-y-1">
