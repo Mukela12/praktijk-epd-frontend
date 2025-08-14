@@ -30,7 +30,7 @@ interface ProgressCardProps {
 }
 
 const ProgressCard: React.FC<ProgressCardProps> = ({ title, value, total, icon: Icon, color }) => {
-  const percentage = Math.round((value / total) * 100);
+  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
   
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -43,17 +43,23 @@ const ProgressCard: React.FC<ProgressCardProps> = ({ title, value, total, icon: 
           <span className="text-2xl font-bold text-gray-900">{value}</span>
           <span className="text-sm text-gray-500">of {total}</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full transition-all duration-500 ${
-              percentage >= 80 ? 'bg-green-500' : 
-              percentage >= 50 ? 'bg-yellow-500' : 
-              'bg-red-500'
-            }`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-        <p className="text-xs text-gray-500">{percentage}% complete</p>
+        {total > 0 ? (
+          <>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  percentage >= 80 ? 'bg-green-500' : 
+                  percentage >= 50 ? 'bg-yellow-500' : 
+                  'bg-red-500'
+                }`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">{percentage}% complete</p>
+          </>
+        ) : (
+          <p className="text-xs text-gray-500">No data available</p>
+        )}
       </div>
     </div>
   );
@@ -100,7 +106,10 @@ const ClientDashboard: React.FC = () => {
     totalSessions: 0,
     completedSessions: 0,
     upcomingAppointments: 0,
-    treatmentProgress: 0
+    treatmentProgress: 0,
+    wellnessScore: 0,
+    resourcesCompleted: 0,
+    totalResources: 0
   });
   const [hasCompletedIntake, setHasCompletedIntake] = useState(true);
 
@@ -117,10 +126,13 @@ const ClientDashboard: React.FC = () => {
             totalSessions: dashboardResult.totalSessions || 0,
             completedSessions: dashboardResult.completedSessions || 0,
             upcomingAppointments: dashboardResult.upcomingAppointments || 0,
-            treatmentProgress: dashboardResult.treatmentProgress || 0
+            treatmentProgress: dashboardResult.treatmentProgress || 0,
+            wellnessScore: dashboardResult.wellnessScore || 0,
+            resourcesCompleted: dashboardResult.resourcesCompleted || 0,
+            totalResources: dashboardResult.totalResources || 0
           });
-          // Check if intake form is completed (mock for now - should come from API)
-          setHasCompletedIntake(dashboardResult.hasCompletedIntake ?? false);
+          // Check if intake form is completed
+          setHasCompletedIntake(dashboardResult.hasCompletedIntake !== false);
         }
         
         // Load appointments separately
@@ -301,15 +313,15 @@ const ClientDashboard: React.FC = () => {
           />
           <ProgressCard
             title="Wellness Score"
-            value={75}
+            value={metrics.wellnessScore}
             total={100}
             icon={HeartIcon}
             color="text-red-600"
           />
           <ProgressCard
             title="Resources Completed"
-            value={12}
-            total={20}
+            value={metrics.resourcesCompleted}
+            total={metrics.totalResources}
             icon={ClipboardDocumentCheckIcon}
             color="text-green-600"
           />
@@ -438,22 +450,25 @@ const ClientDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Wellness Tips */}
-        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Wellness Tip</h2>
-          <div className="bg-white rounded-lg p-4">
-            <p className="text-gray-700">
-              Remember to practice the breathing exercises we discussed. Taking just 5 minutes for 
-              mindful breathing can significantly reduce stress and improve your mood throughout the day.
-            </p>
-            <Link 
-              to="/client/resources/breathing-exercises"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 inline-block"
-            >
-              Learn more →
-            </Link>
+        {/* Wellness Tips - Only show if we have data */}
+        {dashboardData?.wellnessTip && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Wellness Tip</h2>
+            <div className="bg-white rounded-lg p-4">
+              <p className="text-gray-700">
+                {dashboardData.wellnessTip}
+              </p>
+              {dashboardData.wellnessTipLink && (
+                <Link 
+                  to={dashboardData.wellnessTipLink}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 inline-block"
+                >
+                  Learn more →
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </PageTransition>
   );
