@@ -13,16 +13,23 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   DocumentTextIcon,
-  CalendarIcon
+  CalendarIcon,
+  HeartIcon,
+  PuzzlePieceIcon,
+  PlusIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useTherapistDashboard } from '@/hooks/useApi';
+import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useAlert } from '@/components/ui/CustomAlert';
 
 const TherapistProfile: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
+  const { success, error } = useAlert();
   
   // API hooks
   const { getProfile, updateProfile, isLoading } = useTherapistDashboard();
@@ -32,6 +39,12 @@ const TherapistProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<any>({});
   const [activeTab, setActiveTab] = useState<'personal' | 'professional' | 'schedule' | 'financial'>('personal');
+  
+  // Therapies and psychological problems from admin
+  const [availableTherapies, setAvailableTherapies] = useState<any[]>([]);
+  const [availableProblems, setAvailableProblems] = useState<any[]>([]);
+  const [loadingTherapies, setLoadingTherapies] = useState(false);
+  const [loadingProblems, setLoadingProblems] = useState(false);
 
   // Load profile data
   useEffect(() => {
@@ -54,7 +67,9 @@ const TherapistProfile: React.FC = () => {
             date_of_birth: (profileData as any).dateOfBirth || '1985-03-15',
             license_number: (profileData as any).licenseNumber || 'NL-PSY-2019-0234',
             license_expiry: (profileData as any).licenseExpiry || '2025-03-15',
-            specialization: (profileData as any).specializations || (profileData as any).specialization || 'Clinical Psychology',
+            // Changed from specialization to therapies and psychologicalProblems
+            therapies: (profileData as any).therapies || (profileData as any).specializations || [],
+            psychologicalProblems: (profileData as any).psychological_problems || (profileData as any).psychologicalProblems || [],
             bio: (profileData as any).bio || 'Experienced therapist specializing in cognitive behavioral therapy and trauma treatment.',
             education: (profileData as any).education || [
               {
@@ -63,7 +78,7 @@ const TherapistProfile: React.FC = () => {
                 year: '2010'
               }
             ],
-            certifications: (profileData as any).certifications || (profileData as any).specializations || [
+            certifications: (profileData as any).certifications || [
               'Cognitive Behavioral Therapy (CBT)',
               'EMDR Therapy',
               'Trauma-Focused Therapy'
@@ -93,7 +108,8 @@ const TherapistProfile: React.FC = () => {
             email: user.email,
             phone: '+31 6 1234 5678',
             address: 'Hoofdstraat 123, 1234 AB Amsterdam',
-            specialization: 'Clinical Psychology',
+            therapies: [],
+            psychologicalProblems: [],
             status: 'active',
             bio: 'Experienced therapist specializing in cognitive behavioral therapy.',
             education: [],
@@ -118,26 +134,55 @@ const TherapistProfile: React.FC = () => {
     loadProfile();
   }, [getProfile, user, getDisplayName]);
 
+  // Load available therapies and problems from admin
+  useEffect(() => {
+    const loadAdminLists = async () => {
+      try {
+        setLoadingTherapies(true);
+        setLoadingProblems(true);
+        
+        // Load therapies
+        const therapiesResponse = await realApiService.admin.getTherapies();
+        if (therapiesResponse.success && therapiesResponse.data) {
+          setAvailableTherapies(therapiesResponse.data.filter((t: any) => t.isActive));
+        }
+        
+        // Load psychological problems
+        const problemsResponse = await realApiService.admin.getPsychologicalProblems();
+        if (problemsResponse.success && problemsResponse.data) {
+          setAvailableProblems(problemsResponse.data.filter((p: any) => p.isActive));
+        }
+      } catch (err) {
+        console.error('Failed to load admin lists:', err);
+      } finally {
+        setLoadingTherapies(false);
+        setLoadingProblems(false);
+      }
+    };
+
+    if (isEditing) {
+      loadAdminLists();
+    }
+  }, [isEditing]);
+
   const handleSave = async () => {
     try {
       // Save profile using real API
-      const updatedProfile = await updateProfile(editedProfile);
+      const updatedProfile = await updateProfile({
+        ...editedProfile,
+        therapies: editedProfile.therapies,
+        psychological_problems: editedProfile.psychologicalProblems
+      });
       
       if (updatedProfile) {
         setProfile(editedProfile);
         setIsEditing(false);
-        console.log('Profile saved successfully:', editedProfile);
+        success('Profile saved successfully');
       } else {
-        console.error('Failed to save profile');
-        // Still update local state for better UX
-        setProfile(editedProfile);
-        setIsEditing(false);
+        error('Failed to save profile');
       }
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      // Still update local state for better UX
-      setProfile(editedProfile);
-      setIsEditing(false);
+    } catch (err) {
+      error('Error saving profile');
     }
   };
 
@@ -163,6 +208,40 @@ const TherapistProfile: React.FC = () => {
           [field]: value
         }
       }
+    }));
+  };
+
+  const handleAddTherapy = (therapyId: string) => {
+    const therapy = availableTherapies.find(t => t.id === therapyId);
+    if (therapy && !editedProfile.therapies.some((t: any) => t.id === therapyId)) {
+      setEditedProfile((prev: any) => ({
+        ...prev,
+        therapies: [...prev.therapies, therapy]
+      }));
+    }
+  };
+
+  const handleRemoveTherapy = (therapyId: string) => {
+    setEditedProfile((prev: any) => ({
+      ...prev,
+      therapies: prev.therapies.filter((t: any) => t.id !== therapyId)
+    }));
+  };
+
+  const handleAddProblem = (problemId: string) => {
+    const problem = availableProblems.find(p => p.id === problemId);
+    if (problem && !editedProfile.psychologicalProblems.some((p: any) => p.id === problemId)) {
+      setEditedProfile((prev: any) => ({
+        ...prev,
+        psychologicalProblems: [...prev.psychologicalProblems, problem]
+      }));
+    }
+  };
+
+  const handleRemoveProblem = (problemId: string) => {
+    setEditedProfile((prev: any) => ({
+      ...prev,
+      psychologicalProblems: prev.psychologicalProblems.filter((p: any) => p.id !== problemId)
     }));
   };
 
@@ -272,7 +351,11 @@ const TherapistProfile: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{profile.name}</h3>
-                  <p className="text-sm text-gray-500">{profile.specialization}</p>
+                  <p className="text-sm text-gray-500">
+                    {profile.therapies && profile.therapies.length > 0 
+                      ? profile.therapies.map((t: any) => t.name || t).join(', ')
+                      : 'No therapies selected'}
+                  </p>
                   <div className="flex items-center mt-2 space-x-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                       profile.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -284,7 +367,7 @@ const TherapistProfile: React.FC = () => {
                 </div>
               </div>
 
-              {/* Personal Details */}
+              {/* Personal Details - Same as before */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
@@ -413,9 +496,109 @@ const TherapistProfile: React.FC = () => {
                 </div>
               </div>
 
-              {/* Specializations */}
+              {/* Therapies (replaced Specializations) */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Specializations & Certifications</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Therapieën</h3>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {editedProfile.therapies?.map((therapy: any) => (
+                        <div key={therapy.id || therapy} className="flex items-center space-x-2 p-2 bg-purple-100 border border-purple-200 rounded-lg">
+                          <HeartIcon className="w-4 h-4 text-purple-600" />
+                          <span className="text-sm font-medium text-purple-900">{therapy.name || therapy}</span>
+                          <button
+                            onClick={() => handleRemoveTherapy(therapy.id || therapy)}
+                            className="text-purple-600 hover:text-purple-800"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {loadingTherapies ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      <select
+                        onChange={(e) => e.target.value && handleAddTherapy(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        value=""
+                      >
+                        <option value="">Select a therapy to add...</option>
+                        {availableTherapies
+                          .filter(t => !editedProfile.therapies?.some((et: any) => (et.id || et) === t.id))
+                          .map(therapy => (
+                            <option key={therapy.id} value={therapy.id}>
+                              {therapy.name} - {therapy.category}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {profile.therapies?.map((therapy: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <HeartIcon className="w-4 h-4 text-purple-500" />
+                        <span className="text-sm font-medium text-purple-900">{therapy.name || therapy}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Psychological Problems (Hulpvragen) */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Hulpvragen (Psychological Problems)</h3>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {editedProfile.psychologicalProblems?.map((problem: any) => (
+                        <div key={problem.id || problem} className="flex items-center space-x-2 p-2 bg-indigo-100 border border-indigo-200 rounded-lg">
+                          <PuzzlePieceIcon className="w-4 h-4 text-indigo-600" />
+                          <span className="text-sm font-medium text-indigo-900">{problem.name || problem}</span>
+                          <button
+                            onClick={() => handleRemoveProblem(problem.id || problem)}
+                            className="text-indigo-600 hover:text-indigo-800"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {loadingProblems ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      <select
+                        onChange={(e) => e.target.value && handleAddProblem(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        value=""
+                      >
+                        <option value="">Select a psychological problem to add...</option>
+                        {availableProblems
+                          .filter(p => !editedProfile.psychologicalProblems?.some((ep: any) => (ep.id || ep) === p.id))
+                          .map(problem => (
+                            <option key={problem.id} value={problem.id}>
+                              {problem.name} - {problem.category} ({problem.severity})
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {profile.psychologicalProblems?.map((problem: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        <PuzzlePieceIcon className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-medium text-indigo-900">{problem.name || problem}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Certifications */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Certifications</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {profile.certifications.map((cert: string, index: number) => (
                     <div key={index} className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -444,6 +627,7 @@ const TherapistProfile: React.FC = () => {
             </div>
           )}
 
+          {/* Schedule and Financial tabs remain the same */}
           {activeTab === 'schedule' && (
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900">Weekly Schedule</h3>
@@ -543,7 +727,7 @@ const TherapistProfile: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   ) : (
-                    <p className="text-gray-900 font-mono">{profile.bank_account}</p>
+                    <p className="text-gray-900 font-mono">{profile.bank_account || 'Not provided'}</p>
                   )}
                 </div>
 
@@ -557,7 +741,7 @@ const TherapistProfile: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   ) : (
-                    <p className="text-gray-900 font-mono">{profile.tax_number}</p>
+                    <p className="text-gray-900 font-mono">{profile.tax_number || 'Not provided'}</p>
                   )}
                 </div>
 
@@ -571,7 +755,7 @@ const TherapistProfile: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     />
                   ) : (
-                    <p className="text-gray-900 font-mono">{profile.chamber_of_commerce}</p>
+                    <p className="text-gray-900 font-mono">{profile.chamber_of_commerce || 'Not provided'}</p>
                   )}
                 </div>
               </div>

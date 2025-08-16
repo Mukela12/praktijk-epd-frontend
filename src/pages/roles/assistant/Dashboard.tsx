@@ -38,7 +38,7 @@ const AssistantDashboard: React.FC = () => {
       try {
         setIsLoading(true);
         const [appointmentsResponse, clientsResponse, messagesResponse] = await Promise.all([
-          realApiService.appointments.getAll(),
+          realApiService.assistant.getAppointments(),
           realApiService.clients.getAll(),
           realApiService.messages.getInbox(user?.id || '1')
         ]);

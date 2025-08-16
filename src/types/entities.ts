@@ -239,6 +239,9 @@ export interface Challenge extends BaseEntity {
   tasks: ChallengeTask[];
   created_by: string;
   tags?: string[];
+  rewards?: string;
+  instructions?: string;
+  tips?: string;
 }
 
 export interface ChallengeTask {

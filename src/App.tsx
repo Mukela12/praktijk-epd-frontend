@@ -28,6 +28,7 @@ import ClientDashboard from '@/pages/roles/client/Dashboard';
 // Admin Components
 import AgendaPage from '@/pages/roles/admin/agenda/AgendaPage';
 import AllClients from '@/pages/roles/admin/client-management/AllClients';
+import ClientManagement from '@/pages/roles/admin/client-management/ClientManagement';
 import AllTherapists from '@/pages/roles/admin/therapist-management/AllTherapists';
 import FinancialDashboard from '@/pages/roles/admin/financial-management/FinancialDashboard';
 import WaitingListManagement from '@/pages/roles/admin/waiting-list/WaitingListManagement';
@@ -37,7 +38,11 @@ import AdminSettings from '@/pages/roles/admin/settings/AdminSettings';
 import ResourcesManagement from '@/pages/roles/admin/resources/ResourcesManagement';
 import ChallengesManagement from '@/pages/roles/admin/challenges/ChallengesManagement';
 import SurveysManagement from '@/pages/roles/admin/surveys/SurveysManagement';
+import TherapiesManagement from '@/pages/roles/admin/therapies/TherapiesManagement';
+import PsychologicalProblemsManagement from '@/pages/roles/admin/psychological-problems/PsychologicalProblemsManagement';
 import AddressChangeManagement from '@/pages/roles/admin/AddressChangeManagement';
+import UserManagement from '@/pages/roles/admin/user-management/UserManagement';
+import AdminAppointmentsManagement from '@/pages/roles/admin/appointments/AppointmentsManagement';
 
 // Therapist Components
 import TherapistCalendar from '@/pages/roles/therapist/calendar/TherapistCalendar';
@@ -48,6 +53,7 @@ import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSetting
 import TherapistChallengesManagement from '@/pages/roles/therapist/challenges/ChallengesManagement';
 import TherapistSurveysManagement from '@/pages/roles/therapist/surveys/SurveysManagement';
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
+import TreatmentCodesManagement from '@/pages/roles/therapist/treatment-codes/TreatmentCodesManagement';
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
@@ -87,6 +93,8 @@ import ClientProfile from '@/pages/roles/client/profile/ClientProfile';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import RoleRedirect from '@/components/auth/RoleRedirect';
+import ErrorBoundary from '@/components/error/ErrorBoundary';
+import NetworkErrorHandler from '@/components/error/NetworkErrorHandler';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -140,11 +148,34 @@ const App: React.FC = () => {
       }
     };
 
-    initAuth();
-  }, [refreshAuth, user, authenticationState]);
+    // Add a small delay to prevent immediate API calls that might fail
+    const timer = setTimeout(() => {
+      initAuth();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []); // Remove dependencies to prevent infinite loops
 
-  // Show loading spinner during authentication
-  if (authenticationState === AuthenticationState.AUTHENTICATING) {
+  // Add a loading timeout
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
+  
+  React.useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
+    if (authenticationState === AuthenticationState.AUTHENTICATING) {
+      // Set a 3-second timeout for authentication
+      timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 3000);
+    } else {
+      setLoadingTimeout(false);
+    }
+    
+    return () => clearTimeout(timeout);
+  }, [authenticationState]);
+
+  // Show loading spinner during authentication (with timeout)
+  if (authenticationState === AuthenticationState.AUTHENTICATING && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="large" />
@@ -153,12 +184,14 @@ const App: React.FC = () => {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
-        <LanguageProvider>
-          <NotificationInitializer />
-          <Router>
-          <div className="App">
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <NotificationProvider>
+          <NetworkErrorHandler>
+            <LanguageProvider>
+              <NotificationInitializer />
+              <Router>
+              <div className="App">
             <Routes>
               {/* Auth routes - Only render when on auth paths */}
               <Route 
@@ -223,7 +256,10 @@ const App: React.FC = () => {
                         <Route path="" element={<AdminDashboard />} />
                         <Route path="dashboard" element={<AdminDashboard />} />
                         <Route path="agenda" element={<AgendaPage />} />
+                        <Route path="users" element={<UserManagement />} />
+                        <Route path="appointments" element={<AdminAppointmentsManagement />} />
                         <Route path="clients" element={<AllClients />} />
+                        <Route path="client-management" element={<ClientManagement />} />
                         <Route path="therapists" element={<AllTherapists />} />
                         <Route path="financial" element={<FinancialDashboard />} />
                         <Route path="waiting-list" element={<WaitingListManagement />} />
@@ -232,6 +268,8 @@ const App: React.FC = () => {
                         <Route path="resources" element={<ResourcesManagement />} />
                         <Route path="challenges" element={<ChallengesManagement />} />
                         <Route path="surveys" element={<SurveysManagement />} />
+                        <Route path="therapies" element={<TherapiesManagement />} />
+                        <Route path="psychological-problems" element={<PsychologicalProblemsManagement />} />
                         <Route path="address-changes" element={<AddressChangeManagement />} />
                         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                       </Routes>
@@ -251,6 +289,7 @@ const App: React.FC = () => {
                         <Route path="agenda" element={<TherapistCalendar />} />
                         <Route path="clients" element={<TherapistClients />} />
                         <Route path="appointments" element={<TherapistAppointments />} />
+                        <Route path="treatment-codes" element={<TreatmentCodesManagement />} />
                         <Route path="messages" element={<TherapistMessages />} />
                         <Route path="profile" element={<TherapistProfile />} />
                         <Route path="invoices" element={<TherapistInvoices />} />
@@ -360,11 +399,13 @@ const App: React.FC = () => {
             </Routes>
 
             
-          </div>
-        </Router>
-        </LanguageProvider>
-      </NotificationProvider>
-    </QueryClientProvider>
+              </div>
+            </Router>
+            </LanguageProvider>
+          </NetworkErrorHandler>
+        </NotificationProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

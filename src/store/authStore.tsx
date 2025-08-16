@@ -251,6 +251,23 @@ export const useAuthStore = create<AuthStore>()(
             return 'email_not_verified';
           }
           
+          // Check if account is locked (423 status)
+          if (error.response?.status === 423) {
+            set({ 
+              authenticationState: AuthenticationState.ERROR,
+              error: errorMessage || 'Account is temporarily locked',
+              // Legacy support
+              isLoading: false,
+              requiresTwoFactor: false
+            });
+            PremiumNotifications.error(errorMessage || 'Account is temporarily locked. Please try again later or contact support.', {
+              title: 'Account Locked',
+              duration: 10000
+            });
+            // Don't re-throw for 423, just return false
+            return false;
+          }
+          
           set({ 
             authenticationState: AuthenticationState.ERROR,
             error: errorMessage,

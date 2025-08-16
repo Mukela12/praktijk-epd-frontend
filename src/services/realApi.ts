@@ -99,6 +99,22 @@ class RequestManager {
       }
     }
   }
+
+  clearRelatedCache(endpoint: string): void {
+    // Clear cache for related endpoints when data is mutated
+    const relatedEndpoints: Record<string, string[]> = {
+      '/resources': ['/resources', '/admin/dashboard', '/therapist/dashboard'],
+      '/challenges': ['/challenges', '/admin/dashboard'],
+      '/surveys': ['/surveys', '/admin/dashboard'],
+      '/admin/users': ['/admin/users', '/admin/clients', '/admin/dashboard'],
+      '/admin/clients': ['/admin/clients', '/admin/dashboard', '/therapist/clients'],
+      '/appointments': ['/appointments', '/admin/appointments', '/therapist/appointments', '/client/appointments'],
+      '/invoices': ['/invoices', '/bookkeeper/invoices', '/admin/financial']
+    };
+
+    const toClear = relatedEndpoints[endpoint] || [endpoint];
+    toClear.forEach(ep => this.clearEndpointCache(ep));
+  }
 }
 
 const requestManager = new RequestManager();
@@ -289,7 +305,7 @@ export const realApiService = {
   // Health check
   health: {
     check: async (): Promise<{ status: string; timestamp: string; uptime: number; environment: string }> => {
-      const response = await api.get('/health', { baseURL: 'http://localhost:3000' });
+      const response = await api.get('/health', { baseURL: 'https://praktijk-epd-backend-production.up.railway.app' });
       return response.data;
     }
   },
@@ -333,11 +349,17 @@ export const realApiService = {
       phone?: string;
     }): Promise<ApiResponse<{ id: string }>> => {
       const response = await api.post('/admin/users', userData);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/users');
+      }
       return response.data;
     },
 
     updateUser: async (userId: string, updates: any): Promise<ApiResponse<any>> => {
       const response = await api.put(`/admin/users/${userId}`, updates);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/users');
+      }
       return response.data;
     },
 
@@ -378,6 +400,141 @@ export const realApiService = {
     // Reports (✅ WORKING)
     getReports: async (reportType: string, params?: any): Promise<ApiResponse<any>> => {
       const response = await api.get('/admin/reports', { params: { reportType, ...params } });
+      return response.data;
+    },
+    
+    // Therapies Management
+    getTherapies: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/therapies');
+      return response.data;
+    },
+    
+    createTherapy: async (data: any): Promise<ApiResponse<{ id: string }>> => {
+      const response = await api.post('/admin/therapies', data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/therapies');
+      }
+      return response.data;
+    },
+    
+    updateTherapy: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/therapies/${id}`, data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/therapies');
+      }
+      return response.data;
+    },
+    
+    deleteTherapy: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/admin/therapies/${id}`);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/therapies');
+      }
+      return response.data;
+    },
+    
+    // Psychological Problems Management
+    getPsychologicalProblems: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/psychological-problems');
+      return response.data;
+    },
+    
+    createPsychologicalProblem: async (data: any): Promise<ApiResponse<{ id: string }>> => {
+      const response = await api.post('/admin/psychological-problems', data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/psychological-problems');
+      }
+      return response.data;
+    },
+    
+    updatePsychologicalProblem: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/psychological-problems/${id}`, data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/psychological-problems');
+      }
+      return response.data;
+    },
+    
+    deletePsychologicalProblem: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/admin/psychological-problems/${id}`);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/psychological-problems');
+      }
+      return response.data;
+    },
+    
+    // Resources Management
+    getResources: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/resources');
+      return response.data;
+    },
+    
+    createResource: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/admin/resources', data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/resources');
+      }
+      return response.data;
+    },
+    
+    updateResource: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/resources/${id}`, data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/resources');
+      }
+      return response.data;
+    },
+    
+    deleteResource: async (id: string): Promise<ApiResponse<void>> => {
+      const response = await api.delete(`/admin/resources/${id}`);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/resources');
+      }
+      return response.data;
+    },
+
+    // Appointment Requests Management
+    getAppointmentRequests: async (): Promise<ApiResponse<{ requests: any[] }>> => {
+      const response = await api.get('/admin/appointment-requests');
+      return response.data;
+    },
+
+    // Therapist Assignment
+    assignTherapist: async (data: {
+      clientId: string;
+      therapistId: string;
+      appointmentRequestId?: string;
+      notes?: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/admin/assign-therapist', data);
+      return response.data;
+    },
+
+    // Smart Pairing
+    getSmartPairingRecommendations: async (params: {
+      clientId: string;
+      appointmentDate?: string;
+      appointmentTime?: string;
+      therapyType?: string;
+      urgencyLevel?: string;
+    }): Promise<ApiResponse<{ recommendations: any[] }>> => {
+      const response = await api.get('/admin/smart-pairing/recommendations', { params });
+      return response.data;
+    },
+
+    // Sessions Management
+    getSessions: async (params?: {
+      startDate?: string;
+      endDate?: string;
+      therapistId?: string;
+      clientId?: string;
+    }): Promise<ApiResponse<{ sessions: any[] }>> => {
+      const response = await api.get('/admin/sessions', { params });
+      return response.data;
+    },
+
+    getSessionStatistics: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/sessions/statistics');
       return response.data;
     }
   },
@@ -473,6 +630,18 @@ export const realApiService = {
     // Availability (✅ WORKING)
     getAvailability: async (): Promise<ApiResponse<any>> => {
       const response = await api.get('/therapist/availability');
+      return response.data;
+    },
+    
+    // Get available therapies (from admin)
+    getAvailableTherapies: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/therapist/available-therapies');
+      return response.data;
+    },
+    
+    // Get available psychological problems (from admin)
+    getAvailablePsychologicalProblems: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/therapist/available-psychological-problems');
       return response.data;
     }
   },
@@ -648,18 +817,30 @@ export const realApiService = {
       durationMinutes?: number;
     }): Promise<ApiResponse<{ id: string }>> => {
       const response = await api.post('/resources', data);
+      // Clear cache after successful creation
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/resources');
+      }
       return response.data;
     },
     
     // Update resource (✅ WORKING)
     updateResource: async (id: string, data: any): Promise<ApiResponse<any>> => {
       const response = await api.put(`/resources/${id}`, data);
+      // Clear cache after successful update
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/resources');
+      }
       return response.data;
     },
     
     // Delete resource (✅ WORKING)
     deleteResource: async (id: string): Promise<ApiResponse<any>> => {
       const response = await api.delete(`/resources/${id}`);
+      // Clear cache after successful deletion
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/resources');
+      }
       return response.data;
     },
     
@@ -711,18 +892,27 @@ export const realApiService = {
       tips?: string[];
     }): Promise<ApiResponse<{ id: string }>> => {
       const response = await api.post('/challenges', data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/challenges');
+      }
       return response.data;
     },
     
     // Update challenge (✅ WORKING)
     updateChallenge: async (id: string, data: any): Promise<ApiResponse<any>> => {
       const response = await api.put(`/challenges/${id}`, data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/challenges');
+      }
       return response.data;
     },
     
     // Delete challenge (✅ WORKING)
     deleteChallenge: async (id: string): Promise<ApiResponse<any>> => {
       const response = await api.delete(`/challenges/${id}`);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/challenges');
+      }
       return response.data;
     },
     
@@ -798,6 +988,46 @@ export const realApiService = {
     // Get responses (✅ WORKING)
     getResponses: async (id: string): Promise<ApiResponse<any>> => {
       const response = await api.get(`/surveys/${id}/responses`);
+      return response.data;
+    }
+  },
+
+  // Assistant endpoints
+  assistant: {
+    // Dashboard
+    getDashboard: async (): Promise<ApiResponse<any>> => {
+      return managedApiCall('/assistant/dashboard', async () => {
+        const response = await api.get('/assistant/dashboard');
+        return response.data;
+      }, 60000);
+    },
+
+    // Appointments
+    getAppointments: async (params?: { date?: string; status?: string }): Promise<ApiResponse<Appointment[]>> => {
+      return managedApiCall('/assistant/appointments', async () => {
+        const response = await api.get('/assistant/appointments', { params });
+        return response.data;
+      }, 30000);
+    },
+
+    // Clients
+    getClients: async (params?: { status?: string }): Promise<ApiResponse<{ clients: Client[] }>> => {
+      return managedApiCall('/assistant/clients', async () => {
+        const response = await api.get('/assistant/clients', { params });
+        return response.data;
+      }, 60000);
+    },
+
+    // Messages
+    getMessages: async (): Promise<ApiResponse<Message[]>> => {
+      return managedApiCall('/assistant/messages', async () => {
+        const response = await api.get('/assistant/messages');
+        return response.data;
+      }, 30000);
+    },
+
+    sendMessage: async (messageData: any): Promise<ApiResponse<{ id: string }>> => {
+      const response = await api.post('/assistant/messages', messageData);
       return response.data;
     }
   },
@@ -1034,6 +1264,90 @@ export const realApiService = {
 
     markAsRead: async (messageId: string): Promise<ApiResponse> => {
       const response = await api.put(`/messages/${messageId}/read`);
+      return response.data;
+    }
+  },
+
+  // Notifications endpoints
+  notifications: {
+    getNotifications: async (params?: { limit?: number; unreadOnly?: boolean }): Promise<ApiResponse<{ notifications: any[]; unreadCount: number }>> => {
+      const response = await api.get('/notifications', { params });
+      return response.data;
+    },
+
+    markAsRead: async (notificationId: string): Promise<ApiResponse> => {
+      const response = await api.put(`/notifications/${notificationId}/read`);
+      return response.data;
+    },
+
+    markAllAsRead: async (): Promise<ApiResponse> => {
+      const response = await api.put('/notifications/mark-all-read');
+      return response.data;
+    },
+
+    deleteNotification: async (notificationId: string): Promise<ApiResponse> => {
+      const response = await api.delete(`/notifications/${notificationId}`);
+      return response.data;
+    }
+  },
+
+  // Billing endpoints
+  billing: {
+    // Treatment codes
+    getTreatmentCodes: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/billing/treatment-codes');
+      return response.data;
+    },
+    
+    createTreatmentCode: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/billing/treatment-codes', data);
+      return response.data;
+    },
+    
+    updateTreatmentCode: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/billing/treatment-codes/${id}`, data);
+      return response.data;
+    },
+    
+    deleteTreatmentCode: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/billing/treatment-codes/${id}`);
+      return response.data;
+    },
+
+    // Invoices
+    getInvoices: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/billing/invoices', { params });
+      return response.data;
+    },
+    
+    createInvoice: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/billing/invoices', data);
+      return response.data;
+    },
+    
+    getInvoiceById: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/billing/invoices/${id}`);
+      return response.data;
+    },
+    
+    updateInvoice: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/billing/invoices/${id}`, data);
+      return response.data;
+    },
+    
+    sendInvoice: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/billing/invoices/${id}/send`);
+      return response.data;
+    },
+
+    // Reports
+    getRevenueReport: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/billing/reports/revenue', { params });
+      return response.data;
+    },
+    
+    getTaxReport: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/billing/reports/tax', { params });
       return response.data;
     }
   },

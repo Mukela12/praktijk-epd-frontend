@@ -19,6 +19,7 @@ const api: AxiosInstance = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
@@ -136,7 +137,8 @@ api.interceptors.request.use(
 const refreshAccessToken = async (): Promise<string> => {
   try {
     console.log('[API] Refreshing access token...');
-    const response = await api.post('/auth/refresh-token');
+    // Send empty body with POST request, cookies will be sent automatically
+    const response = await api.post('/auth/refresh-token', {});
     
     if (response.data.success && response.data.accessToken) {
       const newToken = response.data.accessToken;
@@ -219,7 +221,7 @@ api.interceptors.response.use(
       
       try {
         // Try to refresh token
-        const refreshResponse = await api.post('/auth/refresh-token');
+        const refreshResponse = await api.post('/auth/refresh-token', {});
         
         if (refreshResponse.data.success && refreshResponse.data.accessToken) {
           const newToken = refreshResponse.data.accessToken;
@@ -245,6 +247,10 @@ api.interceptors.response.use(
       toast.error('Resource not found.');
     } else if (error.response?.status === 422) {
       // Validation errors are handled by individual components
+      return Promise.reject(error);
+    } else if (error.response?.status === 423) {
+      // Account locked - don't show a toast here as the auth store handles it
+      console.warn('Account locked:', (error.response.data as any)?.message);
       return Promise.reject(error);
     } else if (error.response?.status && error.response.status >= 500) {
       toast.error('Server error. Please try again later.');

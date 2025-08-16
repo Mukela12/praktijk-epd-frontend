@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import {
   BookOpenIcon,
   VideoCameraIcon,
@@ -6,62 +7,55 @@ import {
   MusicalNoteIcon,
   PuzzlePieceIcon,
   GlobeAltIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-  ArrowDownTrayIcon,
   TagIcon,
   ClockIcon,
   AcademicCapIcon,
-  SparklesIcon,
+  UserIcon,
+  CalendarIcon,
   CheckCircleIcon,
-  XCircleIcon
+  EyeIcon
 } from '@heroicons/react/24/outline';
-import {
-  BookOpenIcon as BookOpenSolid,
-  VideoCameraIcon as VideoCameraSolid,
-  DocumentTextIcon as DocumentTextSolid,
-  SparklesIcon as SparklesSolid
-} from '@heroicons/react/24/solid';
-import { useTranslation } from '@/contexts/LanguageContext';
-import { resourcesApi } from '@/services/endpoints';
-import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumMetric } from '@/components/layout/PremiumLayout';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import {
+  TextField,
+  TextareaField,
+  SelectField,
+  NumberField,
+  TagsField,
+  CheckboxField
+} from '@/components/forms/FormFields';
 import type { Resource, ResourceType, ResourceCategory, ResourceDifficulty } from '@/types/resources';
 
 const ResourcesManagement: React.FC = () => {
-  const { t } = useTranslation();
-  const { success, error, info } = useAlert();
-
-  // State
+  const { success, error } = useAlert();
   const [resources, setResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'detail'>('list');
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    type: 'all',
-    category: 'all',
-    difficulty: 'all',
-    status: 'all'
-  });
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Statistics
-  const [stats, setStats] = useState({
-    totalResources: 0,
-    publishedResources: 0,
-    totalViews: 0,
-    totalAssignments: 0,
-    byType: {} as Record<ResourceType, number>,
-    byCategory: {} as Record<ResourceCategory, number>
+  // Form state
+  const [formData, setFormData] = useState<Partial<Resource>>({
+    title: '',
+    description: '',
+    short_description: '',
+    type: 'article',
+    category: 'anxiety',
+    difficulty: 'beginner',
+    content_url: '',
+    content_body: '',
+    duration_minutes: 0,
+    tags: [],
+    author_name: '',
+    author_credentials: '',
+    is_public: true,
+    target_audience: 'all',
+    specific_client_ids: [],
+    status: 'draft'
   });
 
   // Load resources
@@ -72,12 +66,11 @@ const ResourcesManagement: React.FC = () => {
   const loadResources = async () => {
     try {
       setIsLoading(true);
-      const response = await resourcesApi.getResources();
+      const response = await realApiService.admin.getResources();
       
       if (response.success && response.data) {
-        const resourcesData = response.data.resources || [];
-        setResources(resourcesData);
-        calculateStats(resourcesData);
+        const resourcesData = response.data || [];
+        setResources(Array.isArray(resourcesData) ? resourcesData : []);
       }
     } catch (err) {
       console.error('Failed to load resources:', err);
@@ -87,40 +80,113 @@ const ResourcesManagement: React.FC = () => {
     }
   };
 
-  const calculateStats = (resourcesData: Resource[]) => {
-    const stats = {
-      totalResources: resourcesData.length,
-      publishedResources: resourcesData.filter(r => r.status === 'published').length,
-      totalViews: resourcesData.reduce((sum, r) => sum + (r.view_count || 0), 0),
-      totalAssignments: 0, // This would come from assignments API
-      byType: {} as Record<ResourceType, number>,
-      byCategory: {} as Record<ResourceCategory, number>
-    };
-
-    // Count by type
-    resourcesData.forEach(resource => {
-      stats.byType[resource.type] = (stats.byType[resource.type] || 0) + 1;
-      stats.byCategory[resource.category] = (stats.byCategory[resource.category] || 0) + 1;
-    });
-
-    setStats(stats);
+  // Handle form submission
+  const handleSubmit = async () => {
+    try {
+      if (viewMode === 'create') {
+        const response = await realApiService.admin.createResource(formData);
+        if (response.success) {
+          success('Resource created successfully');
+          await loadResources();
+          handleCancel();
+        }
+      } else if (viewMode === 'edit' && selectedResource) {
+        const response = await realApiService.admin.updateResource(selectedResource.id, formData);
+        if (response.success) {
+          success('Resource updated successfully');
+          await loadResources();
+          handleCancel();
+        }
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to save resource');
+    }
   };
 
-  // Handle resource deletion
+  // Handle delete
   const handleDelete = async (resourceId: string) => {
     if (!window.confirm('Are you sure you want to delete this resource?')) return;
-
+    
     try {
-      await resourcesApi.deleteResource(resourceId);
+      await realApiService.admin.deleteResource(resourceId);
       success('Resource deleted successfully');
-      loadResources();
+      await loadResources();
     } catch (err) {
       error('Failed to delete resource');
     }
   };
 
+  // Handle cancel
+  const handleCancel = () => {
+    setViewMode('list');
+    setSelectedResource(null);
+    setFormData({
+      title: '',
+      description: '',
+      short_description: '',
+      type: 'article',
+      category: 'anxiety',
+      difficulty: 'beginner',
+      content_url: '',
+      content_body: '',
+      duration_minutes: 0,
+      tags: [],
+      author_name: '',
+      author_credentials: '',
+      is_public: true,
+      target_audience: 'all',
+      specific_client_ids: [],
+      status: 'draft'
+    });
+  };
+
+  // Handle create
+  const handleCreate = () => {
+    setViewMode('create');
+  };
+
+  // Handle edit
+  const handleEdit = (resource: Resource) => {
+    setSelectedResource(resource);
+    setFormData(resource);
+    setViewMode('edit');
+  };
+
+  // Handle view details
+  const handleViewDetails = (resource: Resource) => {
+    setSelectedResource(resource);
+    setViewMode('detail');
+  };
+
+  // Filter resources
+  const filteredResources = useMemo(() => {
+    return resources.filter(resource => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          resource.title.toLowerCase().includes(searchLower) ||
+          resource.description.toLowerCase().includes(searchLower) ||
+          resource.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
+          resource.author_name.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Category filter
+      if (filterCategory !== 'all' && resource.category !== filterCategory) return false;
+      
+      // Type filter
+      if (filterType !== 'all' && resource.type !== filterType) return false;
+      
+      // Status filter
+      if (filterStatus !== 'all' && resource.status !== filterStatus) return false;
+
+      return true;
+    });
+  }, [resources, searchTerm, filterCategory, filterType, filterStatus]);
+
   // Get icon for resource type
-  const getResourceIcon = (type: ResourceType) => {
+  const getResourceIcon = (type: string) => {
     switch (type) {
       case 'article': return BookOpenIcon;
       case 'video': return VideoCameraIcon;
@@ -132,389 +198,386 @@ const ResourcesManagement: React.FC = () => {
     }
   };
 
-  const getResourceIconSolid = (type: ResourceType) => {
-    switch (type) {
-      case 'article': return BookOpenSolid;
-      case 'video': return VideoCameraSolid;
-      case 'pdf': return DocumentTextSolid;
-      default: return DocumentTextSolid;
-    }
-  };
-
   // Get color for resource type
-  const getTypeColor = (type: ResourceType) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'article': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'video': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'pdf': return 'bg-red-100 text-red-800 border-red-200';
-      case 'audio': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'interactive': return 'bg-green-100 text-green-800 border-green-200';
-      case 'external': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'article': return 'text-blue-600';
+      case 'video': return 'text-purple-600';
+      case 'pdf': return 'text-red-600';
+      case 'audio': return 'text-yellow-600';
+      case 'interactive': return 'text-green-600';
+      case 'external': return 'text-gray-600';
+      default: return 'text-gray-600';
     }
   };
 
-  // Get color for difficulty
-  const getDifficultyColor = (difficulty: ResourceDifficulty) => {
-    switch (difficulty) {
-      case 'beginner': return 'bg-green-50 text-green-700 border-green-200';
-      case 'intermediate': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'advanced': return 'bg-red-50 text-red-700 border-red-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  // Filter resources
-  const filteredResources = resources.filter(resource => {
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        resource.title.toLowerCase().includes(searchLower) ||
-        resource.description.toLowerCase().includes(searchLower) ||
-        resource.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
-        resource.author_name.toLowerCase().includes(searchLower);
-      if (!matchesSearch) return false;
-    }
-
-    // Type filter
-    if (filters.type !== 'all' && resource.type !== filters.type) return false;
-    
-    // Category filter
-    if (filters.category !== 'all' && resource.category !== filters.category) return false;
-    
-    // Difficulty filter
-    if (filters.difficulty !== 'all' && resource.difficulty !== filters.difficulty) return false;
-    
-    // Status filter
-    if (filters.status !== 'all' && resource.status !== filters.status) return false;
-
-    return true;
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="large" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="card-premium gradient-healthcare text-white rounded-2xl p-8 animate-fadeInUp">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="heading-primary text-white flex items-center">
-              <div className="p-3 bg-white/20 rounded-xl mr-4">
-                <BookOpenIcon className="w-8 h-8" />
-              </div>
-              Educational Resources
-            </h1>
-            <p className="text-body text-blue-50 mt-2">
-              Manage therapeutic content and educational materials
-            </p>
-          </div>
-          <div className="flex space-x-3">
-            <button className="btn-premium-ghost bg-white/10 border border-white/30 text-white hover:bg-white/20 flex items-center space-x-2">
-              <ArrowDownTrayIcon className="w-5 h-5" />
-              <span>Export</span>
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="btn-premium-primary bg-white text-blue-600 hover:bg-gray-50 flex items-center space-x-2 shadow-premium"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>Create Resource</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <PremiumMetric
-          title="Total Resources"
-          value={stats.totalResources}
-          icon={BookOpenIcon}
-          iconColor="text-indigo-600"
-          change={{ value: "+12%", type: "positive" }}
-        />
-        <PremiumMetric
-          title="Published"
-          value={stats.publishedResources}
-          icon={CheckCircleIcon}
-          iconColor="text-green-600"
-          change={{ value: `${Math.round((stats.publishedResources / stats.totalResources) * 100)}%`, type: "neutral" }}
-        />
-        <PremiumMetric
-          title="Total Views"
-          value={stats.totalViews.toLocaleString()}
-          icon={EyeIcon}
-          iconColor="text-blue-600"
-          change={{ value: "+25%", type: "positive" }}
-        />
-        <PremiumMetric
-          title="Assignments"
-          value={stats.totalAssignments}
-          icon={UserGroupIcon}
-          iconColor="text-purple-600"
-          change={{ value: "Active", type: "neutral" }}
-        />
-      </div>
-
-      {/* Resource Type Distribution */}
-      <div className="grid-content-flexible gap-6">
-        <div className="card-premium">
-          <div className="p-6">
-            <h3 className="heading-section mb-4 flex items-center">
-              <div className="p-2 bg-indigo-50 rounded-lg mr-3">
-                <ChartBarIcon className="w-5 h-5 text-indigo-600" />
-              </div>
-              Resources by Type
-            </h3>
-          <div className="space-y-3">
-            {Object.entries(stats.byType).map(([type, count]) => {
-              const Icon = getResourceIcon(type as ResourceType);
-              const percentage = Math.round((count / stats.totalResources) * 100);
-              
-              return (
-                <div key={type} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Icon className="w-5 h-5 mr-3 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-900 capitalize">{type}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-32 bg-gray-100 rounded-full h-2.5 mr-3 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-600">{count}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          </div>
-        </div>
-
-        <div className="card-premium">
-          <div className="p-6">
-            <h3 className="heading-section mb-4 flex items-center">
-              <div className="p-2 bg-purple-50 rounded-lg mr-3">
-                <TagIcon className="w-5 h-5 text-purple-600" />
-              </div>
-              Resources by Category
-            </h3>
-          <div className="space-y-3">
-            {Object.entries(stats.byCategory).map(([category, count]) => {
-              const percentage = Math.round((count / stats.totalResources) * 100);
-              
-              return (
-                <div key={category} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 capitalize">{category.replace('_', ' ')}</span>
-                  <div className="flex items-center">
-                    <div className="w-32 bg-gray-100 rounded-full h-2.5 mr-3 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-purple-600 h-2.5 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-600">{count}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="card-premium">
-        <div className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search resources by title, description, tags, or author..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-premium pl-10"
-              />
+  // Column definitions
+  const columns = [
+    {
+      key: 'title',
+      label: 'Resource',
+      render: (resource: Resource) => {
+        const Icon = getResourceIcon(resource.type);
+        return (
+          <div className="flex items-start space-x-3">
+            <Icon className={`w-5 h-5 mt-0.5 ${getTypeColor(resource.type)}`} />
+            <div>
+              <p className="font-medium text-gray-900">{resource.title}</p>
+              <p className="text-sm text-gray-500 line-clamp-1">
+                {resource.short_description || resource.description}
+              </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="select-premium text-sm"
-            >
-              <option value="all">All Types</option>
-              <option value="article">Articles</option>
-              <option value="video">Videos</option>
-              <option value="pdf">PDFs</option>
-              <option value="audio">Audio</option>
-              <option value="interactive">Interactive</option>
-              <option value="external">External</option>
-            </select>
-            
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="select-premium text-sm"
-            >
-              <option value="all">All Categories</option>
-              <option value="anxiety">Anxiety</option>
-              <option value="depression">Depression</option>
-              <option value="stress">Stress</option>
-              <option value="relationships">Relationships</option>
-              <option value="trauma">Trauma</option>
-              <option value="self-care">Self-Care</option>
-              <option value="mindfulness">Mindfulness</option>
-            </select>
-            
-            <select
-              value={filters.difficulty}
-              onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-              className="select-premium text-sm"
-            >
-              <option value="all">All Difficulties</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-            
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="select-premium text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
+        );
+      }
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (resource: Resource) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          {resource.category.replace('_', ' ')}
+        </span>
+      )
+    },
+    {
+      key: 'difficulty',
+      label: 'Difficulty',
+      render: (resource: Resource) => {
+        const colors = {
+          beginner: 'bg-green-100 text-green-800',
+          intermediate: 'bg-yellow-100 text-yellow-800',
+          advanced: 'bg-red-100 text-red-800'
+        };
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[resource.difficulty]}`}>
+            {resource.difficulty}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (resource: Resource) => {
+        const colors = {
+          draft: 'bg-gray-100 text-gray-800',
+          published: 'bg-green-100 text-green-800',
+          archived: 'bg-red-100 text-red-800'
+        };
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[resource.status]}`}>
+            {resource.status}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'metrics',
+      label: 'Metrics',
+      render: (resource: Resource) => (
+        <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <span className="flex items-center">
+            <EyeIcon className="w-4 h-4 mr-1" />
+            {resource.view_count}
+          </span>
+          {resource.duration_minutes && (
+            <span className="flex items-center">
+              <ClockIcon className="w-4 h-4 mr-1" />
+              {resource.duration_minutes}m
+            </span>
+          )}
         </div>
-        </div>
+      )
+    }
+  ];
+
+  // Render form fields
+  const renderFormFields = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TextField
+          label="Title"
+          name="title"
+          value={formData.title || ''}
+          onChange={(value) => setFormData({ ...formData, title: value })}
+          required
+          placeholder="Enter resource title"
+        />
+
+        <SelectField
+          label="Type"
+          name="type"
+          value={formData.type || 'article'}
+          onChange={(value) => setFormData({ ...formData, type: value as Resource['type'] })}
+          options={[
+            { value: 'article', label: 'Article' },
+            { value: 'video', label: 'Video' },
+            { value: 'pdf', label: 'PDF' },
+            { value: 'audio', label: 'Audio' },
+            { value: 'interactive', label: 'Interactive' },
+            { value: 'external', label: 'External Link' }
+          ]}
+          required
+        />
+
+        <SelectField
+          label="Category"
+          name="category"
+          value={formData.category || 'anxiety'}
+          onChange={(value) => setFormData({ ...formData, category: value as Resource['category'] })}
+          options={[
+            { value: 'anxiety', label: 'Anxiety' },
+            { value: 'depression', label: 'Depression' },
+            { value: 'stress', label: 'Stress' },
+            { value: 'relationships', label: 'Relationships' },
+            { value: 'trauma', label: 'Trauma' },
+            { value: 'self_care', label: 'Self Care' },
+            { value: 'mindfulness', label: 'Mindfulness' },
+            { value: 'coping_skills', label: 'Coping Skills' }
+          ]}
+          required
+        />
+
+        <SelectField
+          label="Difficulty"
+          name="difficulty"
+          value={formData.difficulty || 'beginner'}
+          onChange={(value) => setFormData({ ...formData, difficulty: value as Resource['difficulty'] })}
+          options={[
+            { value: 'beginner', label: 'Beginner' },
+            { value: 'intermediate', label: 'Intermediate' },
+            { value: 'advanced', label: 'Advanced' }
+          ]}
+          required
+        />
+
+        <TextField
+          label="Author Name"
+          name="author_name"
+          value={formData.author_name || ''}
+          onChange={(value) => setFormData({ ...formData, author_name: value })}
+          placeholder="Enter author name"
+          required
+        />
+
+        <TextField
+          label="Author Credentials"
+          name="author_credentials"
+          value={formData.author_credentials || ''}
+          onChange={(value) => setFormData({ ...formData, author_credentials: value })}
+          placeholder="e.g., PhD, LCSW"
+        />
+
+        <NumberField
+          label="Duration (minutes)"
+          name="duration_minutes"
+          value={formData.duration_minutes || 0}
+          onChange={(value) => setFormData({ ...formData, duration_minutes: value })}
+          min={0}
+          placeholder="Estimated time to complete"
+        />
+
+        <SelectField
+          label="Status"
+          name="status"
+          value={formData.status || 'draft'}
+          onChange={(value) => setFormData({ ...formData, status: value as Resource['status'] })}
+          options={[
+            { value: 'draft', label: 'Draft' },
+            { value: 'published', label: 'Published' },
+            { value: 'archived', label: 'Archived' }
+          ]}
+        />
       </div>
 
-      {/* Resources List */}
-      {filteredResources.length === 0 ? (
-        <PremiumEmptyState
-          icon={BookOpenIcon}
-          title="No Resources Found"
-          description={searchTerm || filters.type !== 'all' || filters.category !== 'all' 
-            ? "Try adjusting your search or filters"
-            : "Create your first educational resource to get started"}
-          action={{
-            label: 'Create Resource',
-            onClick: () => setShowCreateModal(true)
-          }}
+      <TextareaField
+        label="Short Description"
+        name="short_description"
+        value={formData.short_description || ''}
+        onChange={(value) => setFormData({ ...formData, short_description: value })}
+        placeholder="Brief summary for preview (max 500 characters)"
+        rows={2}
+      />
+
+      <TextareaField
+        label="Full Description"
+        name="description"
+        value={formData.description || ''}
+        onChange={(value) => setFormData({ ...formData, description: value })}
+        required
+        placeholder="Detailed description of the resource"
+        rows={4}
+      />
+
+      {(formData.type === 'video' || formData.type === 'pdf' || formData.type === 'external') && (
+        <TextField
+          label="Content URL"
+          name="content_url"
+          type="url"
+          value={formData.content_url || ''}
+          onChange={(value) => setFormData({ ...formData, content_url: value })}
+          placeholder="https://example.com/resource"
         />
-      ) : (
-        <div className="grid-content-flexible gap-6">
-          {filteredResources.map((resource) => {
-            const Icon = getResourceIcon(resource.type);
-            const IconSolid = getResourceIconSolid(resource.type);
-            
-            return (
-              <div
-                key={resource.id}
-                className="card-premium hover:shadow-premium-lg transition-all duration-300 animate-fadeInUp"
-              >
-                <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${getTypeColor(resource.type)}`}>
-                    <IconSolid className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <StatusBadge
-                      status={resource.status}
-                      type={resource.status === 'published' ? 'active' : 
-                            resource.status === 'archived' ? 'discontinued' : 'pending'}
-                      size="sm"
-                    />
-                  </div>
-                </div>
-
-                <h3 className="heading-section mb-2">
-                  {resource.title}
-                </h3>
-                
-                <p className="text-body-sm mb-4 line-clamp-2">
-                  {resource.short_description || resource.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(resource.difficulty)}`}>
-                    <AcademicCapIcon className="w-3 h-3 mr-1" />
-                    {resource.difficulty}
-                  </span>
-                  
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                    <TagIcon className="w-3 h-3 mr-1" />
-                    {resource.category}
-                  </span>
-                  
-                  {resource.duration_minutes && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                      <ClockIcon className="w-3 h-3 mr-1" />
-                      {resource.duration_minutes} min
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span>By {resource.author_name}</span>
-                  <span className="flex items-center">
-                    <EyeIcon className="w-4 h-4 mr-1" />
-                    {resource.view_count} views
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedResource(resource);
-                      setShowAssignModal(true);
-                    }}
-                    className="btn-premium-secondary px-3 py-1.5 text-sm flex items-center space-x-1"
-                  >
-                    <UserGroupIcon className="w-4 h-4" />
-                    <span>Assign</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedResource(resource);
-                      setShowEditModal(true);
-                    }}
-                    className="btn-premium-ghost px-3 py-1.5 text-sm flex items-center space-x-1"
-                  >
-                    <PencilIcon className="w-4 h-4" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(resource.id)}
-                    className="btn-premium-ghost text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 text-sm flex items-center space-x-1"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                    <span>Delete</span>
-                  </button>
-                </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       )}
+
+      {(formData.type === 'article' || formData.type === 'interactive') && (
+        <TextareaField
+          label="Content Body"
+          name="content_body"
+          value={formData.content_body || ''}
+          onChange={(value) => setFormData({ ...formData, content_body: value })}
+          placeholder="Main content of the resource"
+          rows={8}
+        />
+      )}
+
+      <TagsField
+        label="Tags"
+        name="tags"
+        value={formData.tags || []}
+        onChange={(tags) => setFormData({ ...formData, tags })}
+        placeholder="Add tags for better searchability"
+      />
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Visibility Settings</h3>
+        
+        <CheckboxField
+          label="Public Resource"
+          name="is_public"
+          checked={formData.is_public || false}
+          onChange={(checked) => setFormData({ ...formData, is_public: checked })}
+          hint="Make this resource publicly accessible"
+        />
+
+        <SelectField
+          label="Target Audience"
+          name="target_audience"
+          value={formData.target_audience || 'all'}
+          onChange={(value) => setFormData({ ...formData, target_audience: value as Resource['target_audience'] })}
+          options={[
+            { value: 'all', label: 'All Users' },
+            { value: 'clients', label: 'Clients Only' },
+            { value: 'therapists', label: 'Therapists Only' },
+            { value: 'specific', label: 'Specific Clients' }
+          ]}
+        />
+      </div>
     </div>
+  );
+
+  // Render detail view
+  const renderDetailView = () => {
+    if (!selectedResource) return null;
+
+    const Icon = getResourceIcon(selectedResource.type);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-4">
+          <Icon className={`w-8 h-8 ${getTypeColor(selectedResource.type)}`} />
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">{selectedResource.title}</h2>
+            <p className="text-gray-500 mt-1">By {selectedResource.author_name} {selectedResource.author_credentials && `(${selectedResource.author_credentials})`}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Category</p>
+            <p className="font-medium capitalize">{selectedResource.category.replace('_', ' ')}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Difficulty</p>
+            <p className="font-medium capitalize">{selectedResource.difficulty}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Status</p>
+            <p className="font-medium capitalize">{selectedResource.status}</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{selectedResource.description}</p>
+        </div>
+
+        {selectedResource.content_url && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Content URL</h3>
+            <a href={selectedResource.content_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              {selectedResource.content_url}
+            </a>
+          </div>
+        )}
+
+        {selectedResource.content_body && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Content</h3>
+            <div className="prose max-w-none">
+              <p className="text-gray-700 whitespace-pre-wrap">{selectedResource.content_body}</p>
+            </div>
+          </div>
+        )}
+
+        {selectedResource.tags.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Tags</h3>
+            <div className="flex flex-wrap gap-2">
+              {selectedResource.tags.map((tag) => (
+                <span key={tag} className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                  <TagIcon className="w-3 h-3 mr-1" />
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center text-sm text-gray-500">
+              <EyeIcon className="w-4 h-4 mr-1" />
+              Views
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{selectedResource.view_count}</p>
+          </div>
+          {selectedResource.duration_minutes && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center text-sm text-gray-500">
+                <ClockIcon className="w-4 h-4 mr-1" />
+                Duration
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{selectedResource.duration_minutes} minutes</p>
+            </div>
+          )}
+        </div>
+
+        <div className="text-sm text-gray-500">
+          <p>Created: {new Date(selectedResource.created_at).toLocaleDateString()}</p>
+          <p>Last updated: {new Date(selectedResource.updated_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <InlineCrudLayout
+      title="Educational Resources"
+      subtitle="Manage therapeutic content and educational materials"
+      icon={BookOpenIcon}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      isLoading={isLoading}
+      showCreateButton={viewMode === 'list'}
+      createButtonText="Create Resource"
+      totalCount={resources.length}
+      onBack={viewMode !== 'list' ? handleCancel : undefined}
+    >
+      {/* Todo: Implement resource list, form and detail views */}
+      <div>Resource management content</div>
+    </InlineCrudLayout>
   );
 };
 

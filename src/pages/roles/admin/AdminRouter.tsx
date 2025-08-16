@@ -12,8 +12,19 @@ import AllClients from './client-management/AllClients';
 import EnhancedClientList from './client-management/EnhancedClientList';
 import ClientManagementInline from './client-management/ClientManagementInline';
 
+// User Management
+import UserManagement from './user-management/UserManagement';
+
 // Therapist Management
 import AllTherapists from './therapist-management/AllTherapists';
+import TherapistManagementInline from './therapist-management/TherapistManagementInline';
+
+// Appointments Management
+import AppointmentsManagement from './appointments/AppointmentsManagement';
+import AppointmentRequests from './appointments/AppointmentRequests';
+
+// Session Management
+import SessionProgress from './sessions/SessionProgress';
 
 // Financial Management
 import FinancialOverview from './financial/FinancialOverview';
@@ -42,6 +53,13 @@ const adminNavigation = [
     bgColor: 'bg-indigo-100'
   },
   {
+    name: 'User Management',
+    href: '/admin/users',
+    icon: 'UserGroupIcon',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100'
+  },
+  {
     name: 'Client Management',
     href: '/admin/clients',
     icon: 'UserGroupIcon',
@@ -54,6 +72,29 @@ const adminNavigation = [
     icon: 'UsersIcon',
     color: 'text-purple-600',
     bgColor: 'bg-purple-100'
+  },
+  {
+    name: 'Appointments',
+    href: '/admin/appointments',
+    icon: 'CalendarDaysIcon',
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-100'
+  },
+  {
+    name: 'Appointment Requests',
+    href: '/admin/appointment-requests',
+    icon: 'ClockIcon',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-100',
+    badge: 'New'
+  },
+  {
+    name: 'Session Progress',
+    href: '/admin/sessions',
+    icon: 'ChartBarIcon',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-100',
+    badge: 'New'
   },
   {
     name: 'Financial Overview',
@@ -134,15 +175,22 @@ const AdminRouter: React.FC = () => {
         <Route path="/dashboard-legacy" element={<AdminDashboard />} />
         <Route path="/dashboard-enhanced" element={<EnhancedDashboard />} />
         
+        {/* User Management */}
+        <Route path="/users" element={<UserManagement />} />
+        
         {/* Client Management */}
         <Route path="/clients" element={<ClientManagementInline />} />
         <Route path="/clients/enhanced" element={<EnhancedClientList />} />
         <Route path="/clients/legacy" element={<AllClients />} />
         
         {/* Therapist Management */}
-        <Route path="/therapists" element={<AllTherapists />} />
-        <Route path="/therapists/:id" element={<div>Therapist Detail Page (To be implemented)</div>} />
-        <Route path="/therapists/new" element={<div>New Therapist Page (To be implemented)</div>} />
+        <Route path="/therapists" element={<TherapistManagementInline />} />
+        <Route path="/therapists/legacy" element={<AllTherapists />} />
+        
+        {/* Appointments Management */}
+        <Route path="/appointments" element={<AppointmentsManagement />} />
+        <Route path="/appointment-requests" element={<AppointmentRequests />} />
+        <Route path="/sessions" element={<SessionProgress />} />
         
         {/* Financial Management */}
         <Route path="/financial" element={<FinancialOverview />} />

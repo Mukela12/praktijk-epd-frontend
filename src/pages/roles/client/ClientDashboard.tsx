@@ -26,7 +26,7 @@ interface ProgressCardProps {
   value: number;
   total: number;
   icon: React.ComponentType<any>;
-  color: string;
+  color?: string;
 }
 
 const ProgressCard: React.FC<ProgressCardProps> = ({ title, value, total, icon: Icon, color }) => {
@@ -71,7 +71,7 @@ interface QuickActionProps {
   description: string;
   icon: React.ComponentType<any>;
   link: string;
-  color: string;
+  color?: string;
 }
 
 const QuickAction: React.FC<QuickActionProps> = ({ title, description, icon: Icon, link, color }) => {

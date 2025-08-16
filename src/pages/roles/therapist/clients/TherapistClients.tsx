@@ -19,6 +19,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { useTherapistClients } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumListItem } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
+import { therapistApi } from '@/services/endpoints';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Types
@@ -42,7 +43,7 @@ const TherapistClients: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
   const { clients: apiClients, getClients, isLoading } = useTherapistClients();
-  const { success, info, warning } = useAlert();
+  const { success, info, warning, error } = useAlert();
 
   // State
   const [clients, setClients] = useState<Client[]>([]);
@@ -118,29 +119,44 @@ const TherapistClients: React.FC = () => {
   };
 
   // Handle client actions
-  const handleClientAction = (clientId: string, action: string) => {
+  const handleClientAction = async (clientId: string, action: string) => {
     const client = clients.find(c => c.id === clientId);
-    if (client) {
+    if (!client) return;
+
+    try {
       switch (action) {
         case 'view':
-          info(`Viewing details for ${client.name}`);
-          break;
-        case 'message':
-          info(`Opening message thread with ${client.name}`);
-          break;
-        case 'schedule':
-          success(`Opening scheduler for ${client.name}`);
+          // Get client progress from the backend
+          const progressResponse = await therapistApi.getClientProgress(clientId);
+          if (progressResponse.success) {
+            info(`Client Progress: ${progressResponse.data?.sessions_completed || 0} sessions completed`);
+          } else {
+            info(`Viewing details for ${client.name}`);
+          }
           break;
         case 'notes':
-          info(`Opening session notes for ${client.name}`);
+          // Get session notes from the backend
+          const notesResponse = await therapistApi.getClientSessionNotes(clientId);
+          if (notesResponse.success) {
+            const notesCount = notesResponse.data?.length || 0;
+            info(`${client.name} has ${notesCount} session notes`);
+          } else {
+            info(`Opening session notes for ${client.name}`);
+          }
           break;
-        case 'call':
-          info(`Calling ${client.name} at ${client.phone}`);
+        case 'schedule':
+          // Navigate to appointment booking (this would ideally open a modal or navigate)
+          success(`Opening scheduler for ${client.name}`);
           break;
-        case 'email':
-          info(`Sending email to ${client.email}`);
+        case 'message':
+          // This would open messaging interface
+          info(`Opening message thread with ${client.name}`);
           break;
+        default:
+          info(`Action ${action} for ${client.name}`);
       }
+    } catch (err: any) {
+      error(`Failed to ${action} for ${client.name}: ${err.message}`);
     }
   };
 
@@ -416,29 +432,38 @@ const TherapistClients: React.FC = () => {
         )}
       </PremiumCard>
 
-      {/* Add Client Modal (placeholder) */}
+      {/* Add Client Modal */}
       {showAddClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4">Add New Client</h3>
-            <p className="text-gray-600 mb-4">
-              This feature would integrate with the client management system to add new clients.
-            </p>
-            <div className="flex space-x-3">
-              <PremiumButton 
-                variant="primary" 
-                onClick={() => {
-                  setShowAddClient(false);
-                  info('Add client feature requires backend API endpoint');
-                }}
-              >
-                Save
-              </PremiumButton>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-semibold mb-6 flex items-center">
+              <PlusIcon className="w-6 h-6 mr-2 text-green-600" />
+              Add New Client
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="flex">
+                  <InformationCircleIcon className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-800">Client Creation</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      New clients can only be created by practice administrators. Please contact your admin to add new clients to your practice.
+                    </p>
+                    <p className="text-sm text-blue-700 mt-2">
+                      Once a client is created and assigned to you, they will appear in your client list where you can manage their appointments, session notes, and therapy progress.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
               <PremiumButton 
                 variant="outline" 
                 onClick={() => setShowAddClient(false)}
               >
-                Cancel
+                Close
               </PremiumButton>
             </div>
           </div>

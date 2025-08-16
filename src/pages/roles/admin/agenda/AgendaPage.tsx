@@ -55,13 +55,14 @@ const AgendaPage: React.FC = () => {
       try {
         setIsLoading(true);
         const [appointmentsResponse, therapistsResponse] = await Promise.all([
-          realApiService.appointments.getAll(),
+          realApiService.admin.getAppointments(),
           realApiService.therapists.getAll()
         ]);
 
         if (appointmentsResponse.success && appointmentsResponse.data) {
           // Transform appointments to calendar events
-          const calendarEvents: CalendarEvent[] = appointmentsResponse.data.map((apt: any) => ({
+          const appointments = appointmentsResponse.data.appointments || appointmentsResponse.data || [];
+          const calendarEvents: CalendarEvent[] = appointments.map((apt: any) => ({
             id: apt.id,
             title: `${apt.type} - ${apt.client_name}`,
             client_name: apt.client_name,

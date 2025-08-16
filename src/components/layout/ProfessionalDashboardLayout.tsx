@@ -14,6 +14,7 @@ import { useAuth } from '@/store/authStore';
 import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
 import AdminSidebar from './AdminSidebar';
 import { Transition } from '@headlessui/react';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface ProfessionalDashboardLayoutProps {
   children?: React.ReactNode;
@@ -141,13 +142,7 @@ const ProfessionalDashboardLayout: React.FC<ProfessionalDashboardLayoutProps> = 
               <LanguageSwitcher />
 
               {/* Notifications */}
-              <button
-                type="button"
-                className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500"
-              >
-                <span className="sr-only">View notifications</span>
-                <BellIcon className="h-6 w-6" aria-hidden="true" />
-              </button>
+              <NotificationBell />
 
               {/* Help */}
               <button

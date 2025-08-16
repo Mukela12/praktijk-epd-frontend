@@ -124,6 +124,9 @@ export interface Challenge {
   created_by: string;
   created_at: string;
   updated_at: string;
+  rewards?: string;
+  instructions?: string;
+  tips?: string;
 }
 
 // Survey Types

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import {
   ClipboardDocumentCheckIcon,
   PlusIcon,
@@ -14,14 +15,21 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   ChevronUpIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  ClockIcon,
+  FireIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '@/store/authStore';
-import { useTranslation } from '@/contexts/LanguageContext';
-import { resourcesApi } from '@/services/endpoints';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
+import {
+  TextField,
+  TextareaField,
+  SelectField,
+  NumberField,
+  TagsField,
+  CheckboxField
+} from '@/components/forms/FormFields';
 import { formatDate } from '@/utils/dateFormatters';
 
 // Types
@@ -38,39 +46,181 @@ interface Survey {
   id: string;
   title: string;
   description: string;
-  type: 'assessment' | 'feedback' | 'screening' | 'progress' | 'general';
+  type: 'assessment' | 'feedback' | 'progress' | 'satisfaction' | 'custom';
   questions: SurveyQuestion[];
-  status: 'draft' | 'published' | 'active' | 'closed' | 'archived';
-  createdBy: string;
-  createdAt: string;
+  status: 'draft' | 'published' | 'closed' | 'archived';
+  createdBy?: string;
+  created_at?: string;
+  updated_at?: string;
   responseCount?: number;
+  response_count?: number;
   targetAudience?: 'all' | 'clients' | 'therapists' | 'specific';
   validFrom?: string;
   validUntil?: string;
   isAnonymous?: boolean;
 }
 
-const SurveysManagementInline: React.FC = () => {
-  const { user } = useAuth();
-  const { t } = useTranslation();
-  const { success, info, warning, error: errorAlert } = useAlert();
+// Survey Templates
+const surveyTemplates = [
+  {
+    title: 'Weekly Progress Check-In',
+    description: 'A brief survey to track client progress and adjust treatment plans',
+    type: 'progress' as const,
+    questions: [
+      {
+        id: 'q1',
+        text: 'How would you rate your overall mood this week?',
+        type: 'scale' as const,
+        required: true,
+        scale: { min: 1, max: 10, labels: ['Very Low', 'Low', 'Moderate', 'Good', 'Excellent'] }
+      },
+      {
+        id: 'q2',
+        text: 'Which coping strategies did you use this week? (Select all that apply)',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Deep breathing', 'Exercise', 'Meditation', 'Journaling', 'Talking to friends/family', 'Other']
+      },
+      {
+        id: 'q3',
+        text: 'What challenges did you face this week?',
+        type: 'text' as const,
+        required: false
+      },
+      {
+        id: 'q4',
+        text: 'Do you feel you made progress toward your therapy goals this week?',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Yes, significant progress', 'Yes, some progress', 'No change', 'Some setbacks', 'Major setbacks']
+      },
+      {
+        id: 'q5',
+        text: 'What would you like to focus on in our next session?',
+        type: 'text' as const,
+        required: false
+      }
+    ],
+    status: 'published' as const,
+    isAnonymous: false,
+    targetAudience: 'clients' as const
+  },
+  {
+    title: 'Initial Mental Health Assessment',
+    description: 'Comprehensive assessment for new clients to understand their mental health needs',
+    type: 'assessment' as const,
+    questions: [
+      {
+        id: 'q1',
+        text: 'What brings you to therapy at this time?',
+        type: 'text' as const,
+        required: true
+      },
+      {
+        id: 'q2',
+        text: 'How long have you been experiencing these concerns?',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Less than 1 month', '1-3 months', '3-6 months', '6-12 months', 'More than 1 year']
+      },
+      {
+        id: 'q3',
+        text: 'Rate the severity of your symptoms on average:',
+        type: 'scale' as const,
+        required: true,
+        scale: { min: 1, max: 10, labels: ['Mild', 'Moderate', 'Severe'] }
+      },
+      {
+        id: 'q4',
+        text: 'Are you currently taking any medications for mental health?',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Yes', 'No', 'Prefer not to say']
+      },
+      {
+        id: 'q5',
+        text: 'Have you had therapy before?',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Yes, currently', 'Yes, in the past', 'No, this is my first time']
+      },
+      {
+        id: 'q6',
+        text: 'What are your goals for therapy?',
+        type: 'text' as const,
+        required: true
+      },
+      {
+        id: 'q7',
+        text: 'Do you have any concerns about starting therapy?',
+        type: 'text' as const,
+        required: false
+      }
+    ],
+    status: 'published' as const,
+    isAnonymous: false,
+    targetAudience: 'clients' as const
+  },
+  {
+    title: 'Client Satisfaction Survey',
+    description: 'Gather feedback to improve our therapy services',
+    type: 'satisfaction' as const,
+    questions: [
+      {
+        id: 'q1',
+        text: 'How satisfied are you with your therapy experience?',
+        type: 'scale' as const,
+        required: true,
+        scale: { min: 1, max: 5, labels: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'] }
+      },
+      {
+        id: 'q2',
+        text: 'How well does your therapist understand your needs?',
+        type: 'scale' as const,
+        required: true,
+        scale: { min: 1, max: 5, labels: ['Not at all', 'Poorly', 'Adequately', 'Well', 'Very Well'] }
+      },
+      {
+        id: 'q3',
+        text: 'Would you recommend our services to others?',
+        type: 'multiple_choice' as const,
+        required: true,
+        options: ['Definitely yes', 'Probably yes', 'Not sure', 'Probably not', 'Definitely not']
+      },
+      {
+        id: 'q4',
+        text: 'What aspects of our service could be improved?',
+        type: 'text' as const,
+        required: false
+      },
+      {
+        id: 'q5',
+        text: 'What do you appreciate most about your therapy experience?',
+        type: 'text' as const,
+        required: false
+      }
+    ],
+    status: 'published' as const,
+    isAnonymous: true,
+    targetAudience: 'clients' as const
+  }
+];
 
-  // State
+const SurveysManagementInline: React.FC = () => {
+  const { success, error } = useAlert();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'detail'>('list');
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'preview' | 'responses'>('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    status: 'all',
-    type: 'all'
-  });
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Form state
   const [formData, setFormData] = useState<Partial<Survey>>({
     title: '',
     description: '',
-    type: 'general',
+    type: 'assessment',
     questions: [],
     status: 'draft',
     isAnonymous: false,
@@ -93,38 +243,135 @@ const SurveysManagementInline: React.FC = () => {
   const loadSurveys = async () => {
     try {
       setIsLoading(true);
-      const response = await resourcesApi.getSurveys();
+      const response = await realApiService.surveys.getSurveys();
       
       if (response.success && response.data) {
-        setSurveys(response.data.surveys || response.data || []);
+        const surveysData = response.data.surveys || response.data || [];
+        setSurveys(Array.isArray(surveysData) ? surveysData : []);
       }
-    } catch (error) {
-      console.error('Failed to load surveys:', error);
-      errorAlert('Failed to load surveys');
+    } catch (err) {
+      console.error('Failed to load surveys:', err);
+      error('Failed to load surveys');
     } finally {
       setIsLoading(false);
     }
   };
 
   // Filter surveys
-  const filteredSurveys = surveys.filter(survey => {
-    const matchesSearch = survey.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         survey.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filters.status === 'all' || survey.status === filters.status;
-    const matchesType = filters.type === 'all' || survey.type === filters.type;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  const filteredSurveys = useMemo(() => {
+    return surveys.filter(survey => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          survey.title.toLowerCase().includes(searchLower) ||
+          survey.description.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
 
-  // Handle form changes
-  const handleFormChange = (field: keyof Survey, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+      // Type filter
+      if (filterType !== 'all' && survey.type !== filterType) return false;
+      
+      // Status filter
+      if (filterStatus !== 'all' && survey.status !== filterStatus) return false;
+
+      return true;
+    });
+  }, [surveys, searchTerm, filterType, filterStatus]);
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    try {
+      if (viewMode === 'create') {
+        const response = await realApiService.surveys.createSurvey({
+          title: formData.title || '',
+          description: formData.description || '',
+          type: formData.type || 'assessment',
+          questions: formData.questions || []
+        });
+        if (response.success) {
+          success('Survey created successfully');
+          await loadSurveys();
+          handleCancel();
+        }
+      } else if (viewMode === 'edit' && selectedSurvey) {
+        const response = await realApiService.surveys.updateSurvey(selectedSurvey.id, formData);
+        if (response.success) {
+          success('Survey updated successfully');
+          await loadSurveys();
+          handleCancel();
+        }
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to save survey');
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async (surveyId: string) => {
+    if (!window.confirm('Are you sure you want to delete this survey?')) return;
+    
+    try {
+      await realApiService.surveys.deleteSurvey(surveyId);
+      success('Survey deleted successfully');
+      await loadSurveys();
+    } catch (err) {
+      error('Failed to delete survey');
+    }
+  };
+
+  // Handle use template
+  const handleUseTemplate = (template: typeof surveyTemplates[0]) => {
+    setFormData({
+      ...template,
+      status: 'draft' // Always start as draft
+    });
+    setViewMode('create');
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setViewMode('list');
+    setSelectedSurvey(null);
+    setFormData({
+      title: '',
+      description: '',
+      type: 'assessment',
+      questions: [],
+      status: 'draft',
+      isAnonymous: false,
+      targetAudience: 'all'
+    });
+    setNewQuestion({
+      text: '',
+      type: 'text',
+      required: true,
+      options: []
+    });
+  };
+
+  // Handle create
+  const handleCreate = () => {
+    setViewMode('create');
+  };
+
+  // Handle edit
+  const handleEdit = (survey: Survey) => {
+    setSelectedSurvey(survey);
+    setFormData(survey);
+    setViewMode('edit');
+  };
+
+  // Handle view details
+  const handleViewDetails = (survey: Survey) => {
+    setSelectedSurvey(survey);
+    setViewMode('detail');
   };
 
   // Add question to survey
   const handleAddQuestion = () => {
     if (!newQuestion.text) {
-      warning('Please enter question text');
+      error('Please enter question text');
       return;
     }
 
@@ -158,178 +405,335 @@ const SurveysManagementInline: React.FC = () => {
     }));
   };
 
-  // Move question up/down
-  const handleMoveQuestion = (index: number, direction: 'up' | 'down') => {
-    const questions = [...(formData.questions || [])];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    if (newIndex >= 0 && newIndex < questions.length) {
-      [questions[index], questions[newIndex]] = [questions[newIndex], questions[index]];
-      setFormData(prev => ({ ...prev, questions }));
+  // Get icon for survey type
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'assessment': return ClipboardDocumentCheckIcon;
+      case 'feedback': return StarIcon;
+      case 'progress': return ChartBarIcon;
+      case 'satisfaction': return FireIcon;
+      case 'custom': return PlusIcon;
+      default: return ClipboardDocumentCheckIcon;
     }
   };
 
-  // Handle create survey
-  const handleCreateSurvey = async () => {
-    if (!formData.title || !formData.description) {
-      warning('Please fill in all required fields');
-      return;
-    }
-
-    if (!formData.questions || formData.questions.length === 0) {
-      warning('Please add at least one question');
-      return;
-    }
-
-    try {
-      const response = await resourcesApi.createSurvey({
-        ...formData,
-        createdBy: user?.id || ''
-      });
-      
-      if (response.success) {
-        success('Survey created successfully');
-        loadSurveys();
-        setViewMode('list');
-        resetForm();
-      }
-    } catch (error) {
-      console.error('Failed to create survey:', error);
-      errorAlert('Failed to create survey');
+  // Get color for survey type
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'assessment': return 'bg-purple-100 text-purple-800';
+      case 'feedback': return 'bg-blue-100 text-blue-800';
+      case 'progress': return 'bg-green-100 text-green-800';
+      case 'satisfaction': return 'bg-yellow-100 text-yellow-800';
+      case 'custom': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Handle update survey
-  const handleUpdateSurvey = async () => {
-    if (!selectedSurvey) return;
-    
-    try {
-      const response = await resourcesApi.updateSurvey(selectedSurvey.id, formData);
-      
-      if (response.success) {
-        success('Survey updated successfully');
-        loadSurveys();
-        setViewMode('list');
-        setSelectedSurvey(null);
-      }
-    } catch (error) {
-      console.error('Failed to update survey:', error);
-      errorAlert('Failed to update survey');
-    }
-  };
-
-  // Handle delete survey
-  const handleDeleteSurvey = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this survey?')) return;
-    
-    try {
-      const response = await resourcesApi.deleteSurvey(id);
-      
-      if (response.success) {
-        success('Survey deleted successfully');
-        loadSurveys();
-      }
-    } catch (error) {
-      console.error('Failed to delete survey:', error);
-      errorAlert('Failed to delete survey');
-    }
-  };
-
-  // Handle status change
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const response = await resourcesApi.updateSurvey(id, { status: newStatus });
-      
-      if (response.success) {
-        success(`Survey ${newStatus === 'published' ? 'published' : 'updated'} successfully`);
-        loadSurveys();
-      }
-    } catch (error) {
-      console.error('Failed to update survey status:', error);
-      errorAlert('Failed to update survey status');
-    }
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      type: 'general',
-      questions: [],
-      status: 'draft',
-      isAnonymous: false,
-      targetAudience: 'all'
-    });
-    setNewQuestion({
-      text: '',
-      type: 'text',
-      required: true,
-      options: []
-    });
-  };
-
-  const getSurveyTypeColor = (type: string) => {
-    const colors: { [key: string]: string } = {
-      assessment: 'bg-purple-100 text-purple-800',
-      feedback: 'bg-blue-100 text-blue-800',
-      screening: 'bg-red-100 text-red-800',
-      progress: 'bg-green-100 text-green-800',
-      general: 'bg-gray-100 text-gray-800'
-    };
-    return colors[type] || colors.general;
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="large" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-xl shadow-sm p-6 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
-              <ClipboardDocumentCheckIcon className="w-8 h-8 mr-3" />
-              Surveys Management
-            </h1>
-            <p className="text-teal-100 mt-1">
-              Create and manage feedback surveys and assessments
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="bg-white/20 rounded-lg px-4 py-2">
-              <span className="text-sm">Total Surveys</span>
-              <span className="block text-xl font-bold">{surveys.length}</span>
+  // Column definitions
+  const columns = [
+    {
+      key: 'title',
+      label: 'Survey',
+      render: (survey: Survey) => {
+        const Icon = getTypeIcon(survey.type);
+        return (
+          <div className="flex items-start space-x-3">
+            <Icon className="w-5 h-5 mt-0.5 text-teal-600" />
+            <div>
+              <p className="font-medium text-gray-900">{survey.title}</p>
+              <p className="text-sm text-gray-500 line-clamp-1">
+                {survey.description}
+              </p>
             </div>
-            {viewMode === 'list' && (
-              <PremiumButton
-                onClick={() => {
-                  setViewMode('create');
-                  resetForm();
-                }}
-                className="bg-white text-teal-600 hover:bg-gray-50"
-                icon={PlusIcon}
-              >
-                Create Survey
-              </PremiumButton>
-            )}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (survey: Survey) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(survey.type)}`}>
+          {survey.type}
+        </span>
+      )
+    },
+    {
+      key: 'questions',
+      label: 'Questions',
+      render: (survey: Survey) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <ClipboardDocumentCheckIcon className="w-4 h-4 mr-1" />
+          {survey.questions?.length || 0} questions
+        </div>
+      )
+    },
+    {
+      key: 'responses',
+      label: 'Responses',
+      render: (survey: Survey) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <UserGroupIcon className="w-4 h-4 mr-1" />
+          {survey.responseCount || survey.response_count || 0}
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (survey: Survey) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          survey.status === 'published' ? 'bg-green-100 text-green-800' :
+          survey.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+          survey.status === 'closed' ? 'bg-red-100 text-red-800' :
+          'bg-yellow-100 text-yellow-800'
+        }`}>
+          {survey.status}
+        </span>
+      )
+    }
+  ];
+
+  // Render form fields
+  const renderFormFields = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TextField
+          label="Title"
+          name="title"
+          value={formData.title || ''}
+          onChange={(value) => setFormData({ ...formData, title: value })}
+          required
+          placeholder="Enter survey title"
+        />
+
+        <SelectField
+          label="Type"
+          name="type"
+          value={formData.type || 'assessment'}
+          onChange={(value) => setFormData({ ...formData, type: value as any })}
+          options={[
+            { value: 'assessment', label: 'Assessment' },
+            { value: 'feedback', label: 'Feedback' },
+            { value: 'progress', label: 'Progress' },
+            { value: 'satisfaction', label: 'Satisfaction' },
+            { value: 'custom', label: 'Custom' }
+          ]}
+          required
+        />
+
+        <SelectField
+          label="Target Audience"
+          name="targetAudience"
+          value={formData.targetAudience || 'all'}
+          onChange={(value) => setFormData({ ...formData, targetAudience: value as any })}
+          options={[
+            { value: 'all', label: 'All Users' },
+            { value: 'clients', label: 'Clients Only' },
+            { value: 'therapists', label: 'Therapists Only' },
+            { value: 'specific', label: 'Specific Users' }
+          ]}
+        />
+
+        <SelectField
+          label="Status"
+          name="status"
+          value={formData.status || 'draft'}
+          onChange={(value) => setFormData({ ...formData, status: value as any })}
+          options={[
+            { value: 'draft', label: 'Draft' },
+            { value: 'published', label: 'Published' },
+            { value: 'closed', label: 'Closed' },
+            { value: 'archived', label: 'Archived' }
+          ]}
+        />
+      </div>
+
+      <TextareaField
+        label="Description"
+        name="description"
+        value={formData.description || ''}
+        onChange={(value) => setFormData({ ...formData, description: value })}
+        required
+        placeholder="Describe the survey and its purpose"
+        rows={4}
+      />
+
+      <div className="flex items-center">
+        <CheckboxField
+          label="Anonymous responses"
+          name="isAnonymous"
+          checked={formData.isAnonymous || false}
+          onChange={(checked) => setFormData({ ...formData, isAnonymous: checked })}
+        />
+      </div>
+
+      {/* Questions Section */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Survey Questions</h3>
+        
+        {/* Existing Questions */}
+        <div className="space-y-4 mb-6">
+          {formData.questions?.map((question, index) => (
+            <div key={question.id} className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{index + 1}. {question.text}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Type: {question.type} {question.required && '(Required)'}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveQuestion(question.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Add New Question */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <h4 className="font-medium text-gray-900 mb-3">Add New Question</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <TextField
+                label="Question Text"
+                name="questionText"
+                value={newQuestion.text || ''}
+                onChange={(value) => setNewQuestion({ ...newQuestion, text: value })}
+                placeholder="Enter question text"
+              />
+            </div>
+            <SelectField
+              label="Question Type"
+              name="questionType"
+              value={newQuestion.type || 'text'}
+              onChange={(value) => setNewQuestion({ ...newQuestion, type: value as any })}
+              options={[
+                { value: 'text', label: 'Text' },
+                { value: 'number', label: 'Number' },
+                { value: 'scale', label: 'Scale (1-5)' },
+                { value: 'multiple_choice', label: 'Multiple Choice' },
+                { value: 'checkbox', label: 'Checkbox' }
+              ]}
+            />
+            <div className="flex items-center">
+              <CheckboxField
+                label="Required"
+                name="questionRequired"
+                checked={newQuestion.required ?? true}
+                onChange={(checked) => setNewQuestion({ ...newQuestion, required: checked })}
+              />
+            </div>
+          </div>
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={handleAddQuestion}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Question
+            </button>
           </div>
         </div>
       </div>
+    </div>
+  );
 
-      {/* List View */}
+  // Render detail view
+  const renderDetailView = () => {
+    if (!selectedSurvey) return null;
+
+    const Icon = getTypeIcon(selectedSurvey.type);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-4">
+          <Icon className="w-8 h-8 text-teal-600" />
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">{selectedSurvey.title}</h2>
+            <p className="text-gray-500 mt-1">{selectedSurvey.type} • {selectedSurvey.status}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Type</p>
+            <p className="text-2xl font-bold text-gray-900 capitalize">{selectedSurvey.type}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Questions</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedSurvey.questions?.length || 0}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Responses</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedSurvey.responseCount || selectedSurvey.response_count || 0}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Status</p>
+            <p className="text-2xl font-bold text-gray-900 capitalize">{selectedSurvey.status}</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{selectedSurvey.description}</p>
+        </div>
+
+        {selectedSurvey.questions && selectedSurvey.questions.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Questions</h3>
+            <div className="space-y-3">
+              {selectedSurvey.questions.map((question, index) => (
+                <div key={question.id} className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-medium text-gray-900">
+                    {index + 1}. {question.text} {question.required && <span className="text-red-500">*</span>}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">Type: {question.type}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="text-sm text-gray-500">
+          {selectedSurvey.created_at && (
+            <p>Created: {new Date(selectedSurvey.created_at).toLocaleDateString()}</p>
+          )}
+          {selectedSurvey.updated_at && (
+            <p>Last updated: {new Date(selectedSurvey.updated_at).toLocaleDateString()}</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <InlineCrudLayout
+      title="Survey Management"
+      subtitle="Create and manage surveys and assessments"
+      icon={ClipboardDocumentCheckIcon}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      isLoading={isLoading}
+      showCreateButton={viewMode === 'list'}
+      createButtonText="Create Survey"
+      totalCount={surveys.length}
+      onBack={viewMode !== 'list' ? handleCancel : undefined}
+    >
       {viewMode === 'list' && (
         <>
-          {/* Filters */}
-          <PremiumCard>
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          {/* Search and Filters */}
+          <div className="mb-6 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex-1 max-w-lg">
                 <div className="relative">
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -337,160 +741,148 @@ const SurveysManagementInline: React.FC = () => {
                     placeholder="Search surveys..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="active">Active</option>
-                  <option value="closed">Closed</option>
-                  <option value="archived">Archived</option>
-                </select>
-                <select
-                  value={filters.type}
-                  onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="all">All Types</option>
                   <option value="assessment">Assessment</option>
                   <option value="feedback">Feedback</option>
-                  <option value="screening">Screening</option>
                   <option value="progress">Progress</option>
-                  <option value="general">General</option>
+                  <option value="satisfaction">Satisfaction</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="closed">Closed</option>
+                  <option value="archived">Archived</option>
                 </select>
               </div>
-              <div className="text-sm text-gray-600">
-                Showing {filteredSurveys.length} of {surveys.length} surveys
+            </div>
+          </div>
+
+          {/* Templates Section for Empty State */}
+          {surveys.length === 0 && searchTerm === '' && filterType === 'all' && filterStatus === 'all' && (
+            <div className="mb-6 bg-white shadow-sm rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Survey Templates</h3>
+              <p className="text-sm text-gray-600 mb-6">Get started quickly with these professional survey templates</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {surveyTemplates.map((template, index) => {
+                  const Icon = getTypeIcon(template.type);
+                  return (
+                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start space-x-3">
+                        <div className="p-2 rounded-lg bg-teal-100">
+                          <Icon className="w-5 h-5 text-teal-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{template.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+                          <div className="flex items-center mt-2 space-x-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getTypeColor(template.type)}`}>
+                              {template.type}
+                            </span>
+                            <span className="text-xs text-gray-500">{template.questions.length} questions</span>
+                          </div>
+                          <button
+                            onClick={() => handleUseTemplate(template)}
+                            className="mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                          >
+                            Use this template →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </PremiumCard>
+          )}
 
-          {/* Surveys Grid */}
+          {/* Survey List */}
           {filteredSurveys.length === 0 ? (
-            <PremiumEmptyState
-              icon={ClipboardDocumentCheckIcon}
-              title="No Surveys Found"
-              description={searchTerm || filters.status !== 'all' ? "No surveys match your filters." : "Create your first survey to get started."}
-              action={{
-                label: 'Create Survey',
-                onClick: () => setViewMode('create')
-              }}
-            />
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <ClipboardDocumentCheckIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No surveys found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm || filterType !== 'all' || filterStatus !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'Get started by creating a new survey'}
+              </p>
+              {searchTerm === '' && filterType === 'all' && filterStatus === 'all' && (
+                <div className="mt-6">
+                  <button
+                    onClick={handleCreate}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                  >
+                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Create Survey
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredSurveys.map((survey) => (
-                <PremiumCard key={survey.id} className="hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{survey.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{survey.description}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getSurveyTypeColor(survey.type)}`}>
-                          {survey.type}
-                        </span>
-                        <StatusBadge
-                          type="general"
-                          status={survey.status}
-                          size="sm"
-                        />
-                        {survey.isAnonymous && (
-                          <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-                            Anonymous
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <ClipboardDocumentCheckIcon className="w-4 h-4 mr-1" />
-                          {survey.questions.length} questions
-                        </div>
-                        <div className="flex items-center">
-                          <UserGroupIcon className="w-4 h-4 mr-1" />
-                          {survey.responseCount || 0} responses
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedSurvey(survey);
-                          setViewMode('preview');
-                        }}
-                        className="text-sm text-teal-600 hover:text-teal-700 flex items-center"
+            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {columns.map((column) => (
+                      <th
+                        key={column.key}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        <EyeIcon className="w-4 h-4 mr-1" />
-                        Preview
-                      </button>
-                      {survey.responseCount && survey.responseCount > 0 && (
+                        {column.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredSurveys.map((survey) => (
+                    <tr key={survey.id} className="hover:bg-gray-50">
+                      {columns.map((column) => (
+                        <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                          {column.render(survey)}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => {
-                            setSelectedSurvey(survey);
-                            setViewMode('responses');
-                          }}
-                          className="text-sm text-teal-600 hover:text-teal-700 flex items-center"
+                          onClick={() => handleViewDetails(survey)}
+                          className="text-teal-600 hover:text-teal-900 mr-3"
                         >
-                          <ChartBarIcon className="w-4 h-4 mr-1" />
-                          Responses
+                          <EyeIcon className="w-5 h-5" />
                         </button>
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      {survey.status === 'draft' && (
-                        <PremiumButton
-                          size="sm"
-                          variant="primary"
-                          icon={PlayIcon}
-                          onClick={() => handleStatusChange(survey.id, 'published')}
+                        <button
+                          onClick={() => handleEdit(survey)}
+                          className="text-teal-600 hover:text-teal-900 mr-3"
                         >
-                          Publish
-                        </PremiumButton>
-                      )}
-                      {survey.status === 'published' && (
-                        <PremiumButton
-                          size="sm"
-                          variant="outline"
-                          icon={PauseIcon}
-                          onClick={() => handleStatusChange(survey.id, 'closed')}
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(survey.id)}
+                          className="text-red-600 hover:text-red-900"
                         >
-                          Close
-                        </PremiumButton>
-                      )}
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={PencilIcon}
-                        onClick={() => {
-                          setSelectedSurvey(survey);
-                          setFormData(survey);
-                          setViewMode('edit');
-                        }}
-                      >
-                        Edit
-                      </PremiumButton>
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={TrashIcon}
-                        onClick={() => handleDeleteSurvey(survey.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Delete
-                      </PremiumButton>
-                    </div>
-                  </div>
-                </PremiumCard>
-              ))}
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>
@@ -498,331 +890,51 @@ const SurveysManagementInline: React.FC = () => {
 
       {/* Create/Edit Form */}
       {(viewMode === 'create' || viewMode === 'edit') && (
-        <PremiumCard>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {viewMode === 'create' ? 'Create New Survey' : 'Edit Survey'}
-              </h2>
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                  resetForm();
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Survey Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formData.title || ''}
-                  onChange={(e) => handleFormChange('title', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="Survey title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select
-                  value={formData.type || 'general'}
-                  onChange={(e) => handleFormChange('type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="assessment">Assessment</option>
-                  <option value="feedback">Feedback</option>
-                  <option value="screening">Screening</option>
-                  <option value="progress">Progress</option>
-                  <option value="general">General</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  rows={3}
-                  placeholder="Describe the survey..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
-                <select
-                  value={formData.targetAudience || 'all'}
-                  onChange={(e) => handleFormChange('targetAudience', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="all">All Users</option>
-                  <option value="clients">Clients Only</option>
-                  <option value="therapists">Therapists Only</option>
-                  <option value="specific">Specific Users</option>
-                </select>
-              </div>
-
-              <div className="flex items-center">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isAnonymous || false}
-                    onChange={(e) => handleFormChange('isAnonymous', e.target.checked)}
-                    className="mr-2 text-teal-600 focus:ring-teal-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Anonymous responses</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Questions Section */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Survey Questions</h3>
-              
-              {/* Existing Questions */}
-              <div className="space-y-4 mb-6">
-                {formData.questions?.map((question, index) => (
-                  <div key={question.id} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{index + 1}. {question.text}</p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Type: {question.type} {question.required && '(Required)'}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleMoveQuestion(index, 'up')}
-                          disabled={index === 0}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                        >
-                          <ChevronUpIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveQuestion(index, 'down')}
-                          disabled={index === (formData.questions?.length || 0) - 1}
-                          className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                        >
-                          <ChevronDownIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleRemoveQuestion(question.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add New Question */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Add New Question</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <input
-                      type="text"
-                      value={newQuestion.text || ''}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, text: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="Question text"
-                    />
-                  </div>
-                  <div>
-                    <select
-                      value={newQuestion.type || 'text'}
-                      onChange={(e) => setNewQuestion({ ...newQuestion, type: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    >
-                      <option value="text">Text</option>
-                      <option value="number">Number</option>
-                      <option value="scale">Scale</option>
-                      <option value="multiple_choice">Multiple Choice</option>
-                      <option value="checkbox">Checkbox</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={newQuestion.required ?? true}
-                        onChange={(e) => setNewQuestion({ ...newQuestion, required: e.target.checked })}
-                        className="mr-2 text-teal-600 focus:ring-teal-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Required</span>
-                    </label>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <PremiumButton
-                    size="sm"
-                    variant="outline"
-                    icon={PlusIcon}
-                    onClick={handleAddQuestion}
-                  >
-                    Add Question
-                  </PremiumButton>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-              <PremiumButton
-                variant="outline"
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                  resetForm();
-                }}
-              >
-                Cancel
-              </PremiumButton>
-              <PremiumButton
-                variant="primary"
-                icon={CheckCircleIcon}
-                onClick={viewMode === 'create' ? handleCreateSurvey : handleUpdateSurvey}
-              >
-                {viewMode === 'create' ? 'Create Survey' : 'Update Survey'}
-              </PremiumButton>
-            </div>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
+          {renderFormFields()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
+              {viewMode === 'create' ? 'Create Survey' : 'Update Survey'}
+            </button>
           </div>
-        </PremiumCard>
+        </form>
       )}
 
-      {/* Preview Mode */}
-      {viewMode === 'preview' && selectedSurvey && (
-        <PremiumCard>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Survey Preview</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedSurvey.title}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-900">{selectedSurvey.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{selectedSurvey.description}</p>
-              </div>
-
-              <div className="space-y-4">
-                {selectedSurvey.questions.map((question, index) => (
-                  <div key={question.id} className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-medium text-gray-900">
-                      {index + 1}. {question.text} {question.required && <span className="text-red-500">*</span>}
-                    </p>
-                    <div className="mt-2">
-                      {question.type === 'text' && (
-                        <input
-                          type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="Your answer"
-                          disabled
-                        />
-                      )}
-                      {question.type === 'number' && (
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="0"
-                          disabled
-                        />
-                      )}
-                      {question.type === 'scale' && (
-                        <div className="flex items-center space-x-2">
-                          {[1, 2, 3, 4, 5].map(num => (
-                            <button
-                              key={num}
-                              className="w-10 h-10 border border-gray-300 rounded-lg"
-                              disabled
-                            >
-                              {num}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end pt-4 border-t">
-              <PremiumButton
-                variant="outline"
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                }}
-              >
-                Back to List
-              </PremiumButton>
-            </div>
+      {/* Detail View */}
+      {viewMode === 'detail' && (
+        <div className="space-y-6">
+          {renderDetailView()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              Back to List
+            </button>
+            <button
+              onClick={() => handleEdit(selectedSurvey!)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              <PencilIcon className="-ml-1 mr-2 h-5 w-5" />
+              Edit Survey
+            </button>
           </div>
-        </PremiumCard>
+        </div>
       )}
-
-      {/* Responses View */}
-      {viewMode === 'responses' && selectedSurvey && (
-        <PremiumCard>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Survey Responses</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedSurvey.title}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="text-center py-12 text-gray-500">
-              <ChartBarIcon className="w-12 h-12 mx-auto mb-4" />
-              <p>Response analysis functionality will be implemented here.</p>
-              <p className="text-sm mt-2">This will show aggregated survey responses and analytics.</p>
-            </div>
-
-            <div className="flex items-center justify-end pt-4 border-t">
-              <PremiumButton
-                variant="outline"
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedSurvey(null);
-                }}
-              >
-                Back to List
-              </PremiumButton>
-            </div>
-          </div>
-        </PremiumCard>
-      )}
-    </div>
+    </InlineCrudLayout>
   );
 };
 

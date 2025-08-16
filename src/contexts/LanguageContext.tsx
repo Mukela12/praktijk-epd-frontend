@@ -85,6 +85,9 @@ const translations = {
   'nav.educationalResources': { en: 'Educational Resources', nl: 'Educatieve Bronnen' },
   'nav.resourceLibrary': { en: 'Resource Library', nl: 'Bronnen Bibliotheek' },
   'nav.adminCompanySettings': { en: 'Admin Company Settings', nl: 'Beheer Bedrijfsinstellingen' },
+  'nav.users': { en: 'Users', nl: 'Gebruikers' },
+  'nav.therapies': { en: 'Therapies', nl: 'Therapieën' },
+  'nav.psychologicalProblems': { en: 'Psychological Problems', nl: 'Hulpvragen' },
   
   // Common actions
   'action.save': { en: 'Save', nl: 'Opslaan' },
@@ -225,6 +228,7 @@ const translations = {
   'dashboard.pendingApplications': { en: 'Pending applications', nl: 'Openstaande aanmeldingen' },
   'dashboard.applied': { en: 'Applied', nl: 'Aangemeld' },
   'dashboard.adminPortal': { en: 'Admin Portal', nl: 'Beheer Portaal' },
+  'dashboard.thisWeek': { en: 'This Week', nl: 'Deze Week' },
   
   // Client
   'client.specializations': { en: 'Specializations', nl: 'Specialisaties' },

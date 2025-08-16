@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { resourcesApi, adminApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
@@ -40,6 +40,99 @@ interface Resource {
   viewCount?: number;
   status: 'draft' | 'published' | 'archived';
 }
+
+// Resource Templates
+const resourceTemplates = [
+  {
+    title: 'Understanding Anxiety',
+    description: 'A comprehensive guide to understanding and managing anxiety symptoms',
+    type: 'article' as const,
+    category: 'anxiety',
+    contentBody: `Anxiety is a natural response to stress, but when it becomes overwhelming or persistent, it can interfere with daily life. This guide will help you understand anxiety and learn effective coping strategies.
+
+What is Anxiety?
+Anxiety is a feeling of worry, nervousness, or unease about something with an uncertain outcome. It's a normal emotion that everyone experiences from time to time.
+
+Common Symptoms:
+• Racing heart or rapid breathing
+• Sweating or trembling  
+• Difficulty concentrating
+• Sleep disturbances
+• Muscle tension
+• Irritability
+
+Coping Strategies:
+1. Deep Breathing: Practice 4-7-8 breathing technique
+2. Mindfulness: Stay present in the moment
+3. Progressive Muscle Relaxation: Tense and release muscle groups
+4. Regular Exercise: Physical activity reduces stress hormones
+5. Healthy Sleep Habits: Maintain consistent sleep schedule
+
+When to Seek Help:
+If anxiety interferes with daily activities, relationships, or work, consider speaking with a mental health professional.`,
+    difficulty: 'beginner' as const,
+    tags: ['anxiety', 'mental-health', 'coping-strategies', 'self-help'],
+    isPublic: true,
+    status: 'published' as const
+  },
+  {
+    title: '10-Minute Mindfulness Meditation',
+    description: 'A guided meditation video for daily mindfulness practice',
+    type: 'video' as const,
+    category: 'mindfulness',
+    url: 'https://example.com/mindfulness-meditation-10min',
+    difficulty: 'beginner' as const,
+    tags: ['mindfulness', 'meditation', 'stress-relief', 'daily-practice'],
+    isPublic: true,
+    status: 'published' as const
+  },
+  {
+    title: 'Sleep Hygiene Checklist',
+    description: 'Essential habits for better sleep quality and mental health',
+    type: 'document' as const,
+    category: 'sleep',
+    contentBody: `Sleep Hygiene Checklist for Better Mental Health
+
+□ Consistent Schedule
+  - Go to bed and wake up at the same time every day
+  - Even on weekends!
+
+□ Create a Sleep-Friendly Environment
+  - Dark, quiet, and cool room (65-68°F)
+  - Comfortable mattress and pillows
+  - Remove electronic devices
+
+□ Evening Routine (2 hours before bed)
+  - Dim the lights
+  - Avoid screens or use blue light filters
+  - No caffeine or alcohol
+  - Light snack if hungry (avoid heavy meals)
+
+□ Relaxation Techniques
+  - Progressive muscle relaxation
+  - Deep breathing exercises
+  - Gentle stretching or yoga
+  - Reading or listening to calm music
+
+□ During the Day
+  - Get sunlight exposure, especially in the morning
+  - Exercise regularly (but not too close to bedtime)
+  - Limit naps to 20-30 minutes before 3 PM
+
+□ If You Can't Sleep
+  - Get up after 20 minutes
+  - Do a quiet, relaxing activity
+  - Return to bed when sleepy
+  - Don't watch the clock
+
+Track Your Progress:
+Use a sleep diary to identify patterns and improvements in your sleep quality.`,
+    difficulty: 'beginner' as const,
+    tags: ['sleep', 'mental-health', 'habits', 'checklist'],
+    isPublic: true,
+    status: 'published' as const
+  }
+];
 
 interface Client {
   id: string;
@@ -93,10 +186,11 @@ const ResourcesManagementInline: React.FC = () => {
   const loadResources = async () => {
     try {
       setIsLoading(true);
-      const response = await resourcesApi.getResources();
+      const response = await realApiService.resources.getResources();
       
       if (response.success && response.data) {
-        setResources(response.data.resources || response.data || []);
+        const resourcesData = response.data.resources || response.data || [];
+        setResources(Array.isArray(resourcesData) ? resourcesData : []);
       }
     } catch (error) {
       console.error('Failed to load resources:', error);
@@ -108,7 +202,7 @@ const ResourcesManagementInline: React.FC = () => {
 
   const loadClients = async () => {
     try {
-      const response = await adminApi.getClients();
+      const response = await realApiService.admin.getClients();
       if (response.success && response.data) {
         setClients(response.data.clients || []);
       }
@@ -159,14 +253,25 @@ const ResourcesManagementInline: React.FC = () => {
     }
 
     try {
-      const response = await resourcesApi.createResource({
-        ...formData,
-        createdBy: user?.id || ''
-      });
+      const resourceData = {
+        title: formData.title || '',
+        description: formData.description || '',
+        shortDescription: formData.description?.substring(0, 100) || '',
+        type: formData.type || 'article',
+        category: formData.category || 'general',
+        contentBody: formData.contentBody || '',
+        contentUrl: formData.url || '',
+        difficulty: formData.difficulty || 'beginner',
+        tags: formData.tags || [],
+        isPublic: formData.isPublic !== false,
+        status: formData.status || 'draft'
+      };
+      
+      const response = await realApiService.resources.createResource(resourceData);
       
       if (response.success) {
         success('Resource created successfully');
-        loadResources();
+        await loadResources();
         setViewMode('list');
         resetForm();
       }
@@ -181,11 +286,25 @@ const ResourcesManagementInline: React.FC = () => {
     if (!selectedResource) return;
     
     try {
-      const response = await resourcesApi.updateResource(selectedResource.id, formData);
+      const updateData = {
+        title: formData.title || selectedResource.title,
+        description: formData.description || selectedResource.description,
+        shortDescription: formData.description?.substring(0, 100) || selectedResource.description?.substring(0, 100),
+        type: formData.type || selectedResource.type,
+        category: formData.category || selectedResource.category,
+        contentBody: formData.contentBody || selectedResource.contentBody,
+        contentUrl: formData.url || selectedResource.url,
+        difficulty: formData.difficulty || selectedResource.difficulty,
+        tags: formData.tags || selectedResource.tags,
+        isPublic: formData.isPublic !== undefined ? formData.isPublic : selectedResource.isPublic,
+        status: formData.status || selectedResource.status
+      };
+      
+      const response = await realApiService.resources.updateResource(selectedResource.id, updateData);
       
       if (response.success) {
         success('Resource updated successfully');
-        loadResources();
+        await loadResources();
         setViewMode('list');
         setSelectedResource(null);
       }
@@ -200,11 +319,11 @@ const ResourcesManagementInline: React.FC = () => {
     if (!confirm('Are you sure you want to delete this resource?')) return;
     
     try {
-      const response = await resourcesApi.deleteResource(id);
+      const response = await realApiService.resources.deleteResource(id);
       
       if (response.success) {
         success('Resource deleted successfully');
-        loadResources();
+        await loadResources();
       }
     } catch (error) {
       console.error('Failed to delete resource:', error);
@@ -222,9 +341,11 @@ const ResourcesManagementInline: React.FC = () => {
     try {
       // Assign to each selected client
       const promises = selectedClients.map(clientId =>
-        resourcesApi.assignResource(selectedResource.id, {
+        realApiService.resources.assignResource(selectedResource.id, {
           clientId,
-          note: assignmentNote
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days from now
+          priority: 'normal',
+          notes: assignmentNote
         })
       );
 
@@ -255,6 +376,15 @@ const ResourcesManagementInline: React.FC = () => {
       isPublic: true,
       status: 'draft'
     });
+  };
+
+  // Handle use template
+  const handleUseTemplate = (template: typeof resourceTemplates[0]) => {
+    setFormData({
+      ...template,
+      status: 'draft' // Always start as draft
+    });
+    setViewMode('create');
   };
 
   const getResourceIcon = (type: string) => {
@@ -376,6 +506,46 @@ const ResourcesManagementInline: React.FC = () => {
               </div>
             </div>
           </PremiumCard>
+
+          {/* Templates Section for Empty State */}
+          {resources.length === 0 && searchTerm === '' && filters.type === 'all' && (
+            <div className="mb-6">
+              <PremiumCard>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Start Templates</h3>
+                <p className="text-sm text-gray-600 mb-6">Use these pre-made templates to quickly create resources for your clients</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {resourceTemplates.map((template, index) => {
+                    const TemplateIcon = getResourceIcon(template.type);
+                    return (
+                      <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start space-x-3">
+                          <div className={`p-2 rounded-lg ${getResourceTypeColor(template.type)}`}>
+                            <TemplateIcon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{template.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+                            <div className="flex items-center mt-2 space-x-2">
+                              <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(template.difficulty)}`}>
+                                {template.difficulty}
+                              </span>
+                              <span className="text-xs text-gray-500">{template.category}</span>
+                            </div>
+                            <button
+                              onClick={() => handleUseTemplate(template)}
+                              className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Use this template →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </PremiumCard>
+            </div>
+          )}
 
           {/* Resources Grid */}
           {filteredResources.length === 0 ? (

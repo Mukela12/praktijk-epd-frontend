@@ -149,10 +149,35 @@ export const therapistApi = {
     return response.data;
   },
 
-  // Appointments
-  getAppointments: async (params?: { date?: string; status?: string }): Promise<ApiResponse<Appointment[]>> => {
-    const response = await api.get('/therapist/appointments', { params });
+  getClientProgress: async (clientId: string): Promise<ApiResponse<any>> => {
+    const response = await api.get(`/therapist/clients/${clientId}/progress`);
     return response.data;
+  },
+
+  getClientSessionNotes: async (clientId: string): Promise<ApiResponse<any[]>> => {
+    const response = await api.get(`/therapist/clients/${clientId}/session-notes`);
+    return response.data;
+  },
+
+  // Appointments
+  getAppointments: async (params?: { date?: string; status?: string }): Promise<ApiResponse<any>> => {
+    try {
+      console.log('[therapistApi.getAppointments] Making request with params:', params);
+      const response = await api.get('/therapist/appointments', { params });
+      console.log('[therapistApi.getAppointments] Raw response:', response);
+      console.log('[therapistApi.getAppointments] Response data:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[therapistApi.getAppointments] Error fetching appointments:', error);
+      console.error('[therapistApi.getAppointments] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        config: error?.config
+      });
+      throw error;
+    }
   },
 
   createAppointment: async (appointmentData: any): Promise<ApiResponse<{ id: string }>> => {
@@ -211,6 +236,11 @@ export const therapistApi = {
     return response.data;
   },
 
+  shareResource: async (resourceId: string, clientIds: string[]): Promise<ApiResponse> => {
+    const response = await api.post(`/resources/${resourceId}/share`, { clientIds });
+    return response.data;
+  },
+
   // Challenges
   getChallenges: async (params?: any): Promise<ApiResponse<{ challenges: Challenge[] }>> => {
     const response = await api.get('/challenges', { params });
@@ -223,7 +253,12 @@ export const therapistApi = {
   },
 
   assignChallenge: async (challengeId: string, clientId: string, data?: any): Promise<ApiResponse> => {
-    const response = await api.post(`/challenges/${challengeId}/assign`, { clientId, ...data });
+    const response = await api.post(`/challenges/${challengeId}/assign`, { 
+      clientId, 
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+      notes: 'Challenge assigned by therapist',
+      ...data 
+    });
     return response.data;
   },
 
@@ -239,7 +274,12 @@ export const therapistApi = {
   },
 
   assignSurvey: async (surveyId: string, clientId: string, data?: any): Promise<ApiResponse> => {
-    const response = await api.post(`/surveys/${surveyId}/assign`, { clientId, ...data });
+    const response = await api.post(`/surveys/${surveyId}/assign`, { 
+      clientId, 
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+      notes: 'Survey assigned by therapist',
+      ...data 
+    });
     return response.data;
   },
 
@@ -269,9 +309,24 @@ export const clientApi = {
   },
 
   // Appointments
-  getAppointments: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<{ appointments: Appointment[] }>> => {
-    const response = await api.get('/client/appointments', { params });
-    return response.data;
+  getAppointments: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<any>> => {
+    try {
+      console.log('[clientApi.getAppointments] Making request with params:', params);
+      const response = await api.get('/client/appointments', { params });
+      console.log('[clientApi.getAppointments] Raw response:', response);
+      console.log('[clientApi.getAppointments] Response data:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[clientApi.getAppointments] Error fetching appointments:', error);
+      console.error('[clientApi.getAppointments] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        config: error?.config
+      });
+      throw error;
+    }
   },
 
   requestAppointment: async (requestData: any): Promise<ApiResponse<{ id: string }>> => {

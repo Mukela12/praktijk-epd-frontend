@@ -19,11 +19,13 @@ import {
   BookOpenIcon,
   PuzzlePieceIcon,
   ClipboardDocumentCheckIcon,
+  HeartIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
 import { UserRole } from '@/types/auth';
 import { ROLE_COLORS } from '@/types/auth';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -74,6 +76,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
     if (user?.role === UserRole.ADMIN) {
       roleSpecificItems.push(
+        {
+          name: 'Users',
+          nameKey: 'nav.users',
+          href: '/admin/users',
+          icon: UserGroupIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Appointments',
+          nameKey: 'nav.appointments',
+          href: '/admin/appointments',
+          icon: CalendarIcon,
+          roles: [UserRole.ADMIN],
+        },
         {
           name: 'Clients',
           nameKey: 'nav.clients',
@@ -128,6 +144,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           nameKey: 'nav.surveys',
           href: '/admin/surveys',
           icon: ClipboardDocumentCheckIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Therapieën',
+          nameKey: 'nav.therapies',
+          href: '/admin/therapies',
+          icon: HeartIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
+          name: 'Hulpvragen',
+          nameKey: 'nav.psychologicalProblems',
+          href: '/admin/psychological-problems',
+          icon: PuzzlePieceIcon,
           roles: [UserRole.ADMIN],
         }
       );
@@ -483,10 +513,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
             <div className="flex items-center space-x-4 ml-auto">
               {/* Notifications */}
-              <button className="text-gray-400 hover:text-gray-600 relative">
-                <BellIcon className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
+              <NotificationBell />
 
               {/* Language switcher */}
               <LanguageSwitcher />

@@ -90,7 +90,7 @@ interface QuickActionProps {
   icon: React.ComponentType<any>;
   label: string;
   onClick: () => void;
-  color: string;
+  color?: string;
 }
 
 const QuickAction: React.FC<QuickActionProps> = ({ icon: Icon, label, onClick, color }) => {

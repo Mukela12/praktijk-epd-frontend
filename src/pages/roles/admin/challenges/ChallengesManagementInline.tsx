@@ -1,82 +1,160 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import {
+  PuzzlePieceIcon,
   TrophyIcon,
-  PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
+  FlagIcon,
+  RocketLaunchIcon,
   UserGroupIcon,
-  CalendarIcon,
-  ChartBarIcon,
+  ClockIcon,
+  FireIcon,
+  StarIcon,
   CheckCircleIcon,
-  PlayIcon,
-  PauseIcon,
+  EyeIcon,
+  MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
-  ArrowTrendingUpIcon,
-  ClockIcon,
-  SparklesIcon,
-  XMarkIcon
+  PlusIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '@/store/authStore';
-import { useTranslation } from '@/contexts/LanguageContext';
-import { resourcesApi } from '@/services/endpoints';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
-import { formatDate } from '@/utils/dateFormatters';
+import {
+  TextField,
+  TextareaField,
+  SelectField,
+  NumberField,
+  TagsField,
+  CheckboxField
+} from '@/components/forms/FormFields';
+import type { Challenge, ChallengeDifficulty, ChallengeStatus } from '@/types/resources';
 
-// Types
-interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  duration: number;
-  targetValue: number;
-  targetUnit: string;
-  points: number;
-  status: 'draft' | 'published' | 'active' | 'completed' | 'archived';
-  createdBy: string;
-  startDate?: string;
-  endDate?: string;
-  participantCount?: number;
-  completionRate?: number;
-  isPublic: boolean;
-  tags?: string[];
-}
+// Challenge Templates
+const challengeTemplates = [
+  {
+    title: '7-Day Mindfulness Challenge',
+    description: 'Build a daily meditation habit with this beginner-friendly mindfulness challenge',
+    type: 'daily' as const,
+    category: 'mindfulness',
+    difficultyLevel: 'easy' as ChallengeDifficulty,
+    durationDays: 7,
+    targetValue: 7,
+    targetUnit: 'days',
+    goals: {
+      targetValue: 7,
+      targetUnit: 'days',
+      description: 'Complete 7 consecutive days of mindfulness meditation'
+    },
+    rules: [
+      'Meditate for at least 10 minutes each day',
+      'Use any meditation app or technique you prefer',
+      'Track your progress daily',
+      'If you miss a day, continue from where you left off'
+    ],
+    milestones: [
+      { id: 'm1', dueDay: 3, title: 'Getting Started', description: '3 days completed - You\'re building the habit!', targetValue: 3 },
+      { id: 'm2', dueDay: 5, title: 'Almost There', description: '5 days completed - Keep going!', targetValue: 5 },
+      { id: 'm3', dueDay: 7, title: 'Challenge Complete!', description: 'Congratulations on completing the challenge!', targetValue: 7 }
+    ],
+    rewards: 'Certificate of completion and mindfulness badge',
+    instructions: 'Find a quiet space, sit comfortably, and focus on your breath. Use guided meditations if helpful.',
+    tips: 'Set a consistent time each day, create a dedicated space, start with shorter sessions if needed',
+    status: 'active' as ChallengeStatus
+  },
+  {
+    title: '30-Day Fitness Journey',
+    description: 'Transform your physical health with daily exercise and movement',
+    type: 'daily' as const,
+    category: 'fitness',
+    difficultyLevel: 'medium' as ChallengeDifficulty,
+    durationDays: 30,
+    targetValue: 30,
+    targetUnit: 'workouts',
+    goals: {
+      targetValue: 30,
+      targetUnit: 'workouts',
+      description: 'Complete 30 days of physical exercise'
+    },
+    rules: [
+      'Exercise for at least 20 minutes daily',
+      'Mix cardio, strength, and flexibility exercises',
+      'Rest days count if you do light stretching',
+      'Listen to your body and avoid overexertion'
+    ],
+    milestones: [
+      { id: 'm1', dueDay: 7, title: 'First Week Done', description: 'Great start! Your body is adapting', targetValue: 7 },
+      { id: 'm2', dueDay: 14, title: 'Halfway Mark', description: 'Two weeks strong - habits are forming', targetValue: 14 },
+      { id: 'm3', dueDay: 21, title: 'Three Weeks', description: 'It takes 21 days to form a habit!', targetValue: 21 },
+      { id: 'm4', dueDay: 30, title: 'Champion!', description: 'You\'ve completed the fitness journey!', targetValue: 30 }
+    ],
+    rewards: 'Fitness achievement badge and personalized workout plan',
+    instructions: 'Choose activities you enjoy. Start with warm-up, do main exercise, end with cool-down.',
+    tips: 'Track progress with photos, find an accountability partner, celebrate small wins',
+    status: 'active' as ChallengeStatus
+  },
+  {
+    title: 'Gratitude Practice Challenge',
+    description: 'Cultivate happiness and positivity through daily gratitude journaling',
+    type: 'daily' as const,
+    category: 'mental_health',
+    difficultyLevel: 'easy' as ChallengeDifficulty,
+    durationDays: 14,
+    targetValue: 14,
+    targetUnit: 'entries',
+    goals: {
+      targetValue: 14,
+      targetUnit: 'entries',
+      description: 'Write 3 things you\'re grateful for each day for 14 days'
+    },
+    rules: [
+      'Write down 3 things you\'re grateful for each day',
+      'Be specific and detailed in your entries',
+      'Try to find new things each day',
+      'Reflect on why you\'re grateful for each item'
+    ],
+    milestones: [
+      { id: 'm1', dueDay: 3, title: 'Starting Strong', description: 'You\'re developing awareness of positivity', targetValue: 3 },
+      { id: 'm2', dueDay: 7, title: 'One Week', description: 'A full week of gratitude - notice any changes?', targetValue: 7 },
+      { id: 'm3', dueDay: 14, title: 'Gratitude Master', description: 'Two weeks of daily gratitude complete!', targetValue: 14 }
+    ],
+    rewards: 'Gratitude journal template and happiness tracker',
+    instructions: 'Each evening, write 3 specific things from your day. Include why you\'re grateful.',
+    tips: 'Keep journal by bedside, include people/experiences/small moments, review past entries',
+    status: 'active' as ChallengeStatus
+  }
+];
 
 const ChallengesManagementInline: React.FC = () => {
-  const { user, getDisplayName } = useAuth();
-  const { t } = useTranslation();
-  const { success, info, warning, error: errorAlert } = useAlert();
-
-  // State
+  const { success, error } = useAlert();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'detail'>('list');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'participants'>('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    status: 'all',
-    category: 'all',
-    difficulty: 'all'
-  });
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Form state for create/edit
+  // Form state
   const [formData, setFormData] = useState<Partial<Challenge>>({
     title: '',
     description: '',
-    category: 'general',
-    difficulty: 'beginner',
-    duration: 7,
+    type: 'daily',
+    category: 'mental_health',
+    difficultyLevel: 'easy',
+    durationDays: 7,
     targetValue: 1,
     targetUnit: 'times',
-    points: 100,
+    goals: {
+      targetValue: 1,
+      targetUnit: 'times',
+      description: ''
+    },
+    rules: [],
+    milestones: [],
     status: 'draft',
-    isPublic: true,
-    tags: []
+    rewards: '',
+    instructions: '',
+    tips: ''
   });
 
   // Load challenges
@@ -87,201 +165,447 @@ const ChallengesManagementInline: React.FC = () => {
   const loadChallenges = async () => {
     try {
       setIsLoading(true);
-      const response = await resourcesApi.getChallenges();
+      const response = await realApiService.challenges.getChallenges();
       
       if (response.success && response.data) {
-        setChallenges(response.data.challenges || response.data || []);
+        const challengesData = response.data.challenges || response.data || [];
+        setChallenges(Array.isArray(challengesData) ? challengesData : []);
       }
-    } catch (error) {
-      console.error('Failed to load challenges:', error);
-      errorAlert('Failed to load challenges');
+    } catch (err) {
+      console.error('Failed to load challenges:', err);
+      error('Failed to load challenges');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filter challenges
-  const filteredChallenges = challenges.filter(challenge => {
-    const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         challenge.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filters.status === 'all' || challenge.status === filters.status;
-    const matchesCategory = filters.category === 'all' || challenge.category === filters.category;
-    const matchesDifficulty = filters.difficulty === 'all' || challenge.difficulty === filters.difficulty;
-    
-    return matchesSearch && matchesStatus && matchesCategory && matchesDifficulty;
-  });
-
-  // Handle form changes
-  const handleFormChange = (field: keyof Challenge, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Handle create challenge
-  const handleCreateChallenge = async () => {
+  // Handle form submission
+  const handleSubmit = async () => {
     try {
-      const response = await resourcesApi.createChallenge({
-        ...formData,
-        createdBy: user?.id || ''
-      });
-      
-      if (response.success) {
-        success('Challenge created successfully');
-        loadChallenges();
-        setViewMode('list');
-        setFormData({
-          title: '',
-          description: '',
-          category: 'general',
-          difficulty: 'beginner',
-          duration: 7,
-          targetValue: 1,
-          targetUnit: 'times',
-          points: 100,
-          status: 'draft',
+      if (viewMode === 'create') {
+        const challengeData = {
+          title: formData.title || '',
+          description: formData.description || '',
+          category: formData.category || 'mental_health',
+          difficulty: formData.difficultyLevel || 'easy',
+          duration: formData.durationDays || 7,
+          targetValue: formData.targetValue || 1,
+          targetUnit: formData.targetUnit || 'times',
           isPublic: true,
-          tags: []
-        });
+          milestones: formData.milestones || [],
+          rewards: formData.rewards || '',
+          instructions: formData.instructions ? [formData.instructions] : [],
+          tips: formData.tips ? [formData.tips] : []
+        };
+        const response = await realApiService.challenges.createChallenge(challengeData);
+        if (response.success) {
+          success('Challenge created successfully');
+          await loadChallenges();
+          handleCancel();
+        }
+      } else if (viewMode === 'edit' && selectedChallenge) {
+        const challengeData = {
+          title: formData.title || '',
+          description: formData.description || '',
+          category: formData.category || 'mental_health',
+          difficulty: formData.difficultyLevel || 'easy',
+          duration: formData.durationDays || 7,
+          targetValue: formData.targetValue || 1,
+          targetUnit: formData.targetUnit || 'times',
+          isPublic: true,
+          milestones: formData.milestones || [],
+          rewards: formData.rewards || '',
+          instructions: formData.instructions ? [formData.instructions] : [],
+          tips: formData.tips ? [formData.tips] : []
+        };
+        const response = await realApiService.challenges.updateChallenge(selectedChallenge.id, challengeData);
+        if (response.success) {
+          success('Challenge updated successfully');
+          await loadChallenges();
+          handleCancel();
+        }
       }
-    } catch (error) {
-      console.error('Failed to create challenge:', error);
-      errorAlert('Failed to create challenge');
+    } catch (err: any) {
+      error(err.message || 'Failed to save challenge');
     }
   };
 
-  // Handle update challenge
-  const handleUpdateChallenge = async () => {
-    if (!selectedChallenge) return;
+  // Handle delete
+  const handleDelete = async (challengeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this challenge?')) return;
     
     try {
-      const response = await resourcesApi.updateChallenge(selectedChallenge.id, formData);
-      
-      if (response.success) {
-        success('Challenge updated successfully');
-        loadChallenges();
-        setViewMode('list');
-        setSelectedChallenge(null);
-      }
-    } catch (error) {
-      console.error('Failed to update challenge:', error);
-      errorAlert('Failed to update challenge');
+      await realApiService.challenges.deleteChallenge(challengeId);
+      success('Challenge deleted successfully');
+      await loadChallenges();
+    } catch (err) {
+      error('Failed to delete challenge');
     }
   };
 
-  // Handle delete challenge
-  const handleDeleteChallenge = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this challenge?')) return;
-    
-    try {
-      const response = await resourcesApi.deleteChallenge(id);
-      
-      if (response.success) {
-        success('Challenge deleted successfully');
-        loadChallenges();
+  // Handle use template
+  const handleUseTemplate = (template: typeof challengeTemplates[0]) => {
+    setFormData({
+      ...template,
+      status: 'draft' as ChallengeStatus // Always start as draft
+    });
+    setViewMode('create');
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setViewMode('list');
+    setSelectedChallenge(null);
+    setFormData({
+      title: '',
+      description: '',
+      type: 'daily',
+      category: 'mental_health',
+      difficultyLevel: 'easy',
+      durationDays: 7,
+      targetValue: 1,
+      targetUnit: 'times',
+      goals: {
+        targetValue: 1,
+        targetUnit: 'times',
+        description: ''
+      },
+      rules: [],
+      milestones: [],
+      status: 'draft'
+    });
+  };
+
+  // Handle create
+  const handleCreate = () => {
+    setViewMode('create');
+  };
+
+  // Handle edit
+  const handleEdit = (challenge: Challenge) => {
+    setSelectedChallenge(challenge);
+    setFormData(challenge);
+    setViewMode('edit');
+  };
+
+  // Handle view details
+  const handleViewDetails = (challenge: Challenge) => {
+    setSelectedChallenge(challenge);
+    setViewMode('detail');
+  };
+
+  // Filter challenges
+  const filteredChallenges = useMemo(() => {
+    return challenges.filter(challenge => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          challenge.title.toLowerCase().includes(searchLower) ||
+          challenge.description.toLowerCase().includes(searchLower) ||
+          challenge.category.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
       }
-    } catch (error) {
-      console.error('Failed to delete challenge:', error);
-      errorAlert('Failed to delete challenge');
+
+      // Category filter
+      if (filterCategory !== 'all' && challenge.category !== filterCategory) return false;
+      
+      // Difficulty filter
+      if (filterDifficulty !== 'all' && challenge.difficultyLevel !== filterDifficulty) return false;
+      
+      // Status filter
+      if (filterStatus !== 'all' && challenge.status !== filterStatus) return false;
+
+      return true;
+    });
+  }, [challenges, searchTerm, filterCategory, filterDifficulty, filterStatus]);
+
+  // Get icon for challenge category
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'mental_health': return PuzzlePieceIcon;
+      case 'fitness': return FireIcon;
+      case 'nutrition': return StarIcon;
+      case 'mindfulness': return UserGroupIcon;
+      default: return PuzzlePieceIcon;
     }
   };
 
-  // Handle status change
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const response = await resourcesApi.updateChallenge(id, { status: newStatus });
-      
-      if (response.success) {
-        success(`Challenge ${newStatus === 'published' ? 'published' : 'updated'} successfully`);
-        loadChallenges();
-      }
-    } catch (error) {
-      console.error('Failed to update challenge status:', error);
-      errorAlert('Failed to update challenge status');
+  // Get color for difficulty
+  const getDifficultyColor = (difficulty: ChallengeDifficulty) => {
+    switch (difficulty) {
+      case 'easy': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'hard': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      fitness: 'bg-red-100 text-red-800',
-      mindfulness: 'bg-purple-100 text-purple-800',
-      nutrition: 'bg-green-100 text-green-800',
-      sleep: 'bg-blue-100 text-blue-800',
-      social: 'bg-yellow-100 text-yellow-800',
-      general: 'bg-gray-100 text-gray-800'
-    };
-    return colors[category] || colors.general;
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    const colors: { [key: string]: string } = {
-      beginner: 'bg-green-100 text-green-800',
-      intermediate: 'bg-yellow-100 text-yellow-800',
-      advanced: 'bg-red-100 text-red-800'
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="large" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl shadow-sm p-6 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
-              <TrophyIcon className="w-8 h-8 mr-3" />
-              Challenges Management
-            </h1>
-            <p className="text-emerald-100 mt-1">
-              Create and manage therapeutic challenges for clients
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="bg-white/20 rounded-lg px-4 py-2">
-              <span className="text-sm">Total Challenges</span>
-              <span className="block text-xl font-bold">{challenges.length}</span>
+  // Column definitions
+  const columns = [
+    {
+      key: 'title',
+      label: 'Challenge',
+      render: (challenge: Challenge) => {
+        const Icon = getCategoryIcon(challenge.category);
+        return (
+          <div className="flex items-start space-x-3">
+            <Icon className="w-5 h-5 mt-0.5 text-indigo-600" />
+            <div>
+              <p className="font-medium text-gray-900">{challenge.title}</p>
+              <p className="text-sm text-gray-500 line-clamp-1">
+                {challenge.description}
+              </p>
             </div>
-            {viewMode === 'list' && (
-              <PremiumButton
-                onClick={() => {
-                  setViewMode('create');
-                  setFormData({
-                    title: '',
-                    description: '',
-                    category: 'general',
-                    difficulty: 'beginner',
-                    duration: 7,
-                    targetValue: 1,
-                    targetUnit: 'times',
-                    points: 100,
-                    status: 'draft',
-                    isPublic: true,
-                    tags: []
-                  });
-                }}
-                className="bg-white text-emerald-600 hover:bg-gray-50"
-                icon={PlusIcon}
-              >
-                Create Challenge
-              </PremiumButton>
-            )}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (challenge: Challenge) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {challenge.category.replace('_', ' ')}
+        </span>
+      )
+    },
+    {
+      key: 'difficulty',
+      label: 'Difficulty',
+      render: (challenge: Challenge) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(challenge.difficultyLevel)}`}>
+          {challenge.difficultyLevel}
+        </span>
+      )
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      render: (challenge: Challenge) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <ClockIcon className="w-4 h-4 mr-1" />
+          {challenge.durationDays} days
+        </div>
+      )
+    },
+    {
+      key: 'participants',
+      label: 'Participants',
+      render: (challenge: Challenge) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <UserGroupIcon className="w-4 h-4 mr-1" />
+          {challenge.participant_count}
+        </div>
+      )
+    },
+    {
+      key: 'completion',
+      label: 'Completion Rate',
+      render: (challenge: Challenge) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <CheckCircleIcon className="w-4 h-4 mr-1" />
+          {challenge.completion_rate}%
+        </div>
+      )
+    }
+  ];
+
+  // Render form fields
+  const renderFormFields = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TextField
+          label="Title"
+          name="title"
+          value={formData.title || ''}
+          onChange={(value) => setFormData({ ...formData, title: value })}
+          required
+          placeholder="Enter challenge title"
+        />
+
+        <SelectField
+          label="Category"
+          name="category"
+          value={formData.category || 'mental_health'}
+          onChange={(value) => setFormData({ ...formData, category: value })}
+          options={[
+            { value: 'mental_health', label: 'Mental Health' },
+            { value: 'fitness', label: 'Fitness' },
+            { value: 'nutrition', label: 'Nutrition' },
+            { value: 'sleep', label: 'Sleep' },
+            { value: 'mindfulness', label: 'Mindfulness' },
+            { value: 'habits', label: 'Habits' },
+            { value: 'social', label: 'Social' },
+            { value: 'learning', label: 'Learning' }
+          ]}
+          required
+        />
+
+        <SelectField
+          label="Difficulty Level"
+          name="difficultyLevel"
+          value={formData.difficultyLevel || 'easy'}
+          onChange={(value) => setFormData({ ...formData, difficultyLevel: value as ChallengeDifficulty })}
+          options={[
+            { value: 'easy', label: 'Easy' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'hard', label: 'Hard' }
+          ]}
+          required
+        />
+
+        <NumberField
+          label="Duration (days)"
+          name="durationDays"
+          value={formData.durationDays || 7}
+          onChange={(value) => setFormData({ ...formData, durationDays: value })}
+          min={1}
+          max={365}
+          required
+        />
+
+        <NumberField
+          label="Target Value"
+          name="targetValue"
+          value={formData.targetValue || 1}
+          onChange={(value) => setFormData({ ...formData, targetValue: value })}
+          min={1}
+          required
+        />
+
+        <TextField
+          label="Target Unit"
+          name="targetUnit"
+          value={formData.targetUnit || ''}
+          onChange={(value) => setFormData({ ...formData, targetUnit: value })}
+          placeholder="e.g., times, minutes, hours"
+          required
+        />
+
+        <SelectField
+          label="Status"
+          name="status"
+          value={formData.status || 'draft'}
+          onChange={(value) => setFormData({ ...formData, status: value as ChallengeStatus })}
+          options={[
+            { value: 'draft', label: 'Draft' },
+            { value: 'active', label: 'Active' },
+            { value: 'completed', label: 'Completed' },
+            { value: 'archived', label: 'Archived' }
+          ]}
+        />
+      </div>
+
+      <TextareaField
+        label="Description"
+        name="description"
+        value={formData.description || ''}
+        onChange={(value) => setFormData({ ...formData, description: value })}
+        required
+        placeholder="Describe the challenge and its objectives"
+        rows={4}
+      />
+
+      <TextareaField
+        label="Goal Description"
+        name="goalDescription"
+        value={formData.goals?.description || ''}
+        onChange={(value) => setFormData({ 
+          ...formData, 
+          goals: { ...formData.goals!, description: value }
+        })}
+        placeholder="Describe what participants should achieve"
+        rows={3}
+      />
+    </div>
+  );
+
+  // Render detail view
+  const renderDetailView = () => {
+    if (!selectedChallenge) return null;
+
+    const Icon = getCategoryIcon(selectedChallenge.category);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-4">
+          <Icon className="w-8 h-8 text-indigo-600" />
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">{selectedChallenge.title}</h2>
+            <p className="text-gray-500 mt-1">{selectedChallenge.category.replace('_', ' ')} • {selectedChallenge.difficultyLevel}</p>
           </div>
         </div>
-      </div>
 
-      {/* View modes */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Duration</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedChallenge.durationDays} days</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Target</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedChallenge.targetValue} {selectedChallenge.targetUnit}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Participants</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedChallenge.participant_count}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Completion Rate</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedChallenge.completion_rate}%</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{selectedChallenge.description}</p>
+        </div>
+
+        {selectedChallenge.goals && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Goals</h3>
+            <p className="text-gray-700">{selectedChallenge.goals.description}</p>
+          </div>
+        )}
+
+        {selectedChallenge.rules && selectedChallenge.rules.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Rules</h3>
+            <ul className="list-disc list-inside space-y-1">
+              {selectedChallenge.rules.map((rule, index) => (
+                <li key={index} className="text-gray-700">{rule}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="text-sm text-gray-500">
+          <p>Created: {new Date(selectedChallenge.created_at).toLocaleDateString()}</p>
+          <p>Last updated: {new Date(selectedChallenge.updated_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <InlineCrudLayout
+      title="Challenge Management"
+      subtitle="Create and manage therapeutic challenges for clients"
+      icon={TrophyIcon}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      isLoading={isLoading}
+      showCreateButton={viewMode === 'list'}
+      createButtonText="Create Challenge"
+      totalCount={challenges.length}
+      onBack={viewMode !== 'list' ? handleCancel : undefined}
+    >
       {viewMode === 'list' && (
         <>
-          {/* Filters */}
-          <PremiumCard>
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+          {/* Search and Filters */}
+          <div className="mb-6 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex-1 max-w-lg">
                 <div className="relative">
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -289,145 +613,161 @@ const ChallengesManagementInline: React.FC = () => {
                     placeholder="Search challenges..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="mental_health">Mental Health</option>
+                  <option value="fitness">Fitness</option>
+                  <option value="nutrition">Nutrition</option>
+                  <option value="sleep">Sleep</option>
+                  <option value="mindfulness">Mindfulness</option>
+                  <option value="habits">Habits</option>
+                  <option value="social">Social</option>
+                  <option value="learning">Learning</option>
+                </select>
+                <select
+                  value={filterDifficulty}
+                  onChange={(e) => setFilterDifficulty(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">All Difficulties</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="all">All Status</option>
                   <option value="draft">Draft</option>
-                  <option value="published">Published</option>
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
                   <option value="archived">Archived</option>
                 </select>
-                <select
-                  value={filters.category}
-                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="all">All Categories</option>
-                  <option value="fitness">Fitness</option>
-                  <option value="mindfulness">Mindfulness</option>
-                  <option value="nutrition">Nutrition</option>
-                  <option value="sleep">Sleep</option>
-                  <option value="social">Social</option>
-                  <option value="general">General</option>
-                </select>
-                <select
-                  value={filters.difficulty}
-                  onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="all">All Difficulties</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-              <div className="text-sm text-gray-600">
-                Showing {filteredChallenges.length} of {challenges.length} challenges
               </div>
             </div>
-          </PremiumCard>
+          </div>
 
-          {/* Challenges List */}
+          {/* Templates Section for Empty State */}
+          {challenges.length === 0 && searchTerm === '' && filterCategory === 'all' && filterDifficulty === 'all' && filterStatus === 'all' && (
+            <div className="mb-6 bg-white shadow-sm rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Challenge Templates</h3>
+              <p className="text-sm text-gray-600 mb-6">Start with these professionally designed therapeutic challenges</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {challengeTemplates.map((template, index) => {
+                  const Icon = getCategoryIcon(template.category);
+                  return (
+                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start space-x-3">
+                        <div className="p-2 rounded-lg bg-indigo-100">
+                          <Icon className="w-5 h-5 text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{template.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+                          <div className="flex items-center mt-2 space-x-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(template.difficultyLevel)}`}>
+                              {template.difficultyLevel}
+                            </span>
+                            <span className="text-xs text-gray-500">{template.durationDays} days</span>
+                          </div>
+                          <button
+                            onClick={() => handleUseTemplate(template)}
+                            className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                          >
+                            Use this template →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Challenge List */}
           {filteredChallenges.length === 0 ? (
-            <PremiumEmptyState
-              icon={TrophyIcon}
-              title="No Challenges Found"
-              description={searchTerm || filters.status !== 'all' ? "No challenges match your filters." : "Create your first challenge to get started."}
-              action={{
-                label: 'Create Challenge',
-                onClick: () => setViewMode('create')
-              }}
-            />
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <PuzzlePieceIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No challenges found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm || filterCategory !== 'all' || filterDifficulty !== 'all' || filterStatus !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'Get started by creating a new challenge'}
+              </p>
+              {searchTerm === '' && filterCategory === 'all' && filterDifficulty === 'all' && filterStatus === 'all' && (
+                <div className="mt-6">
+                  <button
+                    onClick={handleCreate}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Create Challenge
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredChallenges.map((challenge) => (
-                <PremiumCard key={challenge.id} className="hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{challenge.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{challenge.description}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(challenge.category)}`}>
-                          {challenge.category}
-                        </span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getDifficultyColor(challenge.difficulty)}`}>
-                          {challenge.difficulty}
-                        </span>
-                        <StatusBadge
-                          type="general"
-                          status={challenge.status}
-                          size="sm"
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <ClockIcon className="w-4 h-4 mr-1" />
-                          {challenge.duration} days
-                        </div>
-                        <div className="flex items-center">
-                          <SparklesIcon className="w-4 h-4 mr-1" />
-                          {challenge.points} points
-                        </div>
-                        <div className="flex items-center">
-                          <UserGroupIcon className="w-4 h-4 mr-1" />
-                          {challenge.participantCount || 0} participants
-                        </div>
-                        <div className="flex items-center">
-                          <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                          {challenge.completionRate || 0}% completion
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedChallenge(challenge);
-                          setViewMode('participants');
-                        }}
-                        className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center"
+            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {columns.map((column) => (
+                      <th
+                        key={column.key}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        <EyeIcon className="w-4 h-4 mr-1" />
-                        View Participants
-                      </button>
-                    </div>
-                    <div className="flex space-x-2">
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={PencilIcon}
-                        onClick={() => {
-                          setSelectedChallenge(challenge);
-                          setFormData(challenge);
-                          setViewMode('edit');
-                        }}
-                      >
-                        Edit
-                      </PremiumButton>
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={TrashIcon}
-                        onClick={() => handleDeleteChallenge(challenge.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Delete
-                      </PremiumButton>
-                    </div>
-                  </div>
-                </PremiumCard>
-              ))}
+                        {column.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredChallenges.map((challenge) => (
+                    <tr key={challenge.id} className="hover:bg-gray-50">
+                      {columns.map((column) => (
+                        <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                          {column.render(challenge)}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleViewDetails(challenge)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(challenge)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(challenge.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>
@@ -435,223 +775,51 @@ const ChallengesManagementInline: React.FC = () => {
 
       {/* Create/Edit Form */}
       {(viewMode === 'create' || viewMode === 'edit') && (
-        <PremiumCard>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {viewMode === 'create' ? 'Create New Challenge' : 'Edit Challenge'}
-              </h2>
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedChallenge(null);
-                  setFormData({
-                    title: '',
-                    description: '',
-                    category: 'general',
-                    difficulty: 'beginner',
-                    duration: 7,
-                    targetValue: 1,
-                    targetUnit: 'times',
-                    points: 100,
-                    status: 'draft',
-                    isPublic: true,
-                    tags: []
-                  });
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formData.title || ''}
-                  onChange={(e) => handleFormChange('title', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Challenge title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select
-                  value={formData.category || 'general'}
-                  onChange={(e) => handleFormChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="fitness">Fitness</option>
-                  <option value="mindfulness">Mindfulness</option>
-                  <option value="nutrition">Nutrition</option>
-                  <option value="sleep">Sleep</option>
-                  <option value="social">Social</option>
-                  <option value="general">General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                <select
-                  value={formData.difficulty || 'beginner'}
-                  onChange={(e) => handleFormChange('difficulty', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (days)</label>
-                <input
-                  type="number"
-                  value={formData.duration || 7}
-                  onChange={(e) => handleFormChange('duration', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Value</label>
-                <input
-                  type="number"
-                  value={formData.targetValue || 1}
-                  onChange={(e) => handleFormChange('targetValue', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Unit</label>
-                <input
-                  type="text"
-                  value={formData.targetUnit || 'times'}
-                  onChange={(e) => handleFormChange('targetUnit', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="e.g., times, minutes, hours"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
-                <input
-                  type="number"
-                  value={formData.points || 100}
-                  onChange={(e) => handleFormChange('points', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min="1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.status || 'draft'}
-                  onChange={(e) => handleFormChange('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  rows={4}
-                  placeholder="Describe the challenge..."
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isPublic ?? true}
-                    onChange={(e) => handleFormChange('isPublic', e.target.checked)}
-                    className="mr-2 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Make this challenge public</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-              <PremiumButton
-                variant="outline"
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedChallenge(null);
-                }}
-              >
-                Cancel
-              </PremiumButton>
-              <PremiumButton
-                variant="primary"
-                icon={CheckCircleIcon}
-                onClick={viewMode === 'create' ? handleCreateChallenge : handleUpdateChallenge}
-              >
-                {viewMode === 'create' ? 'Create Challenge' : 'Update Challenge'}
-              </PremiumButton>
-            </div>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
+          {renderFormFields()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
+              {viewMode === 'create' ? 'Create Challenge' : 'Update Challenge'}
+            </button>
           </div>
-        </PremiumCard>
+        </form>
       )}
 
-      {/* Participants View */}
-      {viewMode === 'participants' && selectedChallenge && (
-        <PremiumCard>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Challenge Participants</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedChallenge.title}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedChallenge(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="text-center py-12 text-gray-500">
-              <UserGroupIcon className="w-12 h-12 mx-auto mb-4" />
-              <p>Participant management functionality will be implemented here.</p>
-              <p className="text-sm mt-2">This will show all clients participating in this challenge and their progress.</p>
-            </div>
-
-            <div className="flex items-center justify-end pt-4 border-t">
-              <PremiumButton
-                variant="outline"
-                onClick={() => {
-                  setViewMode('list');
-                  setSelectedChallenge(null);
-                }}
-              >
-                Back to List
-              </PremiumButton>
-            </div>
+      {/* Detail View */}
+      {viewMode === 'detail' && (
+        <div className="space-y-6">
+          {renderDetailView()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Back to List
+            </button>
+            <button
+              onClick={() => handleEdit(selectedChallenge!)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <PencilIcon className="-ml-1 mr-2 h-5 w-5" />
+              Edit Challenge
+            </button>
           </div>
-        </PremiumCard>
+        </div>
       )}
-    </div>
+    </InlineCrudLayout>
   );
 };
 

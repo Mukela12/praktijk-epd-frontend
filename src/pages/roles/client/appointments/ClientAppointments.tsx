@@ -34,7 +34,9 @@ import {
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { realApiService } from '@/services/realApi';
+import { clientApi } from '@/services/endpoints';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import AppointmentBookingInline from '@/components/appointments/AppointmentBookingInline';
 
 interface Appointment {
   id: string;
@@ -69,6 +71,7 @@ const ClientAppointments: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleAppointmentId, setRescheduleAppointmentId] = useState<string | null>(null);
+  const [showBookingForm, setShowBookingForm] = useState(false);
   const hasErrorRef = useRef(false);
   const loadingRef = useRef(false);
 
@@ -82,7 +85,8 @@ const ClientAppointments: React.FC = () => {
         loadingRef.current = true;
         setIsLoading(true);
         hasErrorRef.current = false;
-        const response = await realApiService.client.getAppointments();
+        console.log('[ClientAppointments] Calling clientApi.getAppointments...');
+        const response = await clientApi.getAppointments();
         
         if (response.success && response.data) {
           // response.data is the appointments array directly
@@ -99,7 +103,14 @@ const ClientAppointments: React.FC = () => {
           setAppointments(formattedAppointments);
         }
       } catch (error: any) {
-        console.error('Failed to load appointments:', error);
+        console.error('[ClientAppointments] Failed to load appointments:', error);
+        console.error('[ClientAppointments] Error details:', {
+          message: error?.message,
+          response: error?.response,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          config: error?.config
+        });
         
         // Don't keep retrying if it's a rate limit or auth error
         if (error?.response?.status === 429 || error?.response?.status === 403) {
@@ -111,7 +122,14 @@ const ClientAppointments: React.FC = () => {
       }
     };
 
-    loadAppointments();
+    // Add a small delay to prevent immediate API calls
+    const timer = setTimeout(() => {
+      loadAppointments();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -210,35 +228,8 @@ const ClientAppointments: React.FC = () => {
     }
   };
 
-  const handleBookSession = async () => {
-    try {
-      // For now, create a simple appointment request
-      const appointmentData = {
-        preferredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next week
-        preferredTime: '10:00',
-        therapyType: 'regular',
-        urgencyLevel: 'normal',
-        reason: 'Regular therapy session'
-      };
-
-      console.log('Requesting appointment:', appointmentData);
-      const response = await realApiService.client.requestAppointment(appointmentData);
-      
-      if (response.success) {
-        alert('Appointment request submitted successfully! You will receive a confirmation shortly.');
-        // Refresh appointments list
-        window.location.reload();
-      } else {
-        alert('Failed to submit appointment request. Please try again later.');
-      }
-    } catch (error: any) {
-      console.error('Failed to book session:', error);
-      if (error?.response?.status === 500) {
-        alert('Appointment booking is temporarily unavailable. Please contact your therapist directly.');
-      } else {
-        alert('Failed to book session. Please try again later.');
-      }
-    }
+  const handleBookSession = () => {
+    setShowBookingForm(true);
   };
 
   const filteredAppointments = appointments.filter(appointment => {
@@ -284,7 +275,22 @@ const ClientAppointments: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Debugger removed for production */}
       <div className="space-y-8 p-6">
+        {/* Show booking form if active */}
+        {showBookingForm ? (
+          <div className="max-w-5xl mx-auto">
+            <button
+              onClick={() => setShowBookingForm(false)}
+              className="mb-4 inline-flex items-center text-blue-600 hover:text-blue-700"
+            >
+              <ChevronLeftIcon className="w-5 h-5 mr-1" />
+              Back to Appointments
+            </button>
+            <AppointmentBookingInline />
+          </div>
+        ) : (
+          <>
         {/* Header with Glassmorphism */}
         <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl">
           <div className="absolute inset-0 bg-gradient-to-r from-violet-100/30 via-sky-100/30 to-emerald-100/30"></div>
@@ -677,6 +683,8 @@ const ClientAppointments: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

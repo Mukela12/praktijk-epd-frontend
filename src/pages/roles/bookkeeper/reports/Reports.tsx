@@ -99,11 +99,10 @@ const Reports: React.FC = () => {
         const { startDate, endDate } = getDateRangeForPeriod(reportPeriod);
         
         // Load data with period filters
-        const [invoicesResponse, clientsResponse, therapistsResponse, appointmentsResponse] = await Promise.all([
+        const [invoicesResponse, clientsResponse, therapistsResponse] = await Promise.all([
           realApiService.bookkeeper.getInvoices({}),
           realApiService.clients.getAll(),
-          realApiService.therapists.getAll(),
-          realApiService.appointments.getAll()
+          realApiService.therapists.getAll()
         ]);
 
         if (invoicesResponse.success && invoicesResponse.data) {
@@ -116,10 +115,6 @@ const Reports: React.FC = () => {
 
         if (therapistsResponse.success && therapistsResponse.data) {
           setTherapists(therapistsResponse.data);
-        }
-
-        if (appointmentsResponse.success && appointmentsResponse.data) {
-          setAppointments(appointmentsResponse.data);
         }
       } catch (error) {
         console.error('Failed to load reports data:', error);

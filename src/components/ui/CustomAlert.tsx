@@ -224,12 +224,71 @@ export const useAlert = () => {
   const info = (message: string, options?: AlertOptions) => 
     showAlert('info', message, options);
 
+  interface ConfirmOptions {
+    title?: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'warning' | 'info';
+  }
+
+  const confirm = (options: string | ConfirmOptions, title?: string): Promise<boolean> => {
+    // Handle both old and new signatures
+    let confirmOptions: ConfirmOptions;
+    if (typeof options === 'string') {
+      confirmOptions = {
+        message: options,
+        title: title || 'Confirm',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
+        type: 'info'
+      };
+    } else {
+      confirmOptions = {
+        title: options.title || 'Confirm',
+        message: options.message,
+        confirmText: options.confirmText || 'Confirm',
+        cancelText: options.cancelText || 'Cancel',
+        type: options.type || 'info'
+      };
+    }
+
+    return new Promise((resolve) => {
+      const handleConfirm = () => {
+        removeAlert(alertId);
+        resolve(true);
+      };
+      
+      const handleCancel = () => {
+        removeAlert(alertId);
+        resolve(false);
+      };
+      
+      const alertId = Date.now();
+      const alert = {
+        id: alertId,
+        type: confirmOptions.type as AlertType,
+        title: confirmOptions.title,
+        message: confirmOptions.message,
+        duration: 0, // Don't auto-close
+        action: {
+          label: confirmOptions.confirmText!,
+          onClick: handleConfirm
+        }
+      };
+      
+      // Add a cancel button by extending the alert
+      alerts.forEach(updateFn => updateFn(alert));
+    });
+  };
+
   return {
     alerts: activeAlerts,
     success,
     error,
     warning,
     info,
+    confirm,
     removeAlert
   };
 };

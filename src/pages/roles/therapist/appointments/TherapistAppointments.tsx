@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CalendarIcon,
   ClockIcon,
@@ -17,10 +17,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { useAppointments } from '@/hooks/useApi';
+import { useTherapistAppointments } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumListItem, PremiumMetric } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { therapistApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
+import AppointmentDebugger from '@/components/debug/AppointmentDebugger';
 
 // Types
 interface Appointment {
@@ -42,8 +45,22 @@ interface Appointment {
 const TherapistAppointments: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
-  const { getAll: getAppointments, isLoading } = useAppointments();
-  const { success, info, warning } = useAlert();
+  const { appointments: apiAppointments, getAppointments, isLoading, error: apiError } = useTherapistAppointments();
+  const { success, info, warning, error: showError } = useAlert();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[TherapistAppointments] Component mounted');
+    console.log('[TherapistAppointments] Current user:', user);
+    console.log('[TherapistAppointments] User ID:', user?.id);
+    console.log('[TherapistAppointments] User role:', user?.role);
+  }, [user]);
+
+  useEffect(() => {
+    console.log('[TherapistAppointments] API Appointments data:', apiAppointments);
+    console.log('[TherapistAppointments] Is Loading:', isLoading);
+    console.log('[TherapistAppointments] API Error:', apiError);
+  }, [apiAppointments, isLoading, apiError]);
 
   // State
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -54,127 +71,113 @@ const TherapistAppointments: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
 
-  // Mock appointments data
-  const mockAppointments: Appointment[] = [
-    {
-      id: '1',
-      client_name: 'Maria Jansen',
-      client_id: 'client_1',
-      date: '2024-08-02',
-      time: '09:00',
-      duration: 50,
-      type: 'therapy',
-      location: 'office',
-      status: 'scheduled',
-      notes: 'Regular CBT session',
-      preparation_notes: 'Review anxiety homework from last session',
-      priority: 'normal'
-    },
-    {
-      id: '2',
-      client_name: 'Peter de Vries',
-      client_id: 'client_2',
-      date: '2024-08-02',
-      time: '10:30',
-      duration: 50,
-      type: 'therapy',
-      location: 'online',
-      status: 'scheduled',
-      notes: 'EMDR session',
-      preparation_notes: 'Prepare trauma processing protocol',
-      priority: 'high'
-    },
-    {
-      id: '3',
-      client_name: 'Lisa van Berg',
-      client_id: 'client_3',
-      date: '2024-08-02',
-      time: '14:00',
-      duration: 50,
-      type: 'intake',
-      location: 'office',
-      status: 'scheduled',
-      notes: 'Initial assessment',
-      preparation_notes: 'First session - intake questionnaire',
-      priority: 'normal'
-    },
-    {
-      id: '4',
-      client_name: 'Jan Bakker',
-      client_id: 'client_4',
-      date: '2024-08-01',
-      time: '15:30',
-      duration: 50,
-      type: 'follow_up',
-      location: 'phone',
-      status: 'completed',
-      notes: 'Follow-up after treatment',
-      session_notes: 'Client doing well, discussed coping strategies',
-      priority: 'low'
-    },
-    {
-      id: '5',
-      client_name: 'Sophie Hendricks',
-      client_id: 'client_5',
-      date: '2024-08-03',
-      time: '11:00',
-      duration: 50,
-      type: 'assessment',
-      location: 'office',
-      status: 'scheduled',
-      notes: 'Psychological assessment',
-      preparation_notes: 'Prepare assessment materials',
-      priority: 'urgent'
-    },
-    {
-      id: '6',
-      client_name: 'Mark van Dijk',
-      client_id: 'client_6',
-      date: '2024-08-01',
-      time: '13:00',
-      duration: 50,
-      type: 'therapy',
-      location: 'office',
-      status: 'no_show',
-      notes: 'Weekly therapy session',
-      priority: 'normal'
-    }
-  ];
 
-  // Load appointments
+  // Use refs to prevent re-renders and infinite loops
+  const hasLoadedRef = useRef(false);
+  const isLoadingRef = useRef(false);
+
+  // Load appointments on mount - only once
   useEffect(() => {
+    // Prevent multiple loads
+    if (hasLoadedRef.current || isLoadingRef.current) {
+      console.log('[TherapistAppointments] Already loaded or loading, skipping...');
+      return;
+    }
+
     const loadAppointments = async () => {
+      isLoadingRef.current = true;
+      console.log('[TherapistAppointments] Starting to load appointments...');
       try {
-        const data = await getAppointments();
-        if (Array.isArray(data) && data.length > 0) {
-          // Map API data to appointment format
-          const mappedAppointments = data.map(apt => ({
-            id: apt.id || apt.appointment_id,
-            client_name: apt.client_name || apt.client?.name || 'Unknown Client',
-            client_id: apt.client_id,
-            date: apt.date || apt.appointment_date,
-            time: apt.time || apt.appointment_time,
-            duration: apt.duration || 50,
-            type: apt.type || 'therapy',
-            location: apt.location || 'office',
-            status: apt.status || 'scheduled',
-            notes: apt.notes,
-            preparation_notes: apt.preparation_notes,
-            session_notes: apt.session_notes,
-            priority: apt.priority || 'normal'
-          }));
-          setAppointments(mappedAppointments);
+        hasLoadedRef.current = true;
+        // Call the getAppointments function from the hook
+        if (getAppointments) {
+          console.log('[TherapistAppointments] Using therapist-specific API');
+          const result = await getAppointments();
+          console.log('[TherapistAppointments] Therapist API result:', result);
         } else {
-          setAppointments(mockAppointments);
+          // Fallback: Use the general appointments API if therapist-specific fails
+          console.log('[TherapistAppointments] Using fallback appointments API');
+          console.log('[TherapistAppointments] Therapist ID for query:', user?.id);
+          const response = await realApiService.appointments.getAll({ 
+            therapistId: user?.id,
+            status: 'scheduled' 
+          });
+          console.log('[TherapistAppointments] Fallback API response:', response);
+          if (response.success && response.data) {
+            setAppointments(response.data.appointments || []);
+          }
         }
-      } catch (error) {
-        console.error('Failed to load appointments:', error);
-        setAppointments(mockAppointments);
+      } catch (err: any) {
+        console.error('[TherapistAppointments] Error loading appointments:', err);
+        console.error('[TherapistAppointments] Error response:', err?.response);
+        console.error('[TherapistAppointments] Error status:', err?.response?.status);
+        console.error('[TherapistAppointments] Error data:', err?.response?.data);
+        console.error('Failed to load appointments:', err);
+        
+        // Check if it's a rate limit error
+        if (err?.response?.status === 429) {
+          warning('Too many requests. Please wait a moment before refreshing.');
+        } else if (err?.response?.status === 403) {
+          showError('Access denied. Please check your permissions.');
+        } else if (err?.response?.status === 401) {
+          showError('Session expired. Please login again.');
+        } else if (err?.response?.status === 500) {
+          showError('Server error. Please try again later.');
+        } else if (err?.response?.status === 404) {
+          // 404 might mean no appointments endpoint or no appointments
+          info('No appointments found.');
+          setAppointments([]);
+        } else {
+          // Generic error - don't retry automatically
+          showError('Unable to load appointments. Please use the refresh button.');
+          setAppointments([]); // Set empty to prevent infinite loop
+        }
+      } finally {
+        isLoadingRef.current = false;
       }
     };
 
-    loadAppointments();
-  }, [getAppointments]);
+    // Add a small delay to prevent immediate API calls on mount
+    const timer = setTimeout(() => {
+      loadAppointments();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []); // Empty dependency array - only run once on mount
+  
+  // Update local appointments when API data changes
+  useEffect(() => {
+    console.log('[TherapistAppointments] Processing API appointments:', apiAppointments);
+    if (Array.isArray(apiAppointments)) {
+      console.log('[TherapistAppointments] API appointments is array, length:', apiAppointments.length);
+      // Map API data to appointment format
+      const mappedAppointments = apiAppointments.map((apt, index) => {
+        console.log(`[TherapistAppointments] Mapping appointment ${index}:`, apt);
+        return {
+        id: apt.id || apt.appointment_id || String(Math.random()),
+        client_name: apt.client_name || apt.client?.name || `${apt.client_first_name || ''} ${apt.client_last_name || ''}`.trim() || 'Unknown Client',
+        client_id: apt.client_id,
+        date: apt.date || apt.appointment_date,
+        time: apt.time || apt.appointment_time || apt.start_time,
+        duration: apt.duration || 50,
+        type: apt.type || 'therapy',
+        location: apt.location || 'office',
+        status: apt.status || 'scheduled',
+        notes: apt.notes,
+        preparation_notes: apt.preparation_notes,
+        session_notes: apt.session_notes,
+        priority: apt.priority || 'normal'
+      }});
+      console.log('[TherapistAppointments] Mapped appointments:', mappedAppointments);
+      setAppointments(mappedAppointments);
+    } else {
+      // If no appointments or invalid data, set empty array
+      console.log('[TherapistAppointments] No appointments or invalid data, setting empty array');
+      setAppointments([]);
+    }
+  }, [apiAppointments]);
 
   // Filter appointments
   const filteredAppointments = appointments.filter(appointment => {
@@ -211,36 +214,119 @@ const TherapistAppointments: React.FC = () => {
 
   const stats = getAppointmentStats();
 
+  // Handle creating new appointment
+  const handleCreateAppointment = async () => {
+    try {
+      // In a real application, this would open a modal or navigate to a form
+      // For now, we'll just show a message indicating the functionality is available
+      info('New appointment creation - Integration with appointment booking system needed');
+      
+      // Example of how it would work:
+      // const appointmentData = {
+      //   client_id: 'selected_client_id',
+      //   date: '2024-08-15',
+      //   time: '10:00',
+      //   duration: 50,
+      //   type: 'therapy',
+      //   location: 'office',
+      //   notes: 'Regular therapy session'
+      // };
+      // 
+      // const response = await therapistApi.createAppointment(appointmentData);
+      // if (response.success) {
+      //   success('Appointment created successfully');
+      //   await getAppointments(); // Refresh the list
+      // }
+    } catch (err: any) {
+      errorAlert(`Failed to create appointment: ${err.response?.data?.message || err.message}`);
+    }
+  };
+
+  // Manual refresh function
+  const refreshAppointments = async () => {
+    if (isLoadingRef.current) {
+      warning('Already loading appointments...');
+      return;
+    }
+    
+    try {
+      isLoadingRef.current = true;
+      console.log('[TherapistAppointments] Manual refresh triggered');
+      if (getAppointments) {
+        await getAppointments();
+        success('Appointments refreshed');
+      }
+    } catch (err) {
+      showError('Failed to refresh appointments');
+    } finally {
+      isLoadingRef.current = false;
+    }
+  };
+
   // Handle appointment actions
-  const handleAppointmentAction = (appointmentId: string, action: string) => {
+  const handleAppointmentAction = async (appointmentId: string, action: string) => {
     const appointment = appointments.find(apt => apt.id === appointmentId);
-    if (appointment) {
+    if (!appointment) return;
+
+    try {
       switch (action) {
         case 'complete':
-          setAppointments(prev => 
-            prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'completed' } : apt)
-          );
-          success(`Session with ${appointment.client_name} marked as completed`);
+          const completeResponse = await therapistApi.updateAppointment(appointmentId, { 
+            status: 'completed',
+            session_notes: 'Session completed'
+          });
+          if (completeResponse.success) {
+            setAppointments(prev => 
+              prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'completed' } : apt)
+            );
+            success(`Session with ${appointment.client_name} marked as completed`);
+          }
           break;
         case 'cancel':
-          setAppointments(prev => 
-            prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'cancelled' } : apt)
-          );
-          warning(`Appointment with ${appointment.client_name} cancelled`);
+          const cancelResponse = await therapistApi.updateAppointment(appointmentId, { 
+            status: 'cancelled',
+            notes: 'Appointment cancelled by therapist'
+          });
+          if (cancelResponse.success) {
+            setAppointments(prev => 
+              prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'cancelled' } : apt)
+            );
+            warning(`Appointment with ${appointment.client_name} cancelled`);
+          }
           break;
         case 'reschedule':
-          info(`Opening scheduler for ${appointment.client_name}`);
+          info(`Opening scheduler for ${appointment.client_name} - Integration with calendar system needed`);
           break;
         case 'notes':
-          info(`Opening session notes for ${appointment.client_name}`);
+          info(`Opening session notes for ${appointment.client_name} - Notes interface integration needed`);
           break;
         case 'join':
-          success(`Joining session with ${appointment.client_name}`);
+          if (appointment.location === 'online') {
+            success(`Joining online session with ${appointment.client_name}`);
+            // In a real app, this would open the video conferencing platform
+          }
           break;
         case 'call':
-          info(`Calling ${appointment.client_name}`);
+          if (appointment.location === 'phone') {
+            info(`Calling ${appointment.client_name} - Phone system integration needed`);
+            // In a real app, this would integrate with a phone system
+          }
+          break;
+        case 'no_show':
+          const noShowResponse = await therapistApi.updateAppointment(appointmentId, { 
+            status: 'no_show',
+            notes: 'Client did not show up for appointment'
+          });
+          if (noShowResponse.success) {
+            setAppointments(prev => 
+              prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'no_show' } : apt)
+            );
+            warning(`${appointment.client_name} marked as no-show`);
+          }
           break;
       }
+    } catch (err: any) {
+      showError(`Failed to ${action} appointment: ${err.response?.data?.message || err.message}`);
     }
   };
 
@@ -277,7 +363,8 @@ const TherapistAppointments: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  // Show loading state
+  if (isLoading && appointments.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="large" />
@@ -285,8 +372,26 @@ const TherapistAppointments: React.FC = () => {
     );
   }
 
+  // Show error state if there's an API error and no appointments
+  if (apiError && appointments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <ExclamationTriangleIcon className="w-12 h-12 text-red-500" />
+        <p className="text-gray-600">Unable to load appointments</p>
+        <button
+          onClick={refreshAppointments}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Temporary debugger */}
+      <AppointmentDebugger />
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-sm p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -302,9 +407,17 @@ const TherapistAppointments: React.FC = () => {
           <div className="flex space-x-3">
             <PremiumButton
               variant="outline"
+              icon={ClockIcon}
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+              onClick={refreshAppointments}
+            >
+              Refresh
+            </PremiumButton>
+            <PremiumButton
+              variant="outline"
               icon={PlusIcon}
               className="bg-white/10 border-white/30 text-white hover:bg-white/20"
-              onClick={() => info('Schedule new appointment')}
+              onClick={() => handleCreateAppointment()}
             >
               New Appointment
             </PremiumButton>
@@ -408,7 +521,62 @@ const TherapistAppointments: React.FC = () => {
 
       {/* Appointments List */}
       <PremiumCard>
-        {filteredAppointments.length === 0 ? (
+        {appointments.length === 0 && !isLoading ? (
+          <div className="max-w-2xl mx-auto py-12">
+            <div className="text-center">
+              <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                <UserIcon className="w-12 h-12 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+                Welcome to Your Appointments Dashboard
+              </h3>
+              <p className="text-lg text-gray-600 mb-8">
+                You haven't been assigned any clients yet. Once an administrator assigns clients to you, 
+                their appointments will appear here.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 mr-2" />
+                  What happens next?
+                </h4>
+                <ul className="space-y-2 text-blue-800">
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 rounded-full text-blue-900 text-center text-sm font-semibold mr-3 flex-shrink-0">1</span>
+                    <span>Clients will request appointments through the platform</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 rounded-full text-blue-900 text-center text-sm font-semibold mr-3 flex-shrink-0">2</span>
+                    <span>An administrator will review their needs and assign them to you based on your specializations and availability</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 rounded-full text-blue-900 text-center text-sm font-semibold mr-3 flex-shrink-0">3</span>
+                    <span>You'll receive a notification when a new client is assigned to you</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="inline-block w-6 h-6 bg-blue-200 rounded-full text-blue-900 text-center text-sm font-semibold mr-3 flex-shrink-0">4</span>
+                    <span>Their appointments will automatically appear in this dashboard</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="mt-8 flex justify-center space-x-4">
+                <PremiumButton
+                  variant="primary"
+                  icon={UserIcon}
+                  onClick={() => window.location.href = '/therapist/profile'}
+                >
+                  Update Your Profile
+                </PremiumButton>
+                <PremiumButton
+                  variant="outline"
+                  icon={ClockIcon}
+                  onClick={refreshAppointments}
+                >
+                  Check for Updates
+                </PremiumButton>
+              </div>
+            </div>
+          </div>
+        ) : filteredAppointments.length === 0 ? (
           <PremiumEmptyState
             icon={CalendarIcon}
             title="No Appointments Found"
@@ -491,6 +659,14 @@ const TherapistAppointments: React.FC = () => {
                             onClick={() => handleAppointmentAction(appointment.id, 'cancel')}
                           >
                             Cancel
+                          </PremiumButton>
+                          <PremiumButton
+                            size="sm"
+                            variant="outline"
+                            icon={ExclamationTriangleIcon}
+                            onClick={() => handleAppointmentAction(appointment.id, 'no_show')}
+                          >
+                            No Show
                           </PremiumButton>
                         </>
                       )}

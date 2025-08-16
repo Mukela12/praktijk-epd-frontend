@@ -4,31 +4,18 @@ import {
   TrophyIcon,
   FlagIcon,
   RocketLaunchIcon,
-  ChartBarIcon,
-  CalendarDaysIcon,
   UserGroupIcon,
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  PencilIcon,
-  TrashIcon,
   EyeIcon,
   CheckCircleIcon,
   ClockIcon,
   FireIcon,
   StarIcon,
-  ArrowTrendingUpIcon,
   UserPlusIcon,
-  PlayIcon,
-  PauseIcon,
-  ArchiveBoxIcon
+  ArrowLeftIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
-import {
-  TrophyIcon as TrophySolid,
-  FlagIcon as FlagSolid,
-  FireIcon as FireSolid,
-  StarIcon as StarSolid
-} from '@heroicons/react/24/solid';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { therapistApi } from '@/services/endpoints';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumMetric } from '@/components/layout/PremiumLayout';
@@ -37,6 +24,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
 import type { Challenge, ChallengeType, ChallengeDifficulty, ChallengeStatus } from '@/types/resources';
 
+type ViewMode = 'list' | 'create' | 'detail' | 'assign';
+
 const TherapistChallengesManagement: React.FC = () => {
   const { t } = useTranslation();
   const { success, error, info } = useAlert();
@@ -44,30 +33,30 @@ const TherapistChallengesManagement: React.FC = () => {
 
   // State
   const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
   const [filters, setFilters] = useState({
-    type: 'all',
     difficulty: 'all',
-    status: 'all',
     category: 'all'
   });
 
-  // Statistics
-  const [stats, setStats] = useState({
-    totalChallenges: 0,
-    myChallenges: 0,
-    activeAssignments: 0,
-    completedByClients: 0
+  // Form state for creating challenges
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: 'mindfulness',
+    difficulty: 'beginner',
+    duration: 30,
+    targetValue: 30,
+    targetUnit: 'days',
+    instructions: '',
+    tips: '',
+    isPublic: true
   });
 
   // Load challenges and clients
@@ -93,14 +82,8 @@ const TherapistChallengesManagement: React.FC = () => {
       const response = await therapistApi.getChallenges();
       
       if (response.success && response.data) {
-        const challengesData = response.data.challenges || [];
-        setChallenges(challengesData);
-        
-        // Filter my challenges (created by me)
-        const myChallengesList = challengesData.filter((c: Challenge) => c.created_by === user?.id);
-        setMyChallenges(myChallengesList);
-        
-        calculateStats(challengesData, myChallengesList);
+        const challengesData = response.data.challenges || response.data || [];
+        setChallenges(Array.isArray(challengesData) ? challengesData : []);
       }
     } catch (err) {
       console.error('Failed to load challenges:', err);
@@ -110,85 +93,70 @@ const TherapistChallengesManagement: React.FC = () => {
     }
   };
 
-  const calculateStats = (allChallenges: Challenge[], myChallengesList: Challenge[]) => {
-    setStats({
-      totalChallenges: allChallenges.length,
-      myChallenges: myChallengesList.length,
-      activeAssignments: 0, // Would need assignment data
-      completedByClients: 0 // Would need completion data
-    });
+  // Handle challenge creation
+  const handleCreateChallenge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const challengeData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        difficulty: formData.difficulty,
+        duration: formData.duration,
+        targetValue: formData.targetValue,
+        targetUnit: formData.targetUnit,
+        instructions: formData.instructions ? [formData.instructions] : [],
+        tips: formData.tips ? [formData.tips] : [],
+        isPublic: formData.isPublic,
+        targetAudience: 'all'
+      };
+
+      const response = await therapistApi.createChallenge(challengeData);
+      if (response.success) {
+        success('Challenge created successfully');
+        setViewMode('list');
+        setFormData({
+          title: '',
+          description: '',
+          category: 'mindfulness',
+          difficulty: 'beginner',
+          duration: 30,
+          targetValue: 30,
+          targetUnit: 'days',
+          instructions: '',
+          tips: '',
+          isPublic: true
+        });
+        loadChallenges();
+      }
+    } catch (err: any) {
+      error(err.response?.data?.message || 'Failed to create challenge');
+    }
   };
 
   // Handle challenge assignment
-  const handleAssign = async (challengeId: string, clientId: string) => {
-    try {
-      await therapistApi.assignChallenge(challengeId, clientId);
-      success('Challenge assigned successfully');
-      setShowAssignModal(false);
-    } catch (err) {
-      error('Failed to assign challenge');
-    }
-  };
-
-  // Handle challenge deletion (only for own challenges)
-  const handleDelete = async (challengeId: string) => {
-    if (!window.confirm('Are you sure you want to delete this challenge?')) return;
+  const handleAssignChallenge = async () => {
+    if (!selectedChallenge || !selectedClientId) return;
 
     try {
-      // Would need delete endpoint in therapistApi
-      // await therapistApi.deleteChallenge(challengeId);
-      success('Challenge deleted successfully');
-      loadChallenges();
-    } catch (err) {
-      error('Failed to delete challenge');
-    }
-  };
-
-  // Get icon for challenge type
-  const getChallengeIcon = (type: ChallengeType) => {
-    switch (type) {
-      case 'daily': return CalendarDaysIcon;
-      case 'weekly': return FlagIcon;
-      case 'monthly': return TrophyIcon;
-      case 'custom': return RocketLaunchIcon;
-      default: return PuzzlePieceIcon;
-    }
-  };
-
-  const getChallengeIconSolid = (type: ChallengeType) => {
-    switch (type) {
-      case 'daily': return FireSolid;
-      case 'weekly': return FlagSolid;
-      case 'monthly': return TrophySolid;
-      case 'custom': return StarSolid;
-      default: return TrophySolid;
-    }
-  };
-
-  // Get color for challenge type
-  const getTypeColor = (type: ChallengeType) => {
-    switch (type) {
-      case 'daily': return 'bg-red-100 text-red-800 border-red-200';
-      case 'weekly': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'monthly': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'custom': return 'bg-amber-100 text-amber-800 border-amber-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // Get color for difficulty
-  const getDifficultyColor = (difficulty: ChallengeDifficulty) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-green-50 text-green-700 border-green-200';
-      case 'medium': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'hard': return 'bg-red-50 text-red-700 border-red-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
+      const response = await therapistApi.assignChallenge(selectedChallenge.id, selectedClientId);
+      if (response.success) {
+        success('Challenge assigned successfully');
+        setViewMode('list');
+        setSelectedChallenge(null);
+        setSelectedClientId('');
+      }
+    } catch (err: any) {
+      error(err.response?.data?.message || 'Failed to assign challenge');
     }
   };
 
   // Filter challenges
-  const currentChallenges = activeTab === 'my' ? myChallenges : challenges;
-  const filteredChallenges = currentChallenges.filter(challenge => {
+  const filteredChallenges = challenges.filter(challenge => {
+    // Tab filter
+    if (activeTab === 'my' && challenge.created_by !== user?.id) return false;
+    
     // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -199,20 +167,319 @@ const TherapistChallengesManagement: React.FC = () => {
       if (!matchesSearch) return false;
     }
 
-    // Type filter
-    if (filters.type !== 'all' && (challenge.type || challenge.challengeType) !== filters.type) return false;
-    
     // Difficulty filter
-    if (filters.difficulty !== 'all' && challenge.difficultyLevel !== filters.difficulty) return false;
-    
-    // Status filter
-    if (filters.status !== 'all' && challenge.status !== filters.status) return false;
+    if (filters.difficulty !== 'all' && (challenge as any).difficulty !== filters.difficulty) return false;
     
     // Category filter
     if (filters.category !== 'all' && challenge.category !== filters.category) return false;
 
     return true;
   });
+
+  // Get icon for difficulty
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'advanced': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Render create form
+  const renderCreateForm = () => (
+    <PremiumCard>
+      <form onSubmit={handleCreateChallenge} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Enter challenge title"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="mindfulness">Mindfulness</option>
+              <option value="anxiety">Anxiety</option>
+              <option value="depression">Depression</option>
+              <option value="stress">Stress</option>
+              <option value="relationships">Relationships</option>
+              <option value="self-care">Self Care</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Difficulty <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.difficulty}
+              onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration (days) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+              required
+              min="1"
+              max="365"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Target Value <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              value={formData.targetValue}
+              onChange={(e) => setFormData({ ...formData, targetValue: parseInt(e.target.value) })}
+              required
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Target Unit <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.targetUnit}
+              onChange={(e) => setFormData({ ...formData, targetUnit: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="e.g., days, times, minutes"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            required
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Describe the challenge and its objectives"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Instructions
+          </label>
+          <textarea
+            value={formData.instructions}
+            onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Step-by-step instructions for participants"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Tips for Success
+          </label>
+          <textarea
+            value={formData.tips}
+            onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Helpful tips to complete the challenge"
+          />
+        </div>
+
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={formData.isPublic}
+            onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <label className="ml-2 text-sm text-gray-700">
+            Make this challenge public (available to all therapists)
+          </label>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4 border-t">
+          <PremiumButton
+            variant="outline"
+            onClick={() => setViewMode('list')}
+          >
+            Cancel
+          </PremiumButton>
+          <PremiumButton
+            variant="primary"
+          >
+            Create Challenge
+          </PremiumButton>
+        </div>
+      </form>
+    </PremiumCard>
+  );
+
+  // Render challenge detail
+  const renderChallengeDetail = () => {
+    if (!selectedChallenge) return null;
+
+    return (
+      <PremiumCard>
+        <div className="space-y-6">
+          <div className="flex items-start space-x-4">
+            <TrophyIcon className="w-8 h-8 text-purple-600" />
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900">{selectedChallenge.title}</h2>
+              <p className="text-gray-500 mt-1">{selectedChallenge.category} • {(selectedChallenge as any).difficulty}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-500">Duration</p>
+              <p className="text-2xl font-bold text-gray-900">{(selectedChallenge as any).duration} days</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-500">Target</p>
+              <p className="text-2xl font-bold text-gray-900">{selectedChallenge.targetValue} {selectedChallenge.targetUnit}</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-500">Participants</p>
+              <p className="text-2xl font-bold text-gray-900">{selectedChallenge.participant_count || 0}</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
+            <p className="text-gray-700">{selectedChallenge.description}</p>
+          </div>
+
+          {selectedChallenge.instructions && Array.isArray(selectedChallenge.instructions) && selectedChallenge.instructions.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Instructions</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {selectedChallenge.instructions.map((instruction: any, index: number) => (
+                  <li key={index} className="text-gray-700">{instruction}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {selectedChallenge.tips && Array.isArray(selectedChallenge.tips) && selectedChallenge.tips.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Tips</h3>
+              <ul className="list-disc list-inside space-y-1">
+                {selectedChallenge.tips.map((tip: any, index: number) => (
+                  <li key={index} className="text-gray-700">{tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <PremiumButton
+              variant="outline"
+              onClick={() => setViewMode('list')}
+            >
+              Back to List
+            </PremiumButton>
+            <PremiumButton
+              variant="primary"
+              icon={UserPlusIcon}
+              onClick={() => setViewMode('assign')}
+            >
+              Assign to Client
+            </PremiumButton>
+          </div>
+        </div>
+      </PremiumCard>
+    );
+  };
+
+  // Render assignment view
+  const renderAssignmentView = () => {
+    if (!selectedChallenge) return null;
+
+    return (
+      <PremiumCard>
+        <div className="space-y-6">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-medium text-gray-900 mb-2">Assigning Challenge</h3>
+            <p className="text-gray-600">{selectedChallenge.title}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Client
+            </label>
+            <select
+              value={selectedClientId}
+              onChange={(e) => setSelectedClientId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">Choose a client...</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>
+                  {client.first_name} {client.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <PremiumButton
+              variant="outline"
+              onClick={() => setViewMode('detail')}
+            >
+              Back
+            </PremiumButton>
+            <PremiumButton
+              variant="primary"
+              onClick={handleAssignChallenge}
+              disabled={!selectedClientId}
+            >
+              Assign Challenge
+            </PremiumButton>
+          </div>
+        </div>
+      </PremiumCard>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -227,480 +494,244 @@ const TherapistChallengesManagement: React.FC = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-sm p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
-              <PuzzlePieceIcon className="w-8 h-8 mr-3" />
-              Client Challenges
-            </h1>
-            <p className="text-purple-100 mt-1">
-              Create and assign therapeutic challenges to your clients
-            </p>
+          <div className="flex items-center space-x-4">
+            {viewMode !== 'list' && (
+              <button
+                onClick={() => setViewMode('list')}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <ArrowLeftIcon className="w-5 h-5" />
+              </button>
+            )}
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
+                <PuzzlePieceIcon className="w-8 h-8 mr-3" />
+                {viewMode === 'create' ? 'Create Challenge' : 
+                 viewMode === 'detail' ? 'Challenge Details' :
+                 viewMode === 'assign' ? 'Assign Challenge' : 'Client Challenges'}
+              </h1>
+              <p className="text-purple-100 mt-1">
+                {viewMode === 'create' ? 'Create therapeutic challenges for clients' :
+                 viewMode === 'detail' ? 'View challenge information' :
+                 viewMode === 'assign' ? 'Assign challenge to client' :
+                 `${filteredChallenges.length} challenges available`}
+              </p>
+            </div>
           </div>
           <div className="flex space-x-3">
-            <PremiumButton
-              icon={PlusIcon}
-              onClick={() => setShowCreateModal(true)}
-              className="bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20"
-            >
-              Create Challenge
-            </PremiumButton>
+            {viewMode === 'list' && (
+              <PremiumButton
+                icon={PlusIcon}
+                onClick={() => setViewMode('create')}
+                className="bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20"
+              >
+                Create Challenge
+              </PremiumButton>
+            )}
           </div>
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <PremiumMetric
-          title="Available Challenges"
-          value={stats.totalChallenges}
-          icon={PuzzlePieceIcon}
-          iconColor="text-purple-600"
-        />
-        <PremiumMetric
-          title="My Challenges"
-          value={stats.myChallenges}
-          icon={StarIcon}
-          iconColor="text-pink-600"
-        />
-        <PremiumMetric
-          title="Active Assignments"
-          value={stats.activeAssignments}
-          icon={UserGroupIcon}
-          iconColor="text-blue-600"
-        />
-        <PremiumMetric
-          title="Completed by Clients"
-          value={stats.completedByClients}
-          icon={CheckCircleIcon}
-          iconColor="text-green-600"
-        />
-      </div>
-
-      {/* Tabs */}
-      <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            activeTab === 'all' 
-              ? 'bg-white text-gray-900 shadow-sm' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          All Challenges
-        </button>
-        <button
-          onClick={() => setActiveTab('my')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            activeTab === 'my' 
-              ? 'bg-white text-gray-900 shadow-sm' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          My Challenges
-        </button>
-      </div>
-
-      {/* Filters */}
-      <PremiumCard>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search challenges by title, description, or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Types</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="custom">Custom</option>
-            </select>
-            
-            <select
-              value={filters.difficulty}
-              onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Difficulties</option>
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-            
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <PremiumMetric
+            title="Available Challenges"
+            value={challenges.length}
+            icon={PuzzlePieceIcon}
+            iconColor="text-purple-600"
+          />
+          <PremiumMetric
+            title="My Challenges"
+            value={challenges.filter(c => c.created_by === user?.id).length}
+            icon={StarIcon}
+            iconColor="text-pink-600"
+          />
+          <PremiumMetric
+            title="Public Challenges"
+            value={challenges.filter(c => (c as any).is_public).length}
+            icon={UserGroupIcon}
+            iconColor="text-blue-600"
+          />
+          <PremiumMetric
+            title="Total Assignments"
+            value={challenges.reduce((sum, c) => sum + (c.participant_count || 0), 0)}
+            icon={CheckCircleIcon}
+            iconColor="text-green-600"
+          />
         </div>
-      </PremiumCard>
+      )}
 
-      {/* Challenges List */}
-      {filteredChallenges.length === 0 ? (
-        <PremiumEmptyState
-          icon={PuzzlePieceIcon}
-          title="No Challenges Found"
-          description={searchTerm || filters.type !== 'all' || filters.difficulty !== 'all' 
-            ? "Try adjusting your search or filters"
-            : activeTab === 'my'
-              ? "Create your first challenge to engage clients"
-              : "No challenges available"}
-          action={activeTab === 'my' ? {
-            label: 'Create Challenge',
-            onClick: () => setShowCreateModal(true)
-          } : undefined}
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {filteredChallenges.map((challenge) => {
-            const Icon = getChallengeIcon(challenge.type || challenge.challengeType);
-            const IconSolid = getChallengeIconSolid(challenge.type || challenge.challengeType);
-            const isMyChallenge = challenge.created_by === user?.id;
-            
-            return (
-              <PremiumCard
-                key={challenge.id}
-                className="hover:shadow-lg transition-shadow duration-200"
+      {/* Content based on view mode */}
+      {viewMode === 'create' && renderCreateForm()}
+      {viewMode === 'detail' && renderChallengeDetail()}
+      {viewMode === 'assign' && renderAssignmentView()}
+
+      {/* Challenge List */}
+      {viewMode === 'list' && (
+        <>
+          {/* Tabs and Filters */}
+          <div className="space-y-4">
+            <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'all' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${getTypeColor(challenge.type || challenge.challengeType)}`}>
-                    <IconSolid className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {isMyChallenge && (
-                      <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                        My Challenge
-                      </span>
-                    )}
-                    <StatusBadge
-                      status={challenge.status}
-                      type={challenge.status === 'active' ? 'active' : 
-                            challenge.status === 'completed' ? 'discontinued' : 
-                            challenge.status === 'archived' ? 'discontinued' : 'pending'}
-                      size="sm"
+                All Challenges
+              </button>
+              <button
+                onClick={() => setActiveTab('my')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'my' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                My Challenges
+              </button>
+            </div>
+
+            <PremiumCard>
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search challenges..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     />
                   </div>
                 </div>
-
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {challenge.title}
-                </h3>
-                
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {challenge.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(challenge.difficultyLevel)}`}>
-                    <FireIcon className="w-3 h-3 mr-1" />
-                    {challenge.difficultyLevel}
-                  </span>
-                  
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                    <ClockIcon className="w-3 h-3 mr-1" />
-                    {challenge.durationDays} days
-                  </span>
-                  
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                    <FlagIcon className="w-3 h-3 mr-1" />
-                    {challenge.category}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <span className="flex items-center">
-                    <UserGroupIcon className="w-4 h-4 mr-1" />
-                    {challenge.participant_count} participants
-                  </span>
-                  <span className="flex items-center">
-                    <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                    {challenge.completion_rate}% complete
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <PremiumButton
-                    size="sm"
-                    variant="primary"
-                    icon={UserPlusIcon}
-                    onClick={() => {
-                      setSelectedChallenge(challenge);
-                      setShowAssignModal(true);
-                    }}
-                  >
-                    Assign to Client
-                  </PremiumButton>
-                  <PremiumButton
-                    size="sm"
-                    variant="outline"
-                    icon={EyeIcon}
-                    onClick={() => {
-                      setSelectedChallenge(challenge);
-                      setShowDetailModal(true);
-                    }}
-                  >
-                    View
-                  </PremiumButton>
-                  {isMyChallenge && (
-                    <>
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={PencilIcon}
-                        onClick={() => {
-                          setSelectedChallenge(challenge);
-                          setShowEditModal(true);
-                        }}
-                      >
-                        Edit
-                      </PremiumButton>
-                      {challenge.status === 'draft' && (
-                        <PremiumButton
-                          size="sm"
-                          variant="outline"
-                          icon={PlayIcon}
-                          onClick={() => {}}
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        >
-                          Activate
-                        </PremiumButton>
-                      )}
-                    </>
-                  )}
-                </div>
-              </PremiumCard>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedChallenge && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="card-premium max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-scaleIn">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center">
-                  <div className={`p-3 rounded-lg mr-4 ${getTypeColor(selectedChallenge.type || selectedChallenge.challengeType)}`}>
-                    {React.createElement(getChallengeIconSolid(selectedChallenge.type || selectedChallenge.challengeType), { className: 'w-6 h-6' })}
-                  </div>
-                  <div>
-                    <h2 className="heading-section">{selectedChallenge.title}</h2>
-                    <p className="text-body-sm text-gray-600 mt-1">
-                      {selectedChallenge.type || selectedChallenge.challengeType} challenge • {selectedChallenge.durationDays} days
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Description */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                  <p className="text-gray-600">{selectedChallenge.description}</p>
-                </div>
-
-                {/* Difficulty & Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="card-metric p-4">
-                    <p className="text-caption mb-1">Difficulty</p>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getDifficultyColor(selectedChallenge.difficultyLevel)}`}>
-                      <FireIcon className="w-4 h-4 mr-1" />
-                      {selectedChallenge.difficultyLevel}
-                    </span>
-                  </div>
-                  <div className="card-metric p-4">
-                    <p className="text-caption mb-1">Participants</p>
-                    <p className="text-xl font-bold text-gray-900">{selectedChallenge.participant_count}</p>
-                  </div>
-                  <div className="card-metric p-4">
-                    <p className="text-caption mb-1">Completion Rate</p>
-                    <p className="text-xl font-bold text-gray-900">{selectedChallenge.completion_rate}%</p>
-                  </div>
-                </div>
-
-                {/* Target & Rules */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Target Goal</h3>
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
-                      <p className="text-lg font-medium text-gray-900">
-                        {selectedChallenge.targetValue || selectedChallenge.goals?.targetValue} {selectedChallenge.targetUnit || selectedChallenge.goals?.targetUnit}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">Complete within {selectedChallenge.durationDays} days</p>
-                    </div>
-                  </div>
-                  {selectedChallenge.rules && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Rules</h3>
-                      <ul className="space-y-1">
-                        {selectedChallenge.rules.map((rule, index) => (
-                          <li key={index} className="flex items-start">
-                            <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5" />
-                            <span className="text-sm text-gray-600">{rule}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                {/* Milestones */}
-                {selectedChallenge.milestones && selectedChallenge.milestones.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Milestones</h3>
-                    <div className="space-y-2">
-                      {selectedChallenge.milestones.map((milestone, index) => (
-                        <div key={index} className="flex items-center bg-gray-50 p-3 rounded-lg">
-                          <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-sm mr-3">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-gray-900">{milestone.title}</p>
-                            {milestone.description && (
-                              <p className="text-sm text-gray-600">{milestone.description}</p>
-                            )}
-                          </div>
-                          <span className="text-sm text-gray-500">
-                            Day {milestone.dueDay || milestone.day}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowDetailModal(false)}
-                  className="btn-premium-secondary"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    setShowAssignModal(true);
-                  }}
-                  className="btn-premium-primary flex items-center space-x-2"
-                >
-                  <UserPlusIcon className="w-5 h-5" />
-                  <span>Assign to Client</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Assignment Modal */}
-      {showAssignModal && selectedChallenge && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="card-premium max-w-md w-full animate-scaleIn">
-            <div className="p-6">
-              <h2 className="heading-section mb-4">Assign Challenge</h2>
-              
-              <div className="mb-4">
-                <p className="text-body-sm text-gray-600 mb-2">
-                  Assigning: <span className="font-medium">{selectedChallenge.title}</span>
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Client
-                  </label>
+                <div className="flex flex-wrap gap-2">
                   <select
-                    value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
-                    className="select-premium w-full"
+                    value={filters.difficulty}
+                    onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="">Choose a client...</option>
-                    <option value="client1">Maria Jansen</option>
-                    <option value="client2">Peter de Vries</option>
-                    <option value="client3">Lisa van Berg</option>
+                    <option value="all">All Difficulties</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                  
+                  <select
+                    value={filters.category}
+                    onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="mindfulness">Mindfulness</option>
+                    <option value="anxiety">Anxiety</option>
+                    <option value="depression">Depression</option>
+                    <option value="stress">Stress</option>
+                    <option value="relationships">Relationships</option>
+                    <option value="self-care">Self Care</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    className="input-premium w-full"
-                    defaultValue={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    className="input-premium w-full"
-                    rows={3}
-                    placeholder="Add any specific instructions or encouragement..."
-                  />
-                </div>
               </div>
-
-              <div className="flex items-center justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedClientId('');
-                  }}
-                  className="btn-premium-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedClientId) {
-                      handleAssign(selectedChallenge.id, selectedClientId);
-                    } else {
-                      error('Please select a client');
-                    }
-                  }}
-                  className="btn-premium-primary"
-                  disabled={!selectedClientId}
-                >
-                  Assign Challenge
-                </button>
-              </div>
-            </div>
+            </PremiumCard>
           </div>
-        </div>
+
+          {/* Challenges Grid */}
+          {filteredChallenges.length === 0 ? (
+            <PremiumEmptyState
+              icon={PuzzlePieceIcon}
+              title="No Challenges Found"
+              description={searchTerm || filters.difficulty !== 'all' || filters.category !== 'all' 
+                ? "Try adjusting your search or filters"
+                : activeTab === 'my'
+                  ? "Create your first challenge to engage clients"
+                  : "No challenges available"}
+              action={activeTab === 'my' ? {
+                label: 'Create Challenge',
+                onClick: () => setViewMode('create')
+              } : undefined}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+              {filteredChallenges.map((challenge) => (
+                <PremiumCard
+                  key={challenge.id}
+                  className="hover:shadow-lg transition-shadow duration-200"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
+                      <TrophyIcon className="w-6 h-6" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {challenge.created_by === user?.id && (
+                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                          My Challenge
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor((challenge as any).difficulty)}`}>
+                        {(challenge as any).difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {challenge.title}
+                  </h3>
+                  
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                    {challenge.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                      <ClockIcon className="w-3 h-3 mr-1" />
+                      {(challenge as any).duration} days
+                    </span>
+                    
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      <FlagIcon className="w-3 h-3 mr-1" />
+                      {challenge.category}
+                    </span>
+                    
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                      <UserGroupIcon className="w-3 h-3 mr-1" />
+                      {challenge.participant_count || 0} participants
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <PremiumButton
+                      size="sm"
+                      variant="primary"
+                      icon={UserPlusIcon}
+                      onClick={() => {
+                        setSelectedChallenge(challenge);
+                        setViewMode('assign');
+                      }}
+                    >
+                      Assign
+                    </PremiumButton>
+                    <PremiumButton
+                      size="sm"
+                      variant="outline"
+                      icon={EyeIcon}
+                      onClick={() => {
+                        setSelectedChallenge(challenge);
+                        setViewMode('detail');
+                      }}
+                    >
+                      View
+                    </PremiumButton>
+                  </div>
+                </PremiumCard>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

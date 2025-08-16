@@ -59,7 +59,7 @@ const AssistantScheduling: React.FC = () => {
       try {
         setIsLoading(true);
         const [appointmentsResponse, clientsResponse, therapistsResponse] = await Promise.all([
-          realApiService.appointments.getAll(),
+          realApiService.assistant.getAppointments(),
           realApiService.clients.getAll(),
           realApiService.therapists.getAll()
         ]);

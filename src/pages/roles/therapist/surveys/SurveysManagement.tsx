@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import {
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
@@ -8,23 +9,21 @@ import {
   QuestionMarkCircleIcon,
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  PencilIcon,
-  TrashIcon,
   EyeIcon,
-  DocumentDuplicateIcon,
   UserGroupIcon,
   CheckCircleIcon,
   ClockIcon,
   UserPlusIcon,
   ChartPieIcon,
-  DocumentChartBarIcon,
   LockClosedIcon,
   LockOpenIcon,
   CalendarIcon,
-  PlayIcon,
-  StopIcon,
-  PaperAirplaneIcon
+  ArrowLeftIcon,
+  StarIcon,
+  PencilIcon,
+  TrashIcon,
+  FireIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import {
   ClipboardDocumentCheckIcon as ClipboardSolid,
@@ -34,11 +33,27 @@ import {
 } from '@heroicons/react/24/solid';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { therapistApi } from '@/services/endpoints';
-import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumMetric } from '@/components/layout/PremiumLayout';
+import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
 import type { Survey, SurveyType, QuestionType } from '@/types/resources';
+import {
+  TextField,
+  TextareaField,
+  SelectField,
+  CheckboxField
+} from '@/components/forms/FormFields';
+import { formatDate } from '@/utils/dateFormatters';
+
+interface SurveyQuestion {
+  id: string;
+  text: string;
+  type: QuestionType;
+  isRequired: boolean;
+  options?: string[];
+  scale?: { min: number; max: number; labels?: { min: string; max: string } };
+  order: number;
+}
 
 const TherapistSurveysManagement: React.FC = () => {
   const { t } = useTranslation();
@@ -47,33 +62,54 @@ const TherapistSurveysManagement: React.FC = () => {
 
   // State
   const [surveys, setSurveys] = useState<Survey[]>([]);
-  const [mySurveys, setMySurveys] = useState<Survey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit' | 'detail' | 'assign'>('list');
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showResponsesModal, setShowResponsesModal] = useState(false);
-  const [showAssignModal, setShowAssignModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'my'>('all');
-  const [filters, setFilters] = useState({
-    type: 'all',
-    status: 'all',
-    anonymous: 'all'
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form state for creating surveys
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    type: 'assessment' as SurveyType,
+    isAnonymous: false,
+    allowMultipleSubmissions: false,
+    validUntil: '',
+    questions: [] as SurveyQuestion[]
   });
 
-  // Statistics
-  const [stats, setStats] = useState({
-    totalSurveys: 0,
-    mySurveys: 0,
-    totalResponses: 0,
-    activeAssignments: 0
+  // Current question being added
+  const [currentQuestion, setCurrentQuestion] = useState({
+    text: '',
+    type: 'text' as QuestionType,
+    isRequired: true,
+    options: [] as string[],
+    scaleMin: 1,
+    scaleMax: 10,
+    scaleLabels: { min: '', max: '' }
   });
 
-  // Load surveys
+  // Load surveys and clients
   useEffect(() => {
     loadSurveys();
+    loadClients();
   }, []);
+
+  const loadClients = async () => {
+    try {
+      const response = await therapistApi.getClients();
+      if (response.success && response.data) {
+        setClients(response.data.clients || []);
+      }
+    } catch (err) {
+      console.error('Failed to load clients:', err);
+    }
+  };
 
   const loadSurveys = async () => {
     try {
@@ -81,14 +117,8 @@ const TherapistSurveysManagement: React.FC = () => {
       const response = await therapistApi.getSurveys();
       
       if (response.success && response.data) {
-        const surveysData = response.data.surveys || [];
-        setSurveys(surveysData);
-        
-        // Filter my surveys (created by me)
-        const mySurveysList = surveysData.filter((s: Survey) => s.created_by === user?.id);
-        setMySurveys(mySurveysList);
-        
-        calculateStats(surveysData, mySurveysList);
+        const surveysData = response.data.surveys || response.data || [];
+        setSurveys(Array.isArray(surveysData) ? surveysData : []);
       }
     } catch (err) {
       console.error('Failed to load surveys:', err);
@@ -98,59 +128,184 @@ const TherapistSurveysManagement: React.FC = () => {
     }
   };
 
-  const calculateStats = (allSurveys: Survey[], mySurveysList: Survey[]) => {
-    setStats({
-      totalSurveys: allSurveys.length,
-      mySurveys: mySurveysList.length,
-      totalResponses: allSurveys.reduce((sum, s) => sum + s.response_count, 0),
-      activeAssignments: 0 // Would need assignment data
-    });
+  // Handle survey creation
+  const handleCreateSurvey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.questions.length === 0) {
+      error('Please add at least one question to the survey');
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      const surveyData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        isAnonymous: formData.isAnonymous,
+        allowMultipleSubmissions: formData.allowMultipleSubmissions,
+        validUntil: formData.validUntil || null,
+        questions: formData.questions,
+        status: 'published'
+      };
+
+      const response = await therapistApi.createSurvey(surveyData);
+      if (response.success) {
+        success('Survey created successfully');
+        handleCancel();
+        loadSurveys();
+      }
+    } catch (err: any) {
+      error(err.response?.data?.message || 'Failed to create survey');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle survey assignment
-  const handleAssign = async (surveyId: string, clientId: string) => {
+  const handleAssignSurvey = async () => {
+    if (!selectedSurvey || !selectedClientId) return;
+
     try {
-      await therapistApi.assignSurvey(surveyId, clientId);
-      success('Survey assigned successfully');
-      setShowAssignModal(false);
-    } catch (err) {
-      error('Failed to assign survey');
+      setIsSubmitting(true);
+      const response = await therapistApi.assignSurvey(selectedSurvey.id, selectedClientId, {
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+        notes: 'Survey assigned by therapist'
+      });
+      if (response.success) {
+        success('Survey assigned successfully');
+        setViewMode('list');
+        setSelectedSurvey(null);
+        setSelectedClientId('');
+      }
+    } catch (err: any) {
+      error(err.response?.data?.message || 'Failed to assign survey');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Handle survey deletion (only for own surveys)
-  const handleDelete = async (surveyId: string) => {
-    if (!window.confirm('Are you sure you want to delete this survey? This will also delete all responses.')) return;
-
-    try {
-      // Would need delete endpoint in therapistApi
-      // await therapistApi.deleteSurvey(surveyId);
-      success('Survey deleted successfully');
-      loadSurveys();
-    } catch (err) {
-      error('Failed to delete survey');
+  // Add question to survey
+  const handleAddQuestion = () => {
+    if (!currentQuestion.text.trim()) {
+      error('Question text is required');
+      return;
     }
+
+    const question: SurveyQuestion = {
+      id: Date.now().toString(),
+      text: currentQuestion.text,
+      type: currentQuestion.type,
+      isRequired: currentQuestion.isRequired,
+      order: formData.questions.length + 1,
+      ...(currentQuestion.type === 'multiple_choice' && { options: currentQuestion.options.filter(opt => opt.trim()) }),
+      ...(currentQuestion.type === 'scale' && {
+        scale: {
+          min: currentQuestion.scaleMin,
+          max: currentQuestion.scaleMax,
+          labels: currentQuestion.scaleLabels
+        }
+      })
+    };
+
+    setFormData({ ...formData, questions: [...formData.questions, question] });
+    setCurrentQuestion({
+      text: '',
+      type: 'text',
+      isRequired: true,
+      options: [],
+      scaleMin: 1,
+      scaleMax: 10,
+      scaleLabels: { min: '', max: '' }
+    });
   };
 
-  // Handle survey duplication
-  const handleDuplicate = async (survey: Survey) => {
-    try {
-      const duplicatedSurvey = {
-        ...survey,
-        title: `${survey.title} (Copy)`,
-        status: 'draft' as const,
-        response_count: 0
-      };
-      delete (duplicatedSurvey as any).id;
-      delete (duplicatedSurvey as any).created_at;
-      delete (duplicatedSurvey as any).updated_at;
-      
-      await therapistApi.createSurvey(duplicatedSurvey);
-      success('Survey duplicated successfully');
-      loadSurveys();
-    } catch (err) {
-      error('Failed to duplicate survey');
-    }
+  // Remove question from survey
+  const handleRemoveQuestion = (questionId: string) => {
+    setFormData({
+      ...formData,
+      questions: formData.questions.filter(q => q.id !== questionId)
+    });
+  };
+
+  // Add option to multiple choice question
+  const handleAddOption = () => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      options: [...currentQuestion.options, '']
+    });
+  };
+
+  // Update option text
+  const handleUpdateOption = (index: number, value: string) => {
+    const newOptions = [...currentQuestion.options];
+    newOptions[index] = value;
+    setCurrentQuestion({ ...currentQuestion, options: newOptions });
+  };
+
+  // Remove option
+  const handleRemoveOption = (index: number) => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      options: currentQuestion.options.filter((_, i) => i !== index)
+    });
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    setViewMode('list');
+    setSelectedSurvey(null);
+    setFormData({
+      title: '',
+      description: '',
+      type: 'assessment',
+      isAnonymous: false,
+      allowMultipleSubmissions: false,
+      validUntil: '',
+      questions: []
+    });
+    setCurrentQuestion({
+      text: '',
+      type: 'text',
+      isRequired: true,
+      options: [],
+      scaleMin: 1,
+      scaleMax: 10,
+      scaleLabels: { min: '', max: '' }
+    });
+  };
+
+  // Handle create
+  const handleCreate = () => {
+    setViewMode('create');
+  };
+
+  // Handle edit
+  const handleEdit = (survey: Survey) => {
+    setSelectedSurvey(survey);
+    setFormData({
+      title: survey.title,
+      description: survey.description,
+      type: survey.type,
+      isAnonymous: survey.isAnonymous || false,
+      allowMultipleSubmissions: survey.allowMultipleSubmissions || false,
+      validUntil: survey.validUntil || '',
+      questions: survey.questions || []
+    });
+    setViewMode('edit');
+  };
+
+  // Handle view details
+  const handleViewDetails = (survey: Survey) => {
+    setSelectedSurvey(survey);
+    setViewMode('detail');
+  };
+
+  // Handle assign survey
+  const handleAssign = (survey: Survey) => {
+    setSelectedSurvey(survey);
+    setViewMode('assign');
   };
 
   // Get icon for survey type
@@ -162,16 +317,6 @@ const TherapistSurveysManagement: React.FC = () => {
       case 'satisfaction': return ScaleIcon;
       case 'custom': return ListBulletIcon;
       default: return QuestionMarkCircleIcon;
-    }
-  };
-
-  const getSurveyIconSolid = (type: SurveyType) => {
-    switch (type) {
-      case 'assessment': return ClipboardSolid;
-      case 'feedback': return ChatSolid;
-      case 'progress': return ChartSolid;
-      case 'satisfaction': return ScaleSolid;
-      default: return ClipboardSolid;
     }
   };
 
@@ -199,316 +344,600 @@ const TherapistSurveysManagement: React.FC = () => {
   };
 
   // Filter surveys
-  const currentSurveys = activeTab === 'my' ? mySurveys : surveys;
-  const filteredSurveys = currentSurveys.filter(survey => {
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        survey.title.toLowerCase().includes(searchLower) ||
-        survey.description.toLowerCase().includes(searchLower);
-      if (!matchesSearch) return false;
-    }
+  const filteredSurveys = useMemo(() => {
+    return surveys.filter(survey => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          survey.title.toLowerCase().includes(searchLower) ||
+          survey.description.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
 
-    // Type filter
-    if (filters.type !== 'all' && survey.type !== filters.type) return false;
-    
-    // Status filter
-    if (filters.status !== 'all' && survey.status !== filters.status) return false;
-    
-    // Anonymous filter
-    if (filters.anonymous !== 'all') {
-      const isAnonymous = filters.anonymous === 'anonymous';
-      if (survey.isAnonymous !== isAnonymous) return false;
-    }
+      // Type filter
+      if (filterType !== 'all' && survey.type !== filterType) return false;
+      
+      // Status filter
+      if (filterStatus !== 'all' && survey.status !== filterStatus) return false;
 
-    return true;
-  });
+      return true;
+    });
+  }, [surveys, searchTerm, filterType, filterStatus]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="large" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-xl shadow-sm p-6 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
-              <ClipboardDocumentCheckIcon className="w-8 h-8 mr-3" />
-              Client Surveys
-            </h1>
-            <p className="text-teal-100 mt-1">
-              Create and assign assessments and feedback forms to your clients
-            </p>
+  // Column definitions
+  const columns = [
+    {
+      key: 'title',
+      label: 'Survey',
+      render: (survey: Survey) => {
+        const Icon = getSurveyIcon(survey.type);
+        return (
+          <div className="flex items-start space-x-3">
+            <Icon className="w-5 h-5 mt-0.5 text-teal-600" />
+            <div>
+              <p className="font-medium text-gray-900">{survey.title}</p>
+              <p className="text-sm text-gray-500 line-clamp-1">
+                {survey.description}
+              </p>
+            </div>
           </div>
-          <div className="flex space-x-3">
-            <PremiumButton
-              icon={PlusIcon}
-              onClick={() => setShowCreateModal(true)}
-              className="bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20"
-            >
-              Create Survey
-            </PremiumButton>
-          </div>
+        );
+      }
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (survey: Survey) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(survey.type)}`}>
+          {survey.type}
+        </span>
+      )
+    },
+    {
+      key: 'questions',
+      label: 'Questions',
+      render: (survey: Survey) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <ListBulletIcon className="w-4 h-4 mr-1" />
+          {survey.questions?.length || 0} questions
         </div>
+      )
+    },
+    {
+      key: 'responses',
+      label: 'Responses',
+      render: (survey: Survey) => (
+        <div className="flex items-center text-sm text-gray-600">
+          <UserGroupIcon className="w-4 h-4 mr-1" />
+          {survey.response_count || 0}
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (survey: Survey) => (
+        <StatusBadge
+          status={survey.status}
+          type={survey.status === 'published' ? 'active' : 
+                survey.status === 'closed' ? 'discontinued' : 'pending'}
+          size="sm"
+        />
+      )
+    }
+  ];
+
+  // Render form fields
+  const renderFormFields = () => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TextField
+          label="Title"
+          name="title"
+          value={formData.title}
+          onChange={(value) => setFormData({ ...formData, title: value })}
+          required
+          placeholder="Enter survey title"
+        />
+
+        <SelectField
+          label="Type"
+          name="type"
+          value={formData.type}
+          onChange={(value) => setFormData({ ...formData, type: value as SurveyType })}
+          options={[
+            { value: 'assessment', label: 'Assessment' },
+            { value: 'feedback', label: 'Feedback' },
+            { value: 'progress', label: 'Progress' },
+            { value: 'satisfaction', label: 'Satisfaction' },
+            { value: 'custom', label: 'Custom' }
+          ]}
+          required
+        />
+
+        <TextField
+          label="Valid Until (Optional)"
+          name="validUntil"
+          type="date"
+          value={formData.validUntil}
+          onChange={(value) => setFormData({ ...formData, validUntil: value })}
+        />
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <PremiumMetric
-          title="Available Surveys"
-          value={stats.totalSurveys}
-          icon={ClipboardDocumentCheckIcon}
-          iconColor="text-teal-600"
+      <TextareaField
+        label="Description"
+        name="description"
+        value={formData.description}
+        onChange={(value) => setFormData({ ...formData, description: value })}
+        required
+        placeholder="Describe the purpose and instructions for this survey"
+        rows={3}
+      />
+
+      <div className="flex items-center space-x-6">
+        <CheckboxField
+          label="Anonymous responses"
+          name="isAnonymous"
+          checked={formData.isAnonymous}
+          onChange={(checked) => setFormData({ ...formData, isAnonymous: checked })}
         />
-        <PremiumMetric
-          title="My Surveys"
-          value={stats.mySurveys}
-          icon={ClipboardSolid}
-          iconColor="text-cyan-600"
-        />
-        <PremiumMetric
-          title="Total Responses"
-          value={stats.totalResponses}
-          icon={UserGroupIcon}
-          iconColor="text-blue-600"
-        />
-        <PremiumMetric
-          title="Active Assignments"
-          value={stats.activeAssignments}
-          icon={ChartPieIcon}
-          iconColor="text-purple-600"
+        <CheckboxField
+          label="Allow multiple submissions"
+          name="allowMultipleSubmissions"
+          checked={formData.allowMultipleSubmissions}
+          onChange={(checked) => setFormData({ ...formData, allowMultipleSubmissions: checked })}
         />
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-1 p-1 bg-gray-100 rounded-lg">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            activeTab === 'all' 
-              ? 'bg-white text-gray-900 shadow-sm' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          All Surveys
-        </button>
-        <button
-          onClick={() => setActiveTab('my')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            activeTab === 'my' 
-              ? 'bg-white text-gray-900 shadow-sm' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          My Surveys
-        </button>
-      </div>
+      {/* Questions Section */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Survey Questions</h3>
+        
+        {/* Existing Questions */}
+        {formData.questions.length > 0 && (
+          <div className="space-y-3 mb-6">
+            {formData.questions.map((question, index) => (
+              <div key={question.id} className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {index + 1}. {question.text}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Type: {getQuestionTypeLabel(question.type)}
+                      {question.isRequired && ' • Required'}
+                    </div>
+                    {question.options && (
+                      <div className="text-sm text-gray-600 mt-2">
+                        Options: {question.options.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveQuestion(question.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Filters */}
-      <PremiumCard>
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search surveys by title or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        {/* Add New Question */}
+        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+          <h4 className="font-medium text-gray-900">Add New Question</h4>
+          
+          <TextField
+            label="Question Text"
+            name="questionText"
+            value={currentQuestion.text}
+            onChange={(value) => setCurrentQuestion({ ...currentQuestion, text: value })}
+            placeholder="Enter your question"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SelectField
+              label="Question Type"
+              name="questionType"
+              value={currentQuestion.type}
+              onChange={(value) => setCurrentQuestion({ ...currentQuestion, type: value as QuestionType })}
+              options={[
+                { value: 'text', label: 'Text' },
+                { value: 'multiple_choice', label: 'Multiple Choice' },
+                { value: 'scale', label: 'Scale (1-10)' },
+                { value: 'boolean', label: 'Yes/No' }
+              ]}
+            />
+            
+            <div className="flex items-center">
+              <CheckboxField
+                label="Required question"
+                name="isRequired"
+                checked={currentQuestion.isRequired}
+                onChange={(checked) => setCurrentQuestion({ ...currentQuestion, isRequired: checked })}
               />
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="all">All Types</option>
-              <option value="assessment">Assessment</option>
-              <option value="feedback">Feedback</option>
-              <option value="progress">Progress</option>
-              <option value="satisfaction">Satisfaction</option>
-              <option value="custom">Custom</option>
-            </select>
-            
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="closed">Closed</option>
-            </select>
-            
-            <select
-              value={filters.anonymous}
-              onChange={(e) => setFilters({ ...filters, anonymous: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="all">All Privacy</option>
-              <option value="anonymous">Anonymous</option>
-              <option value="identified">Identified</option>
-            </select>
+
+          {/* Multiple Choice Options */}
+          {currentQuestion.type === 'multiple_choice' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Answer Options
+              </label>
+              <div className="space-y-2">
+                {currentQuestion.options.map((option, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => handleUpdateOption(index, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      placeholder={`Option ${index + 1}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                >
+                  <PlusIcon className="w-4 h-4 inline mr-1" />
+                  Add Option
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Scale Labels */}
+          {currentQuestion.type === 'scale' && (
+            <div className="grid grid-cols-2 gap-4">
+              <TextField
+                label="Minimum Label (1)"
+                name="scaleMin"
+                value={currentQuestion.scaleLabels.min}
+                onChange={(value) => setCurrentQuestion({ 
+                  ...currentQuestion, 
+                  scaleLabels: { ...currentQuestion.scaleLabels, min: value }
+                })}
+                placeholder="e.g., Not at all"
+              />
+              <TextField
+                label="Maximum Label (10)"
+                name="scaleMax"
+                value={currentQuestion.scaleLabels.max}
+                onChange={(value) => setCurrentQuestion({ 
+                  ...currentQuestion, 
+                  scaleLabels: { ...currentQuestion.scaleLabels, max: value }
+                })}
+                placeholder="e.g., Extremely"
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleAddQuestion}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+          >
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Add Question
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render detail view
+  const renderDetailView = () => {
+    if (!selectedSurvey) return null;
+
+    const Icon = getSurveyIcon(selectedSurvey.type);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start space-x-4">
+          <Icon className="w-8 h-8 text-teal-600" />
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">{selectedSurvey.title}</h2>
+            <p className="text-gray-500 mt-1">{selectedSurvey.type} • {selectedSurvey.questions?.length || 0} questions</p>
           </div>
         </div>
-      </PremiumCard>
 
-      {/* Surveys List */}
-      {filteredSurveys.length === 0 ? (
-        <PremiumEmptyState
-          icon={ClipboardDocumentCheckIcon}
-          title="No Surveys Found"
-          description={searchTerm || filters.type !== 'all' || filters.status !== 'all' 
-            ? "Try adjusting your search or filters"
-            : activeTab === 'my'
-              ? "Create your first survey to collect feedback and assessments"
-              : "No surveys available"}
-          action={activeTab === 'my' ? {
-            label: 'Create Survey',
-            onClick: () => setShowCreateModal(true)
-          } : undefined}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Questions</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedSurvey.questions?.length || 0}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Responses</p>
+            <p className="text-2xl font-bold text-gray-900">{selectedSurvey.response_count || 0}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Status</p>
+            <p className="text-2xl font-bold text-gray-900 capitalize">{selectedSurvey.status}</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Description</h3>
+          <p className="text-gray-700 whitespace-pre-wrap">{selectedSurvey.description}</p>
+        </div>
+
+        {selectedSurvey.questions && selectedSurvey.questions.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Questions</h3>
+            <div className="space-y-3">
+              {selectedSurvey.questions.map((question: any, index: number) => (
+                <div key={question.id || index} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="font-medium text-gray-900">
+                    {index + 1}. {question.text}
+                    {(question.isRequired || question.required) && <span className="text-red-500 ml-1">*</span>}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Type: {getQuestionTypeLabel(question.type)}
+                  </div>
+                  {question.options && (
+                    <div className="text-sm text-gray-600 mt-2">
+                      Options: {question.options.join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="text-sm text-gray-500">
+          {selectedSurvey.created_at && (
+            <p>Created: {formatDate(selectedSurvey.created_at)}</p>
+          )}
+          {selectedSurvey.updated_at && (
+            <p>Last updated: {formatDate(selectedSurvey.updated_at)}</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render assignment view
+  const renderAssignmentView = () => {
+    if (!selectedSurvey) return null;
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-medium text-gray-900 mb-2">Assigning Survey</h3>
+          <p className="text-gray-600">{selectedSurvey.title}</p>
+        </div>
+
+        <SelectField
+          label="Select Client"
+          name="client"
+          value={selectedClientId}
+          onChange={(value) => setSelectedClientId(value)}
+          options={[
+            { value: '', label: 'Choose a client...' },
+            ...clients.map(client => ({
+              value: client.id,
+              label: `${client.first_name} ${client.last_name}`
+            }))
+          ]}
+          required
         />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {filteredSurveys.map((survey) => {
-            const Icon = getSurveyIcon(survey.type);
-            const IconSolid = getSurveyIconSolid(survey.type);
-            const isMySurvey = survey.created_by === user?.id;
-            
-            return (
-              <PremiumCard
-                key={survey.id}
-                className="hover:shadow-lg transition-shadow duration-200"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${getTypeColor(survey.type)}`}>
-                    <IconSolid className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {isMySurvey && (
-                      <span className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded-full">
-                        My Survey
-                      </span>
-                    )}
-                    {survey.isAnonymous ? (
-                      <LockClosedIcon className="w-4 h-4 text-gray-500" title="Anonymous" />
-                    ) : (
-                      <LockOpenIcon className="w-4 h-4 text-gray-500" title="Identified" />
-                    )}
-                    <StatusBadge
-                      status={survey.status}
-                      type={survey.status === 'published' ? 'active' : 
-                            survey.status === 'closed' ? 'discontinued' : 'pending'}
-                      size="sm"
-                    />
-                  </div>
+
+        <div className="flex justify-end space-x-3">
+          <PremiumButton
+            variant="outline"
+            onClick={() => setViewMode('detail')}
+          >
+            Back
+          </PremiumButton>
+          <PremiumButton
+            variant="primary"
+            onClick={handleAssignSurvey}
+            disabled={!selectedClientId}
+            isLoading={isSubmitting}
+          >
+            Assign Survey
+          </PremiumButton>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <InlineCrudLayout
+      title="Survey Management"
+      subtitle="Create and manage surveys for your clients"
+      icon={ClipboardDocumentCheckIcon}
+      viewMode={viewMode as any}
+      onViewModeChange={setViewMode as any}
+      isLoading={isLoading}
+      showCreateButton={viewMode === 'list'}
+      createButtonText="Create Survey"
+      totalCount={surveys.length}
+      onBack={viewMode !== 'list' ? handleCancel : undefined}
+    >
+      {viewMode === 'list' && (
+        <>
+          {/* Search and Filters */}
+          <div className="mb-6 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex-1 max-w-lg">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search surveys..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="assessment">Assessment</option>
+                  <option value="feedback">Feedback</option>
+                  <option value="progress">Progress</option>
+                  <option value="satisfaction">Satisfaction</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {survey.title}
-                </h3>
-                
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {survey.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                    <ListBulletIcon className="w-3 h-3 mr-1" />
-                    {survey.questions.length} questions
-                  </span>
-                  
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                    <UserGroupIcon className="w-3 h-3 mr-1" />
-                    {survey.response_count} responses
-                  </span>
-                  
-                  {survey.validUntil && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                      <CalendarIcon className="w-3 h-3 mr-1" />
-                      {new Date(survey.validUntil).toLocaleDateString()}
-                    </span>
-                  )}
+          {/* Survey List */}
+          {filteredSurveys.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <ClipboardDocumentCheckIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No surveys found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm || filterType !== 'all' || filterStatus !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'Get started by creating a new survey'}
+              </p>
+              {searchTerm === '' && filterType === 'all' && filterStatus === 'all' && (
+                <div className="mt-6">
+                  <button
+                    onClick={handleCreate}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                  >
+                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Create Survey
+                  </button>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <PremiumButton
-                    size="sm"
-                    variant="primary"
-                    icon={UserPlusIcon}
-                    onClick={() => {
-                      setSelectedSurvey(survey);
-                      setShowAssignModal(true);
-                    }}
-                  >
-                    Assign to Client
-                  </PremiumButton>
-                  <PremiumButton
-                    size="sm"
-                    variant="outline"
-                    icon={EyeIcon}
-                    onClick={() => {
-                      // Preview survey
-                    }}
-                  >
-                    Preview
-                  </PremiumButton>
-                  {survey.response_count > 0 && (
-                    <PremiumButton
-                      size="sm"
-                      variant="secondary"
-                      icon={ChartBarIcon}
-                      onClick={() => {
-                        setSelectedSurvey(survey);
-                        setShowResponsesModal(true);
-                      }}
-                    >
-                      Results
-                    </PremiumButton>
-                  )}
-                  {isMySurvey && (
-                    <>
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={DocumentDuplicateIcon}
-                        onClick={() => handleDuplicate(survey)}
+              )}
+            </div>
+          ) : (
+            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {columns.map((column) => (
+                      <th
+                        key={column.key}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Copy
-                      </PremiumButton>
-                      {survey.status === 'draft' && (
-                        <PremiumButton
-                          size="sm"
-                          variant="outline"
-                          icon={PencilIcon}
-                          onClick={() => {
-                            setSelectedSurvey(survey);
-                            setShowEditModal(true);
-                          }}
+                        {column.label}
+                      </th>
+                    ))}
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredSurveys.map((survey) => (
+                    <tr key={survey.id} className="hover:bg-gray-50">
+                      {columns.map((column) => (
+                        <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                          {column.render(survey)}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleViewDetails(survey)}
+                          className="text-teal-600 hover:text-teal-900 mr-3"
+                          title="View Details"
                         >
-                          Edit
-                        </PremiumButton>
-                      )}
-                    </>
-                  )}
-                </div>
-              </PremiumCard>
-            );
-          })}
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleAssign(survey)}
+                          className="text-teal-600 hover:text-teal-900"
+                          title="Assign to Client"
+                        >
+                          <UserPlusIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Create/Edit Form */}
+      {(viewMode === 'create' || viewMode === 'edit') && (
+        <form onSubmit={handleCreateSurvey} className="space-y-6">
+          {renderFormFields()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
+              {viewMode === 'create' ? 'Create Survey' : 'Update Survey'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Detail View */}
+      {viewMode === 'detail' && (
+        <div className="space-y-6">
+          {renderDetailView()}
+          
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              Back to List
+            </button>
+            <button
+              onClick={() => handleAssign(selectedSurvey!)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+            >
+              <UserPlusIcon className="-ml-1 mr-2 h-5 w-5" />
+              Assign to Client
+            </button>
+          </div>
         </div>
       )}
-    </div>
+
+      {/* Assign View */}
+      {viewMode === 'assign' && renderAssignmentView()}
+    </InlineCrudLayout>
   );
 };
 

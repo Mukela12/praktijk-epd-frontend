@@ -1,0 +1,46 @@
+i want us to work on all screens where the crud operations will be happening and details pages and they should all be operational the button should all work like create, delete, edit, etc and         details i want this to be a fully functional web app with all the screens working and callign real 
+endpoints i want you to review the backend at [Pasted text #1 +90 lines] make sure the UI matches the UI you are workign on and is professional don't use any modals all operations should be in the dashboard and should look amazing and consistent with other screens and should function correctly.  Please make sure to fully complete the project take time to make sure that it looks as refined and detailed as other screens and should be able to perform all operations and have screens to do so  this will take you should time you are going to complete it then go through a second round of checks on the backend and frontend as well as perform curl commands to the backend in production VITE_API_URL=https://praktijk-epd-backend-production.up.railway.app/api                     if you want to test the endpoints review: comprehensive-backend-test-full.js file i also want you to make sure that everything is complete and functional because my client was testing it and nothing was working so please go through the whole development process three times (development and endpoint integration, UI refinement and development and integration code review and fixing  to look professional and consistent with all other screens, refinement of everything and ensuring all operations are working correctly with the backend and that their no issues that can cause glitches and errors as well as  making correct api call) by the end of this the client should be able to use all roles and perform all operations with all the data going to the backend and all endpoints working as well as all operations should be able to function completely    here is the js file of the backend tests we performed you can also review the backend code in the src files at  mukelakatungu@Mukelas-MacBook-Air praktijk-epd-backend %  which is in the parent directory 
+ 
+
+ Hey @~Natalie, how are you today?
+Just to update you we ware still in development testing mollie and moneybird as well as working on parts of the frontend
+We have deployed the backend and frontend and we will be updating it as we continue development
+https://praktijk-epd.netlify.app/
+That’s where the website will be hosted you can be seeing our progress there and make comments
+I am good. Thank you. Hope you Guys are doing great as Well!
+Okey thank you inapriciate the update
+Great! With what username and password can i login?
+Awesome, I’m doing great
+You can try to create your own account but you can use these too:
+
+Mukelathegreat@gmail.com pass: Milan18$
+
+Jessekatungu@gmail.com
+Pass: Milan18$
+
+Mukela.j.katungu@gmail.com
+Pass: Milan18$
+Yes i was able to create my own account. It is a lot of fun to go trough.
+Glad you like it, let us know your feedback. We are still working on payment and other issues
+Okey good to know. I will send Some
+In the therapist role appointment had a glitch
+Noted it’s something to do with the backend errors because i’m still updating the backend
+Also we need to work on messaging
+Because it’s not real time currently
+from the therapist role: they can add specializations. Would it be posscile that the admin creat the names and the therapist can choose beween the options. This gives a universal look to clients. Can we rename specialization to therapies (Therapieën)? and add a section of option with what psychologicol problems (hulpvragen) a therapist can help. like ADD, concentration problems etc. Also admin needs to create this list and therapist can choose.
+The therapist setting is not yet completed right?
+Noted
+No, not yet
+If you find any other issues or changes you want please let me know 🙏
+The my profile section was glitching as well. 
+
+The look and feel looks good. Adding cliënt etc does not yet work, so i can not give any feedback yes.
+Noted, the adding client is actually supposed to work it was working locally on my computer thanks for letting me know let test it now that’s it’s deployed
+Messages isn’t working as well
+Okey.
+What should work?
+Challenges, resources and surveys should be working btw i can see that they are not in production
+Can i test it and update it you when it’s working?
+Because alot of requests being sent because of the issue with appointments
+I checked. I could not add
+Yes Okey       

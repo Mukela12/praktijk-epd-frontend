@@ -21,6 +21,8 @@ export function useApiCall<T = any>(
   const [data, setData] = useState<T | null>(null);
 
   const execute = useCallback(async (...args: any[]) => {
+    // Reduced logging - only log function name
+    console.log('[useApiCall] Executing:', apiFunction.name);
     setIsLoading(true);
     setError(null);
 
@@ -28,6 +30,7 @@ export function useApiCall<T = any>(
       const response = await apiFunction(...args);
       
       if (response.success && response.data) {
+        console.log('[useApiCall] Success');
         setData(response.data);
         
         if (options?.showSuccessToast) {
@@ -37,9 +40,11 @@ export function useApiCall<T = any>(
         options?.onSuccess?.(response.data);
         return response.data;
       } else {
+        console.log('[useApiCall] Failed:', response.message);
         throw new Error(response.message || 'Operation failed');
       }
     } catch (err: any) {
+      console.error('[useApiCall] Error:', err.message || err);
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred';
       setError(errorMessage);
       
@@ -172,8 +177,31 @@ export function useTherapistAppointments() {
   
   const { execute: getAppointments, isLoading, error } = useApiCall(therapistApi.getAppointments, {
     onSuccess: (data) => {
-      setAppointments(data);
-    }
+      console.log('[useTherapistAppointments] Success response data:', data);
+      // Handle both direct array response and nested appointments property
+      if (Array.isArray(data)) {
+        console.log('[useTherapistAppointments] Data is array, length:', data.length);
+        setAppointments(data);
+      } else if (data?.appointments) {
+        console.log('[useTherapistAppointments] Data has appointments property:', data.appointments);
+        setAppointments(data.appointments);
+      } else {
+        console.log('[useTherapistAppointments] Data format not recognized, setting empty array');
+        console.log('[useTherapistAppointments] Data structure:', JSON.stringify(data, null, 2));
+        setAppointments([]);
+      }
+    },
+    onError: (error) => {
+      console.error('[useTherapistAppointments] Failed to fetch appointments:', error);
+      console.error('[useTherapistAppointments] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data
+      });
+      setAppointments([]);
+    },
+    showErrorToast: false // Prevent duplicate error toasts
   });
 
   const { execute: createAppointment } = useApiCall(therapistApi.createAppointment, {

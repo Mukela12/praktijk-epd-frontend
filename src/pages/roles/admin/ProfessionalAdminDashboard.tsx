@@ -120,7 +120,7 @@ interface ModuleCardProps {
   title: string;
   description: string;
   icon: React.ComponentType<any>;
-  color: string;
+  color?: string;
   link: string;
   stats?: { label: string; value: string | number }[];
   isNew?: boolean;
@@ -187,7 +187,7 @@ interface QuickActionProps {
   icon: React.ComponentType<any>;
   label: string;
   onClick: () => void;
-  color: string;
+  color?: string;
   badge?: number;
 }
 

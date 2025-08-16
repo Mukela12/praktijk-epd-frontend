@@ -98,7 +98,7 @@ export const PremiumMetric: React.FC<PremiumMetricProps> = ({
 // Premium Status Badge
 interface StatusBadgeProps {
   status: string;
-  type?: 'new' | 'viewed' | 'scheduled' | 'starting' | 'active' | 'discontinued' | 'paid' | 'partial' | 'overdue' | 'collection' | 'legal' | 'pending' | 'suspended' | 'processing' | 'general' | 'waiting_list' | 'client';
+  type?: 'new' | 'viewed' | 'scheduled' | 'starting' | 'active' | 'discontinued' | 'paid' | 'partial' | 'overdue' | 'collection' | 'legal' | 'pending' | 'suspended' | 'processing' | 'general' | 'waiting_list' | 'client' | 'user';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -130,7 +130,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     processing: 'bg-white text-gray-800 border border-gray-300',
     general: 'bg-gray-100 text-gray-800',
     waiting_list: 'bg-amber-100 text-amber-800',
-    client: 'bg-blue-100 text-blue-800'
+    client: 'bg-blue-100 text-blue-800',
+    user: 'bg-indigo-100 text-indigo-800'
   };
 
   return (
@@ -150,7 +151,7 @@ interface PremiumButtonProps {
   variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
   loading?: boolean;
   icon?: React.ComponentType<any>;
