@@ -32,7 +32,7 @@ import {
   ChartBarIcon as ChartSolid
 } from '@heroicons/react/24/solid';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { therapistApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import { useAuth } from '@/store/authStore';
@@ -102,7 +102,7 @@ const TherapistSurveysManagement: React.FC = () => {
 
   const loadClients = async () => {
     try {
-      const response = await therapistApi.getClients();
+      const response = await realApiService.therapist.getClients();
       if (response.success && response.data) {
         setClients(response.data.clients || []);
       }
@@ -114,7 +114,7 @@ const TherapistSurveysManagement: React.FC = () => {
   const loadSurveys = async () => {
     try {
       setIsLoading(true);
-      const response = await therapistApi.getSurveys();
+      const response = await realApiService.therapist.getSurveys();
       
       if (response.success && response.data) {
         const surveysData = response.data.surveys || response.data || [];
@@ -150,7 +150,7 @@ const TherapistSurveysManagement: React.FC = () => {
         status: 'published'
       };
 
-      const response = await therapistApi.createSurvey(surveyData);
+      const response = await realApiService.therapist.createSurvey(surveyData);
       if (response.success) {
         success('Survey created successfully');
         handleCancel();
@@ -169,7 +169,7 @@ const TherapistSurveysManagement: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      const response = await therapistApi.assignSurvey(selectedSurvey.id, selectedClientId, {
+      const response = await realApiService.therapist.assignSurvey(selectedSurvey.id, selectedClientId, {
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
         notes: 'Survey assigned by therapist'
       });

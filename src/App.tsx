@@ -54,6 +54,7 @@ import TherapistChallengesManagement from '@/pages/roles/therapist/challenges/Ch
 import TherapistSurveysManagement from '@/pages/roles/therapist/surveys/SurveysManagement';
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
 import TreatmentCodesManagement from '@/pages/roles/therapist/treatment-codes/TreatmentCodesManagement';
+import TherapistResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
@@ -68,6 +69,7 @@ import ClientDocuments from '@/pages/roles/client/documents/ClientDocuments';
 import SessionHistory from '@/pages/roles/client/SessionHistory';
 import PaymentCenter from '@/pages/roles/client/PaymentCenter';
 import PaymentMethods from '@/pages/roles/client/PaymentMethods';
+import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
 
 // Assistant Components
 import AssistantDashboard from '@/pages/roles/assistant/Dashboard';
@@ -296,6 +298,7 @@ const App: React.FC = () => {
                         <Route path="settings" element={<TherapistSettings />} />
                         <Route path="challenges" element={<TherapistChallengesManagement />} />
                         <Route path="surveys" element={<TherapistSurveysManagement />} />
+                        <Route path="resources" element={<TherapistResourcesManagementInline />} />
                         <Route path="availability" element={<AvailabilityManagement />} />
                         <Route path="*" element={<Navigate to="/therapist/dashboard" replace />} />
                       </Routes>
@@ -325,6 +328,7 @@ const App: React.FC = () => {
                         <Route path="invoices" element={<ClientInvoices />} />
                         <Route path="documents" element={<ClientDocuments />} />
                         <Route path="session-history" element={<SessionHistory />} />
+                        <Route path="challenges" element={<ClientChallenges />} />
                         <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
                       </Routes>
                     </DashboardLayout>

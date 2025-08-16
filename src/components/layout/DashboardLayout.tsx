@@ -192,6 +192,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           href: '/therapist/surveys',
           icon: ClipboardDocumentCheckIcon,
           roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
+        },
+        {
+          name: 'Resources',
+          nameKey: 'nav.resources',
+          href: '/therapist/resources',
+          icon: BookOpenIcon,
+          roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
         }
       );
     }
@@ -224,6 +231,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           nameKey: 'nav.paymentMethods',
           href: '/client/payment-methods',
           icon: ShieldCheckIcon,
+          roles: [UserRole.CLIENT],
+        },
+        {
+          name: 'Challenges',
+          nameKey: 'nav.challenges',
+          href: '/client/challenges',
+          icon: PuzzlePieceIcon,
           roles: [UserRole.CLIENT],
         }
       );

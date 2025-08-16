@@ -59,7 +59,7 @@ const AppointmentBookingInline: React.FC = () => {
   });
   const [assignedTherapist, setAssignedTherapist] = useState<TherapistInfo | null>(null);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Check if client has assigned therapist
@@ -82,9 +82,11 @@ const AppointmentBookingInline: React.FC = () => {
           therapistId: response.data.id,
           therapistName: `${response.data.first_name} ${response.data.last_name}`
         }));
+        // Automatically move to datetime step if therapist is assigned
+        setCurrentStep('datetime');
       }
     } catch (error) {
-      // No assigned therapist
+      // No assigned therapist - stay on therapist selection step
       setAssignedTherapist(null);
     } finally {
       setIsLoading(false);
@@ -122,13 +124,9 @@ const AppointmentBookingInline: React.FC = () => {
       const requestData = {
         preferredDate: bookingData.preferredDate!,
         preferredTime: bookingData.preferredTime!,
-        alternativeDate: bookingData.alternativeDate,
-        alternativeTime: bookingData.alternativeTime,
         therapyType: bookingData.therapyType,
         urgencyLevel: bookingData.urgencyLevel,
-        reason: bookingData.reasonForTherapy,
-        notes: bookingData.additionalNotes,
-        preferredTherapistId: bookingData.therapistId
+        reason: bookingData.reasonForTherapy
       };
 
       const response = await realApiService.client.requestAppointment(requestData);
@@ -137,7 +135,7 @@ const AppointmentBookingInline: React.FC = () => {
         success('Appointment request submitted successfully!');
         setCurrentStep('success');
       }
-    } catch (error) {
+    } catch (err) {
       error('Failed to submit appointment request');
     } finally {
       setIsLoading(false);
@@ -523,7 +521,7 @@ const AppointmentBookingInline: React.FC = () => {
     }
   };
 
-  if (isLoading && currentStep === 'therapist') {
+  if (isLoading) {
     return (
       <PremiumCard>
         <div className="flex justify-center items-center py-12">

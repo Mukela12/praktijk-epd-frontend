@@ -643,6 +643,64 @@ export const realApiService = {
     getAvailablePsychologicalProblems: async (): Promise<ApiResponse<any[]>> => {
       const response = await api.get('/therapist/available-psychological-problems');
       return response.data;
+    },
+
+    // Challenges
+    getChallenges: async (): Promise<ApiResponse<{ challenges: any[] }>> => {
+      const response = await api.get('/therapist/challenges');
+      return response.data;
+    },
+
+    createChallenge: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/therapist/challenges', data);
+      return response.data;
+    },
+
+    updateChallenge: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/therapist/challenges/${id}`, data);
+      return response.data;
+    },
+
+    deleteChallenge: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/therapist/challenges/${id}`);
+      return response.data;
+    },
+
+    assignChallenge: async (challengeId: string, clientId: string, data?: any): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/therapist/challenges/${challengeId}/assign`, { clientId, ...data });
+      return response.data;
+    },
+
+    // Surveys
+    getSurveys: async (): Promise<ApiResponse<{ surveys: any[] }>> => {
+      const response = await api.get('/therapist/surveys');
+      return response.data;
+    },
+
+    createSurvey: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/therapist/surveys', data);
+      return response.data;
+    },
+
+    updateSurvey: async (id: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/therapist/surveys/${id}`, data);
+      return response.data;
+    },
+
+    deleteSurvey: async (id: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/therapist/surveys/${id}`);
+      return response.data;
+    },
+
+    assignSurvey: async (surveyId: string, clientId: string, data?: any): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/therapist/surveys/${surveyId}/assign`, { clientId, ...data });
+      return response.data;
+    },
+
+    // Resources
+    getResources: async (): Promise<ApiResponse<{ resources: any[] }>> => {
+      const response = await api.get('/therapist/resources');
+      return response.data;
     }
   },
 
@@ -775,6 +833,29 @@ export const realApiService = {
       const response = await api.put('/client/preferences', data);
       return response.data;
     },
+
+    // Challenges
+    getChallenges: async (): Promise<ApiResponse<{ challenges: any[] }>> => {
+      const response = await api.get('/client/challenges');
+      return response.data;
+    },
+
+    // Surveys
+    getSurveys: async (): Promise<ApiResponse<{ surveys: any[] }>> => {
+      const response = await api.get('/client/surveys');
+      return response.data;
+    },
+
+    submitSurveyResponse: async (surveyId: string, responses: any): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/client/surveys/${surveyId}/respond`, { responses });
+      return response.data;
+    },
+
+    // Resources
+    getResources: async (): Promise<ApiResponse<{ resources: any[] }>> => {
+      const response = await api.get('/client/resources');
+      return response.data;
+    }
 
     // Invoices (✅ WORKING)
     getInvoices: async (params?: { status?: string }): Promise<ApiResponse<any[]>> => {

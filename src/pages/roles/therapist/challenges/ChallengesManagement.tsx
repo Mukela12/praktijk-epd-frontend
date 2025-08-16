@@ -17,7 +17,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { therapistApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumMetric } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -67,7 +67,7 @@ const TherapistChallengesManagement: React.FC = () => {
 
   const loadClients = async () => {
     try {
-      const response = await therapistApi.getClients();
+      const response = await realApiService.therapist.getClients();
       if (response.success && response.data) {
         setClients(response.data.clients || []);
       }
@@ -79,7 +79,7 @@ const TherapistChallengesManagement: React.FC = () => {
   const loadChallenges = async () => {
     try {
       setIsLoading(true);
-      const response = await therapistApi.getChallenges();
+      const response = await realApiService.therapist.getChallenges();
       
       if (response.success && response.data) {
         const challengesData = response.data.challenges || response.data || [];
@@ -112,7 +112,7 @@ const TherapistChallengesManagement: React.FC = () => {
         targetAudience: 'all'
       };
 
-      const response = await therapistApi.createChallenge(challengeData);
+      const response = await realApiService.therapist.createChallenge(challengeData);
       if (response.success) {
         success('Challenge created successfully');
         setViewMode('list');
@@ -140,7 +140,7 @@ const TherapistChallengesManagement: React.FC = () => {
     if (!selectedChallenge || !selectedClientId) return;
 
     try {
-      const response = await therapistApi.assignChallenge(selectedChallenge.id, selectedClientId);
+      const response = await realApiService.therapist.assignChallenge(selectedChallenge.id, selectedClientId);
       if (response.success) {
         success('Challenge assigned successfully');
         setViewMode('list');
