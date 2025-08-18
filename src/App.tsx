@@ -6,7 +6,8 @@ import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
-import { useAuthMonitor } from '@/hooks/useAuthMonitor';
+// Remove auth monitor that's causing issues
+// import { useAuthMonitor } from '@/hooks/useAuthMonitor';
 import '@/utils/authDebug'; // Import auth debug utilities
 import '@/utils/loginDebug'; // Import login debug utilities
 
@@ -16,6 +17,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Auth Components
 import LoginPage from '@/pages/auth/LoginPage';
+import SimpleLoginPage from '@/pages/auth/SimpleLoginPage'; // New simple login
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
@@ -96,6 +98,7 @@ import BookkeeperSettings from '@/pages/roles/bookkeeper/settings/BookkeeperSett
 
 // Other Components
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import SimpleProtectedRoute from '@/components/auth/SimpleProtectedRoute'; // New simple protected route
 import RoleRedirect from '@/components/auth/RoleRedirect';
 import NetworkErrorHandler from '@/components/NetworkErrorHandler';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -141,7 +144,7 @@ const AppRoutes: React.FC = () => {
   } = useAuth();
   
   // Use auth monitor to handle automatic logout
-  useAuthMonitor();
+  // Removed auth monitor - was causing logout loops
   
   return (
     <div className="App">
@@ -154,13 +157,7 @@ const AppRoutes: React.FC = () => {
               <Routes>
                 <Route 
                   path="login" 
-                  element={
-                    authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
-                      <RoleRedirect />
-                    ) : (
-                      <LoginPage />
-                    )
-                  } 
+                  element={<SimpleLoginPage />} 
                 />
                 <Route 
                   path="register" 
@@ -231,7 +228,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/therapist/*"
           element={
-            <ProtectedRoute roles={[UserRole.THERAPIST, UserRole.SUBSTITUTE]}>
+            <SimpleProtectedRoute allowedRoles={['therapist', 'substitute']}>
               <DashboardLayout>
                 <Routes>
                   <Route path="dashboard" element={<TherapistDashboard />} />
