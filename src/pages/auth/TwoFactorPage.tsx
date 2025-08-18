@@ -63,17 +63,6 @@ const TwoFactorPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Debug logging
-  console.log('[TwoFactorPage] Rendering with:', {
-    authenticationState,
-    mode,
-    user: user?.email,
-    role: user?.role,
-    setupData: !!setupData,
-    isLoadingSetup,
-    showBackupCodes,
-    setupError
-  });
 
   const from = (location.state as any)?.from?.pathname || '/';
 
@@ -105,44 +94,34 @@ const TwoFactorPage: React.FC = () => {
 
   // Determine mode based on auth state
   useEffect(() => {
-    console.log('[TwoFactorPage] Auth state effect triggered:', authenticationState, 'User:', user?.email, 'Role:', user?.role);
-    console.log('[TwoFactorPage] Current auth state from store:', useAuthStore.getState().authenticationState);
     switch (authenticationState) {
       case AuthenticationState.REQUIRES_2FA_SETUP:
-        console.log('[TwoFactorPage] Setting mode to setup and initializing');
         setMode('setup');
         initializeSetup();
         break;
       case AuthenticationState.REQUIRES_2FA_VERIFICATION:
-        console.log('[TwoFactorPage] Setting mode to verify');
         setMode('verify');
         break;
       case AuthenticationState.AUTHENTICATED_COMPLETE:
-        console.log('[TwoFactorPage] User authenticated, redirecting to dashboard');
         // User is fully authenticated, redirect to dashboard
         // Force check current state to ensure we have latest data
         const currentState = useAuthStore.getState();
         if (currentState.user && currentState.user.role) {
           const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-          console.log('[TwoFactorPage] Force redirecting to:', dashboardPath);
           navigate(dashboardPath, { replace: true });
         } else if (user && user.role) {
           // Fallback to prop user if state user not available
           const dashboardPath = navigation.getDashboardPath(user.role);
-          console.log('[TwoFactorPage] Fallback redirecting to:', dashboardPath);
           navigate(dashboardPath, { replace: true });
         } else {
-          console.log('[TwoFactorPage] No user or role found, cannot redirect');
         }
         break;
       case AuthenticationState.IDLE:
       case AuthenticationState.ERROR:
-        console.log('[TwoFactorPage] Auth state reset, redirecting to login');
         // Auth state was cleared (likely due to session expiration)
         navigate('/auth/login', { replace: true });
         break;
       default:
-        console.log('[TwoFactorPage] Invalid auth state, redirecting to login');
         // If user is not in a 2FA state, redirect to login
         navigate('/auth/login', { replace: true });
         break;
@@ -151,42 +130,31 @@ const TwoFactorPage: React.FC = () => {
 
   // Handle pending navigation
   useEffect(() => {
-    console.log('[TwoFactorPage] Pending navigation effect, path:', pendingNavigation);
     if (pendingNavigation) {
-      console.log('[TwoFactorPage] Navigating to pending path:', pendingNavigation);
       navigate(pendingNavigation, { replace: true });
     }
   }, [pendingNavigation, navigate]);
 
   const initializeSetup = async () => {
-    console.log('[TwoFactorPage] initializeSetup called, existing data:', !!setupData);
     if (setupData) {
-      console.log('[TwoFactorPage] Setup data already exists, skipping');
       return; // Already initialized
     }
-    
-    console.log('[TwoFactorPage] Starting 2FA setup initialization');
     setIsLoadingSetup(true);
     setSetupError(null);
     
     try {
       const data = await setup2FA();
-      console.log('[TwoFactorPage] Setup 2FA response:', data);
       if (data) {
         setSetupData(data);
         setRetryCount(0);
-        console.log('[TwoFactorPage] Setup data saved successfully');
       } else {
-        console.log('[TwoFactorPage] Setup 2FA returned null');
         setSetupError('Failed to initialize 2FA setup. Please try again.');
       }
     } catch (error: any) {
-      console.error('[TwoFactorPage] 2FA setup error:', error);
       const errorMessage = error.response?.data?.message || 'Failed to initialize 2FA setup. Please try again.';
       setSetupError(errorMessage);
     } finally {
       setIsLoadingSetup(false);
-      console.log('[TwoFactorPage] Setup initialization complete, loading:', false);
     }
   };
 
@@ -199,44 +167,34 @@ const TwoFactorPage: React.FC = () => {
     try {
       if (mode === 'setup') {
         // For setup mode, use the verify2FA function
-        console.log('[TwoFactorPage] Completing 2FA setup with code:', data.code);
         const success = await verify2FA(data.code, setupData?.secret);
         if (success) {
-          console.log('[TwoFactorPage] 2FA setup completed successfully');
           setShowBackupCodes(true);
           
           // Check if auth state was updated and force navigation if needed
           const currentState = useAuthStore.getState();
-          console.log('[TwoFactorPage] Current state after setup:', currentState.authenticationState, currentState.user?.role);
           
           if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
             // Don't navigate immediately, let user see backup codes first
-            console.log('[TwoFactorPage] Setup complete, showing backup codes first');
           }
         }
       } else {
         // For verification mode during login, complete the 2FA login
-        console.log('[TwoFactorPage] Completing 2FA login with code:', data.code);
         const success = await complete2FALogin(data.code);
         
         if (success) {
-          console.log('[TwoFactorPage] 2FA login completed successfully');
           // Force navigation since the auth state change isn't triggering the useEffect
           const currentState = useAuthStore.getState();
-          console.log('[TwoFactorPage] Current state after login:', currentState.authenticationState, currentState.user?.role);
           
           if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
             const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-            console.log('[TwoFactorPage] Force navigating to:', dashboardPath);
             navigate(dashboardPath, { replace: true });
           } else if (currentState.pendingNavigation) {
-            console.log('[TwoFactorPage] Force navigating to pending path:', currentState.pendingNavigation);
             navigate(currentState.pendingNavigation, { replace: true });
           }
         }
       }
     } catch (error: any) {
-      console.error('2FA verification error:', error);
       const errorMessage = error.response?.data?.message || 'Invalid code. Please try again.';
       setError('code', {
         type: 'manual',
@@ -249,20 +207,16 @@ const TwoFactorPage: React.FC = () => {
     try {
       if (mode === 'setup') {
         // For setup mode, this shouldn't happen
-        console.error('[TwoFactorPage] Backup code submission during setup mode');
         return;
       } else {
         // For verification mode during login, complete the 2FA login with backup code
-        console.log('[TwoFactorPage] Completing 2FA login with backup code');
         const success = await complete2FALogin(data.code);
         
         if (success) {
-          console.log('[TwoFactorPage] 2FA login completed successfully with backup code');
           // Navigation will be handled by the auth state change useEffect
         }
       }
     } catch (error: any) {
-      console.error('Backup code verification error:', error);
       const errorMessage = error.response?.data?.message || 'Invalid backup code. Please try again.';
       backupCodeForm.setError('code', {
         type: 'manual',
@@ -292,31 +246,25 @@ const TwoFactorPage: React.FC = () => {
         setCopiedCodes(true);
         setTimeout(() => setCopiedCodes(false), 2000);
       } catch (error) {
-        console.error('Failed to copy backup codes:', error);
+        // Failed to copy backup codes
       }
     }
   };
 
   const completeSetup = () => {
-    console.log('[TwoFactorPage] Completing setup and navigating to dashboard');
     // Force navigation to ensure we get the latest auth state
     const currentState = useAuthStore.getState();
-    console.log('[TwoFactorPage] Current state during complete setup:', currentState.authenticationState, currentState.user?.role);
     
     if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
       const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-      console.log('[TwoFactorPage] Force navigating to dashboard:', dashboardPath);
       navigate(dashboardPath, { replace: true });
     } else if (currentState.pendingNavigation) {
-      console.log('[TwoFactorPage] Force navigating to pending path:', currentState.pendingNavigation);
       navigate(currentState.pendingNavigation, { replace: true });
     } else if (user) {
       // Fallback to user prop if state isn't updated yet
       const dashboardPath = navigation.getDashboardPath(user.role);
-      console.log('[TwoFactorPage] Fallback navigation to:', dashboardPath);
       navigate(dashboardPath, { replace: true });
     } else {
-      console.log('[TwoFactorPage] No user found, navigating to home');
       navigate('/', { replace: true });
     }
   };
@@ -551,7 +499,7 @@ const TwoFactorPage: React.FC = () => {
                       await navigator.clipboard.writeText(setupData.secret);
                       // Could add toast notification here
                     } catch (error) {
-                      console.error('Failed to copy secret key:', error);
+                      // Failed to copy secret key
                     }
                   }}
                   className="mt-2 text-sm text-blue-600 hover:text-blue-700"

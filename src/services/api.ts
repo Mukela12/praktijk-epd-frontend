@@ -53,7 +53,6 @@ let refreshTokenPromise: Promise<string> | null = null;
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    console.log('[API] Request:', config.method?.toUpperCase(), config.url);
     
     // Skip auth for auth endpoints
     const skipAuthEndpoints = [
@@ -82,7 +81,6 @@ api.interceptors.request.use(
           
           // If token expires within 5 minutes, refresh it
           if (timeUntilExpiry < 300000) { // 5 minutes = 300000ms
-            console.log('[API] Token expires soon, refreshing...');
             
             if (!isRefreshingToken) {
               isRefreshingToken = true;
@@ -119,11 +117,6 @@ api.interceptors.request.use(
     
     // Log registration requests
     if (config.url?.includes('/auth/register')) {
-      console.log('=== AXIOS INTERCEPTOR - REGISTER REQUEST ===');
-      console.log('URL:', config.baseURL + config.url);
-      console.log('Method:', config.method);
-      console.log('Headers:', config.headers);
-      console.log('Data:', config.data);
     }
     
     return config;
@@ -136,7 +129,6 @@ api.interceptors.request.use(
 // Helper function to refresh access token
 const refreshAccessToken = async (): Promise<string> => {
   try {
-    console.log('[API] Refreshing access token...');
     // Send empty body with POST request, cookies will be sent automatically
     const response = await api.post('/auth/refresh-token', {});
     
@@ -149,7 +141,6 @@ const refreshAccessToken = async (): Promise<string> => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      console.log('[API] Token refreshed successfully');
       return newToken;
     } else {
       throw new Error('Token refresh failed');
@@ -170,11 +161,9 @@ const refreshAccessToken = async (): Promise<string> => {
 // Response interceptor for error handling and token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('[API] Response:', response.config.method?.toUpperCase(), response.config.url, response.status);
     return response;
   },
   async (error: AxiosError) => {
-    console.log('[API] Error:', error.config?.method?.toUpperCase(), error.config?.url, error.response?.status);
     const originalRequest = error.config as any;
     
     // Handle 429 rate limit errors specially
@@ -284,15 +273,9 @@ export const authApi = {
    * Register new user
    */
   register: async (userData: RegisterData): Promise<AuthResponse> => {
-    console.log('=== API SERVICE REGISTER ===');
-    console.log('Payload being sent:', JSON.stringify(userData, null, 2));
-    console.log('Request headers:', api.defaults.headers);
-    console.log('API Base URL:', api.defaults.baseURL);
     
     const response = await api.post<AuthResponse>('/auth/register', userData);
     
-    console.log('API Response Status:', response.status);
-    console.log('API Response Data:', response.data);
     
     return response.data;
   },

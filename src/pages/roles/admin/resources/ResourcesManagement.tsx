@@ -568,7 +568,11 @@ const ResourcesManagement: React.FC = () => {
       subtitle="Manage therapeutic content and educational materials"
       icon={BookOpenIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Create Resource"

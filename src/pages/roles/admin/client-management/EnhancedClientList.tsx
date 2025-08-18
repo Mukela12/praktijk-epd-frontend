@@ -216,7 +216,6 @@ const EnhancedClientList: React.FC = () => {
       icon: EyeIcon,
       onClick: (client) => {
         // Navigate to client profile
-        console.log('View client:', client.id);
       },
       variant: 'secondary'
     },
@@ -226,7 +225,6 @@ const EnhancedClientList: React.FC = () => {
       icon: PencilIcon,
       onClick: (client) => {
         // Navigate to edit form
-        console.log('Edit client:', client.id);
       },
       variant: 'secondary'
     },
@@ -236,7 +234,6 @@ const EnhancedClientList: React.FC = () => {
       icon: EnvelopeIcon,
       onClick: (client) => {
         // Open messaging modal
-        console.log('Contact client:', client.id);
       },
       variant: 'secondary'
     }
@@ -319,12 +316,10 @@ const EnhancedClientList: React.FC = () => {
   // Handle bulk actions
   const handleBulkExport = () => {
     if (selectedClients.length === 0) return;
-    console.log('Export clients:', selectedClients.map(c => c.id));
   };
 
   const handleBulkAssign = () => {
     if (selectedClients.length === 0) return;
-    console.log('Bulk assign clients:', selectedClients.map(c => c.id));
   };
 
   if (isLoading) {

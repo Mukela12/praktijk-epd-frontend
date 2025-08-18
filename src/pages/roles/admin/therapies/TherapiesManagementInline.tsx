@@ -315,15 +315,6 @@ const TherapiesManagementInline: React.FC = () => {
         value={formData.techniques}
         onChange={(value) => setFormData({ ...formData, techniques: value })}
         placeholder="Add therapy techniques..."
-        suggestions={[
-          'Cognitive restructuring',
-          'Behavioral activation',
-          'Mindfulness',
-          'Exposure therapy',
-          'Relaxation techniques',
-          'Role-playing',
-          'Journaling'
-        ]}
       />
 
       <TagsField
@@ -332,18 +323,6 @@ const TherapiesManagementInline: React.FC = () => {
         value={formData.conditions_treated}
         onChange={(value) => setFormData({ ...formData, conditions_treated: value })}
         placeholder="Add conditions this therapy can treat..."
-        suggestions={[
-          'Depression',
-          'Anxiety',
-          'PTSD',
-          'OCD',
-          'Bipolar Disorder',
-          'ADHD',
-          'Eating Disorders',
-          'Substance Abuse',
-          'Phobias',
-          'Panic Disorder'
-        ]}
       />
 
       <TagsField
@@ -352,13 +331,6 @@ const TherapiesManagementInline: React.FC = () => {
         value={formData.age_groups}
         onChange={(value) => setFormData({ ...formData, age_groups: value })}
         placeholder="Add suitable age groups..."
-        suggestions={[
-          'Children (5-12)',
-          'Adolescents (13-17)',
-          'Young Adults (18-25)',
-          'Adults (26-64)',
-          'Seniors (65+)'
-        ]}
       />
     </div>
   );
@@ -445,7 +417,11 @@ const TherapiesManagementInline: React.FC = () => {
       subtitle="Manage available therapy types and approaches"
       icon={HeartIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Add Therapy"

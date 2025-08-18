@@ -209,7 +209,6 @@ const AssistantMessages: React.FC = () => {
     if (!newMessage.trim() || !selectedConversation) return;
     
     // Mock send message
-    console.log('Sending message:', newMessage);
     setNewMessage('');
   };
 

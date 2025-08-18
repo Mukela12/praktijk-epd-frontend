@@ -69,7 +69,8 @@ const TherapistChallengesManagement: React.FC = () => {
     try {
       const response = await realApiService.therapist.getClients();
       if (response.success && response.data) {
-        setClients(response.data.clients || []);
+        const clientsData = response.data as any;
+        setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
       }
     } catch (err) {
       console.error('Failed to load clients:', err);

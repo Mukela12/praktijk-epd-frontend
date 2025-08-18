@@ -230,6 +230,9 @@ const translations = {
   'dashboard.adminPortal': { en: 'Admin Portal', nl: 'Beheer Portaal' },
   'dashboard.thisWeek': { en: 'This Week', nl: 'Deze Week' },
   
+  // Two Factor Authentication
+  'twofa.twoFactorCode': { en: 'Two-Factor Code', nl: 'Twee-Factor Code' },
+  
   // Client
   'client.specializations': { en: 'Specializations', nl: 'Specialisaties' },
   'client.generalTherapy': { en: 'General therapy', nl: 'Algemene therapie' },

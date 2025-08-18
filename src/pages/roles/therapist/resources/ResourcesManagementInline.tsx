@@ -118,7 +118,8 @@ const TherapistResourcesManagementInline: React.FC = () => {
     try {
       const response = await realApiService.therapist.getClients();
       if (response.success && response.data) {
-        setClients(response.data.clients || []);
+        const clientsData = response.data as any;
+        setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
       }
     } catch (error) {
       console.error('Failed to load clients:', error);
@@ -152,15 +153,13 @@ const TherapistResourcesManagementInline: React.FC = () => {
         const response = await realApiService.resources.createResource({
           title: formData.title || '',
           description: formData.description || '',
-          shortDescription: formData.description?.substring(0, 100) || '',
           type: formData.type || 'article',
           category: formData.category || 'general',
           contentBody: formData.contentBody || '',
           contentUrl: formData.url || '',
           difficulty: formData.difficulty || 'beginner',
           tags: formData.tags || [],
-          isPublic: formData.isPublic !== false,
-          status: formData.status || 'draft'
+          isPublic: formData.isPublic !== false
         });
         
         if (response.success) {
@@ -606,7 +605,7 @@ const TherapistResourcesManagementInline: React.FC = () => {
             variant="primary"
             onClick={handleAssignResource}
             disabled={!selectedClientId}
-            isLoading={isSubmitting}
+            loading={isSubmitting}
           >
             Assign Resource
           </PremiumButton>

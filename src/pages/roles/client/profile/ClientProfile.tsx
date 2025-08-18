@@ -161,7 +161,6 @@ const ClientProfile: React.FC = () => {
         if (preferencesUpdate) {
           setProfile(editedProfile);
           setIsEditing(false);
-          console.log('Profile saved successfully:', editedProfile);
         } else {
           console.error('Failed to save preferences');
           // Still update local state for better UX

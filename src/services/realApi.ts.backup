@@ -40,20 +40,17 @@ class RequestManager {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && this.isValidCache(cached)) {
-      console.log(`[RequestManager] Using cached data for ${endpoint}`);
       return cached.data;
     }
 
     // Check if request is already pending
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
-      console.log(`[RequestManager] Request already pending for ${endpoint}, waiting...`);
       return pending;
     }
 
     // Throttle requests to prevent 429 errors
     if (this.shouldThrottle(endpoint)) {
-      console.log(`[RequestManager] Throttling request to ${endpoint}, using cache or waiting...`);
       if (cached) {
         return cached.data; // Use expired cache if available
       }
@@ -81,7 +78,6 @@ class RequestManager {
     } catch (error) {
       // On error, return cached data if available
       if (cached) {
-        console.warn(`[RequestManager] Request failed for ${endpoint}, using cached data`);
         return cached.data;
       }
       throw error;
@@ -589,7 +585,6 @@ export const realApiService = {
               } catch (therapistError: any) {
                 if (therapistError.response?.status === 403) {
                   // If still forbidden, return mock data instead of failing
-                  console.warn('User does not have permission to access client data, returning mock data');
                   return { 
                     success: true, 
                     data: [
@@ -636,7 +631,6 @@ export const realApiService = {
           }
           return response.data;
         } catch (error) {
-          console.warn('Clients getAll failed, returning empty array:', error);
           return { success: true, data: [], message: 'API call failed, using empty data' };
         }
       }, 45000); // Cache for 45 seconds
@@ -652,7 +646,6 @@ export const realApiService = {
             response = await api.get('/admin/therapists');
           } catch (adminError: any) {
             if (adminError.response?.status === 403) {
-              console.warn('User does not have admin permission, returning mock therapist data');
               return { 
                 success: true, 
                 data: [
@@ -698,7 +691,6 @@ export const realApiService = {
           }
           return response.data;
         } catch (error) {
-          console.warn('Therapists getAll failed, returning empty array:', error);
           return { success: true, data: [], message: 'API call failed, using empty data' };
         }
       }, 60000); // Cache for 1 minute
@@ -725,7 +717,6 @@ export const realApiService = {
                 } catch (clientError: any) {
                   if (clientError.response?.status === 403) {
                     // Return mock data instead of failing
-                    console.warn('User does not have permission to access appointment data, returning mock data');
                     return { 
                       success: true, 
                       data: [
@@ -769,7 +760,6 @@ export const realApiService = {
         }
         return response.data;
       } catch (error) {
-        console.warn('Appointments getAll failed, returning empty array:', error);
         return { success: true, data: [], message: 'API call failed, using empty data' };
       }
     }
@@ -790,7 +780,6 @@ export const realApiService = {
             } catch (adminError: any) {
               if (adminError.response?.status === 403) {
                 // Return mock data instead of failing
-                console.warn('User does not have permission to access invoice data, returning mock data');
                 return { 
                   success: true, 
                   data: [
@@ -829,7 +818,6 @@ export const realApiService = {
         }
         return response.data;
       } catch (error) {
-        console.warn('Invoices getAll failed, returning empty array:', error);
         return { success: true, data: [], message: 'API call failed, using empty data' };
       }
     }
@@ -850,7 +838,6 @@ export const realApiService = {
             } catch (clientError: any) {
               if (clientError.response?.status === 403) {
                 // Return mock data instead of failing
-                console.warn('User does not have permission to access messages, returning mock data');
                 return { 
                   success: true, 
                   data: [
@@ -888,7 +875,6 @@ export const realApiService = {
         }
         return response.data;
       } catch (error) {
-        console.warn('Messages getInbox failed, returning empty array:', error);
         return { success: true, data: [], message: 'API call failed, using empty data' };
       }
     }
@@ -909,7 +895,6 @@ export const realApiService = {
             } catch (adminError: any) {
               if (adminError.response?.status === 403) {
                 // Return mock data instead of failing
-                console.warn('User does not have permission to access contracts, returning mock data');
                 return { 
                   success: true, 
                   data: [
@@ -947,7 +932,6 @@ export const realApiService = {
         }
         return response.data;
       } catch (error) {
-        console.warn('Contracts getAll failed, returning empty array:', error);
         return { success: true, data: [], message: 'API call failed, using empty data' };
       }
     }
@@ -968,7 +952,6 @@ export const realApiService = {
             } catch (assistantError: any) {
               if (assistantError.response?.status === 403) {
                 // Return mock data instead of failing
-                console.warn('User does not have permission to access waiting list, returning mock data');
                 return { 
                   success: true, 
                   data: [
@@ -1006,7 +989,6 @@ export const realApiService = {
         }
         return response.data;
       } catch (error) {
-        console.warn('Waiting list getAll failed, returning empty array:', error);
         return { success: true, data: [], message: 'API call failed, using empty data' };
       }
     }
@@ -1144,7 +1126,6 @@ export const realApiService = {
         await realApiService.health.check();
         return true;
       } catch (error) {
-        console.error('API connection test failed:', error);
         return false;
       }
     },

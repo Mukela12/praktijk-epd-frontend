@@ -85,7 +85,6 @@ const TherapistProfile: React.FC = () => {
           setEditedProfile(enhancedProfile);
         }
       } catch (error) {
-        console.error('Failed to load profile:', error);
         // Fallback to user data if API fails
         if (user) {
           const fallbackProfile = {
@@ -126,15 +125,12 @@ const TherapistProfile: React.FC = () => {
       if (updatedProfile) {
         setProfile(editedProfile);
         setIsEditing(false);
-        console.log('Profile saved successfully:', editedProfile);
       } else {
-        console.error('Failed to save profile');
         // Still update local state for better UX
         setProfile(editedProfile);
         setIsEditing(false);
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
       // Still update local state for better UX
       setProfile(editedProfile);
       setIsEditing(false);

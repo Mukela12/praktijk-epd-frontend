@@ -22,6 +22,7 @@ import TherapistManagementInline from './therapist-management/TherapistManagemen
 // Appointments Management
 import AppointmentsManagement from './appointments/AppointmentsManagement';
 import AppointmentRequests from './appointments/AppointmentRequests';
+import AppointmentAssignments from './appointments/AppointmentAssignments';
 
 // Session Management
 import SessionProgress from './sessions/SessionProgress';
@@ -87,6 +88,14 @@ const adminNavigation = [
     color: 'text-amber-600',
     bgColor: 'bg-amber-100',
     badge: 'New'
+  },
+  {
+    name: 'Assign Therapists',
+    href: '/admin/appointment-assignments',
+    icon: 'UserGroupIcon',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    badge: 'Smart'
   },
   {
     name: 'Session Progress',
@@ -190,6 +199,7 @@ const AdminRouter: React.FC = () => {
         {/* Appointments Management */}
         <Route path="/appointments" element={<AppointmentsManagement />} />
         <Route path="/appointment-requests" element={<AppointmentRequests />} />
+        <Route path="/appointment-assignments" element={<AppointmentAssignments />} />
         <Route path="/sessions" element={<SessionProgress />} />
         
         {/* Financial Management */}

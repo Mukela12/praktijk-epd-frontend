@@ -20,6 +20,7 @@ import {
   PuzzlePieceIcon,
   ClipboardDocumentCheckIcon,
   HeartIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
@@ -180,6 +181,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
         },
         {
+          name: 'Sessions',
+          nameKey: 'nav.sessions',
+          href: '/therapist/sessions',
+          icon: ClockIcon,
+          roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
+        },
+        {
           name: 'Challenges',
           nameKey: 'nav.challenges',
           href: '/therapist/challenges',
@@ -238,6 +246,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           nameKey: 'nav.challenges',
           href: '/client/challenges',
           icon: PuzzlePieceIcon,
+          roles: [UserRole.CLIENT],
+        },
+        {
+          name: 'Resources',
+          nameKey: 'nav.resources',
+          href: '/client/resources',
+          icon: BookOpenIcon,
+          roles: [UserRole.CLIENT],
+        },
+        {
+          name: 'Surveys',
+          nameKey: 'nav.surveys',
+          href: '/client/surveys',
+          icon: ClipboardDocumentCheckIcon,
           roles: [UserRole.CLIENT],
         }
       );

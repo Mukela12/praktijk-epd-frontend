@@ -50,16 +50,9 @@ const TherapistAppointments: React.FC = () => {
 
   // Debug logging
   useEffect(() => {
-    console.log('[TherapistAppointments] Component mounted');
-    console.log('[TherapistAppointments] Current user:', user);
-    console.log('[TherapistAppointments] User ID:', user?.id);
-    console.log('[TherapistAppointments] User role:', user?.role);
   }, [user]);
 
   useEffect(() => {
-    console.log('[TherapistAppointments] API Appointments data:', apiAppointments);
-    console.log('[TherapistAppointments] Is Loading:', isLoading);
-    console.log('[TherapistAppointments] API Error:', apiError);
   }, [apiAppointments, isLoading, apiError]);
 
   // State
@@ -70,6 +63,7 @@ const TherapistAppointments: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
+  const [hasClients, setHasClients] = useState<boolean | null>(null);
 
 
   // Use refs to prevent re-renders and infinite loops
@@ -80,29 +74,21 @@ const TherapistAppointments: React.FC = () => {
   useEffect(() => {
     // Prevent multiple loads
     if (hasLoadedRef.current || isLoadingRef.current) {
-      console.log('[TherapistAppointments] Already loaded or loading, skipping...');
       return;
     }
 
     const loadAppointments = async () => {
       isLoadingRef.current = true;
-      console.log('[TherapistAppointments] Starting to load appointments...');
       try {
         hasLoadedRef.current = true;
         // Call the getAppointments function from the hook
         if (getAppointments) {
-          console.log('[TherapistAppointments] Using therapist-specific API');
           const result = await getAppointments();
-          console.log('[TherapistAppointments] Therapist API result:', result);
         } else {
           // Fallback: Use the general appointments API if therapist-specific fails
-          console.log('[TherapistAppointments] Using fallback appointments API');
-          console.log('[TherapistAppointments] Therapist ID for query:', user?.id);
           const response = await realApiService.appointments.getAll({ 
-            therapistId: user?.id,
             status: 'scheduled' 
           });
-          console.log('[TherapistAppointments] Fallback API response:', response);
           if (response.success && response.data) {
             setAppointments(response.data.appointments || []);
           }
@@ -149,12 +135,9 @@ const TherapistAppointments: React.FC = () => {
   
   // Update local appointments when API data changes
   useEffect(() => {
-    console.log('[TherapistAppointments] Processing API appointments:', apiAppointments);
     if (Array.isArray(apiAppointments)) {
-      console.log('[TherapistAppointments] API appointments is array, length:', apiAppointments.length);
       // Map API data to appointment format
       const mappedAppointments = apiAppointments.map((apt, index) => {
-        console.log(`[TherapistAppointments] Mapping appointment ${index}:`, apt);
         return {
         id: apt.id || apt.appointment_id || String(Math.random()),
         client_name: apt.client_name || apt.client?.name || `${apt.client_first_name || ''} ${apt.client_last_name || ''}`.trim() || 'Unknown Client',
@@ -170,14 +153,29 @@ const TherapistAppointments: React.FC = () => {
         session_notes: apt.session_notes,
         priority: apt.priority || 'normal'
       }});
-      console.log('[TherapistAppointments] Mapped appointments:', mappedAppointments);
       setAppointments(mappedAppointments);
     } else {
       // If no appointments or invalid data, set empty array
-      console.log('[TherapistAppointments] No appointments or invalid data, setting empty array');
       setAppointments([]);
     }
+    
+    // Check if therapist has been assigned any clients
+    checkTherapistClients();
   }, [apiAppointments]);
+
+  // Check if therapist has any assigned clients
+  const checkTherapistClients = async () => {
+    try {
+      const response = await realApiService.therapist.getClients();
+      if (response.success && response.data) {
+        const clients = Array.isArray(response.data) ? response.data : [];
+        setHasClients(clients.length > 0);
+      }
+    } catch (error) {
+      console.error('Failed to check assigned clients:', error);
+      setHasClients(false);
+    }
+  };
 
   // Filter appointments
   const filteredAppointments = appointments.filter(appointment => {
@@ -238,7 +236,7 @@ const TherapistAppointments: React.FC = () => {
       //   await getAppointments(); // Refresh the list
       // }
     } catch (err: any) {
-      errorAlert(`Failed to create appointment: ${err.response?.data?.message || err.message}`);
+      showError(`Failed to create appointment: ${err.response?.data?.message || err.message}`);
     }
   };
 
@@ -251,7 +249,6 @@ const TherapistAppointments: React.FC = () => {
     
     try {
       isLoadingRef.current = true;
-      console.log('[TherapistAppointments] Manual refresh triggered');
       if (getAppointments) {
         await getAppointments();
         success('Appointments refreshed');
@@ -521,18 +518,17 @@ const TherapistAppointments: React.FC = () => {
 
       {/* Appointments List */}
       <PremiumCard>
-        {appointments.length === 0 && !isLoading ? (
+        {appointments.length === 0 && !isLoading && hasClients === false ? (
           <div className="max-w-2xl mx-auto py-12">
             <div className="text-center">
-              <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
                 <UserIcon className="w-12 h-12 text-green-600" />
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-                Welcome to Your Appointments Dashboard
+                Welcome to Your Practice
               </h3>
-              <p className="text-lg text-gray-600 mb-8">
-                You haven't been assigned any clients yet. Once an administrator assigns clients to you, 
-                their appointments will appear here.
+              <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto">
+                You haven't been assigned any clients yet. The administrator will assign clients to you based on your specializations and availability.
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
                 <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
@@ -576,6 +572,16 @@ const TherapistAppointments: React.FC = () => {
               </div>
             </div>
           </div>
+        ) : appointments.length === 0 && !isLoading && hasClients === true ? (
+          <PremiumEmptyState
+            icon={CalendarIcon}
+            title="No Appointments Scheduled"
+            description="You have been assigned clients, but no appointments are scheduled yet. Clients will book appointments with you soon."
+            action={{
+              label: 'Create Appointment',
+              onClick: () => handleCreateAppointment()
+            }}
+          />
         ) : filteredAppointments.length === 0 ? (
           <PremiumEmptyState
             icon={CalendarIcon}

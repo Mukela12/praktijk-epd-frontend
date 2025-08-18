@@ -19,26 +19,36 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate } from '@/utils/dateFormatters';
 
 interface Challenge {
-  id: string;
+  id: string; // Will be set from assignment_id
+  assignment_id: string;
   challenge_id: string;
   title: string;
   description: string;
   category: string;
   difficulty_level: string;
-  duration_minutes: number;
-  frequency: string;
-  start_date: string;
-  end_date: string;
-  progress: {
+  assigned_at: string;
+  due_date: string;
+  status: 'active' | 'completed' | 'paused';
+  notes: string | null;
+  completed_at: string | null;
+  instructions: string[];
+  therapist_first_name: string;
+  therapist_last_name: string;
+  check_in_count: number;
+  last_check_in_date: string | null;
+  // Fields that might not be in API but are used in UI
+  duration_minutes?: number;
+  frequency?: string;
+  start_date?: string;
+  end_date?: string;
+  // Computed progress fields
+  progress?: {
     completed_days: number;
     total_days: number;
     streak: number;
     last_completed: string | null;
     today_completed: boolean;
   };
-  status: 'active' | 'completed' | 'paused';
-  instructions?: string[];
-  tips?: string;
   milestones?: any[];
 }
 
@@ -62,17 +72,51 @@ const ClientChallenges: React.FC = () => {
       const response = await realApiService.client.getChallenges();
       
       if (response.success && response.data) {
-        setChallenges(response.data.challenges || []);
+        const challengesData = response.data.challenges || [];
+        
+        // Map and compute progress for each challenge
+        const mappedChallenges = challengesData.map((challenge: any) => {
+          const assignedDate = new Date(challenge.assigned_at);
+          const dueDate = new Date(challenge.due_date);
+          const today = new Date();
+          
+          // Calculate total days
+          const totalDays = Math.ceil((dueDate.getTime() - assignedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Check if completed today
+          const lastCheckIn = challenge.last_check_in_date ? new Date(challenge.last_check_in_date) : null;
+          const todayCompleted = lastCheckIn ? 
+            lastCheckIn.toDateString() === today.toDateString() : false;
+          
+          return {
+            ...challenge,
+            id: challenge.assignment_id, // Use assignment_id as id
+            duration_minutes: 15, // Default duration
+            frequency: 'daily', // Default frequency
+            start_date: challenge.assigned_at,
+            end_date: challenge.due_date,
+            progress: {
+              completed_days: challenge.check_in_count || 0,
+              total_days: totalDays,
+              streak: challenge.check_in_count || 0, // Simple streak based on check-ins
+              last_completed: challenge.last_check_in_date,
+              today_completed: todayCompleted
+            }
+          };
+        });
+        
+        setChallenges(mappedChallenges);
       }
     } catch (err) {
       error('Failed to load challenges');
+      console.error('Error loading challenges:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleStartChallenge = (challenge: Challenge) => {
-    if (challenge.progress.today_completed) {
+    if (challenge.progress?.today_completed) {
       error('You have already completed this challenge today');
       return;
     }
@@ -95,8 +139,8 @@ const ClientChallenges: React.FC = () => {
     }
   };
 
-  const getProgressPercentage = (progress: Challenge['progress']) => {
-    if (progress.total_days === 0) return 0;
+  const getProgressPercentage = (progress: Challenge['progress'] | undefined) => {
+    if (!progress || progress.total_days === 0) return 0;
     return Math.round((progress.completed_days / progress.total_days) * 100);
   };
 
@@ -124,7 +168,7 @@ const ClientChallenges: React.FC = () => {
         <ChallengeTimer
           challengeId={selectedChallenge.id}
           challengeTitle={selectedChallenge.title}
-          targetMinutes={selectedChallenge.duration_minutes}
+          targetMinutes={selectedChallenge.duration_minutes || 15}
           onComplete={handleChallengeComplete}
           instructions={selectedChallenge.instructions}
         />
@@ -171,7 +215,7 @@ const ClientChallenges: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Completed Today</p>
               <p className="text-2xl font-bold text-gray-900">
-                {challenges.filter(c => c.progress.today_completed).length}
+                {challenges.filter(c => c.progress?.today_completed).length}
               </p>
             </div>
           </div>
@@ -185,7 +229,7 @@ const ClientChallenges: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Best Streak</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.max(...challenges.map(c => c.progress.streak), 0)} days
+                {Math.max(...challenges.map(c => c.progress?.streak || 0), 0)} days
               </p>
             </div>
           </div>
@@ -199,7 +243,7 @@ const ClientChallenges: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Progress</p>
               <p className="text-2xl font-bold text-gray-900">
-                {challenges.reduce((sum, c) => sum + c.progress.completed_days, 0)} days
+                {challenges.reduce((sum, c) => sum + (c.progress?.completed_days || 0), 0)} days
               </p>
             </div>
           </div>
@@ -245,7 +289,7 @@ const ClientChallenges: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredChallenges.map((challenge) => {
             const progressPercentage = getProgressPercentage(challenge.progress);
-            const isCompletedToday = challenge.progress.today_completed;
+            const isCompletedToday = challenge.progress?.today_completed || false;
             
             return (
               <PremiumCard key={challenge.id} hover>
@@ -260,7 +304,7 @@ const ClientChallenges: React.FC = () => {
                         {challenge.description}
                       </p>
                     </div>
-                    {challenge.progress.streak > 0 && (
+                    {challenge.progress && challenge.progress.streak > 0 && (
                       <div className="flex items-center space-x-1 text-orange-600">
                         <FireIcon className="w-5 h-5" />
                         <span className="text-sm font-medium">{challenge.progress.streak}</span>
@@ -278,10 +322,10 @@ const ClientChallenges: React.FC = () => {
                     </span>
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center">
                       <ClockIcon className="w-3 h-3 mr-1" />
-                      {challenge.duration_minutes} min
+                      {challenge.duration_minutes || 15} min
                     </span>
                     <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                      {challenge.frequency}
+                      {challenge.frequency || 'daily'}
                     </span>
                   </div>
 
@@ -290,7 +334,7 @@ const ClientChallenges: React.FC = () => {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">Progress</span>
                       <span className="font-medium text-gray-900">
-                        {challenge.progress.completed_days} / {challenge.progress.total_days} days
+                        {challenge.progress?.completed_days || 0} / {challenge.progress?.total_days || 0} days
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -306,7 +350,7 @@ const ClientChallenges: React.FC = () => {
                     <div className="flex items-center space-x-1">
                       <CalendarIcon className="w-4 h-4" />
                       <span>
-                        {formatDate(challenge.start_date)} - {formatDate(challenge.end_date)}
+                        {formatDate(challenge.start_date || challenge.assigned_at)} - {formatDate(challenge.end_date || challenge.due_date)}
                       </span>
                     </div>
                   </div>

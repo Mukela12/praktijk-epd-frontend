@@ -12,8 +12,10 @@ class RequestManager {
   private cache: Map<string, CacheEntry> = new Map();
   private pendingRequests: Map<string, Promise<any>> = new Map();
   private lastRequestTimes: Map<string, number> = new Map();
-  private readonly MIN_REQUEST_INTERVAL = 100; // 100ms between requests to same endpoint
-  private readonly DEFAULT_CACHE_DURATION = 30000; // 30 seconds
+  private readonly MIN_REQUEST_INTERVAL = 1000; // 1 second between requests to same endpoint
+  private readonly DEFAULT_CACHE_DURATION = 300000; // 5 minutes
+  private requestCount = 0;
+  private requestResetTime = Date.now();
 
   private getCacheKey(endpoint: string, params?: any): string {
     return `${endpoint}_${params ? JSON.stringify(params) : ''}`;
@@ -26,6 +28,18 @@ class RequestManager {
   private shouldThrottle(endpoint: string): boolean {
     const lastRequest = this.lastRequestTimes.get(endpoint);
     if (!lastRequest) return false;
+    
+    // Reset request count every minute
+    if (Date.now() - this.requestResetTime > 60000) {
+      this.requestCount = 0;
+      this.requestResetTime = Date.now();
+    }
+    
+    // Throttle if too many requests in current window
+    if (this.requestCount > 30) {
+      return true;
+    }
+    
     return Date.now() - lastRequest < this.MIN_REQUEST_INTERVAL;
   }
 
@@ -40,20 +54,17 @@ class RequestManager {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && this.isValidCache(cached)) {
-      console.log(`[RequestManager] Using cached data for ${endpoint}`);
       return cached.data;
     }
 
     // Check if request is already pending
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
-      console.log(`[RequestManager] Request already pending for ${endpoint}, waiting...`);
       return pending;
     }
 
     // Throttle requests to prevent 429 errors
     if (this.shouldThrottle(endpoint)) {
-      console.log(`[RequestManager] Throttling request to ${endpoint}, using cache or waiting...`);
       if (cached) {
         return cached.data; // Use expired cache if available
       }
@@ -68,6 +79,7 @@ class RequestManager {
     });
 
     this.pendingRequests.set(cacheKey, requestPromise);
+    this.requestCount++;
 
     try {
       const result = await requestPromise;
@@ -78,10 +90,10 @@ class RequestManager {
         expiry: Date.now() + cacheDuration
       });
       return result;
-    } catch (error) {
-      // On error, return cached data if available
-      if (cached) {
-        console.warn(`[RequestManager] Request failed for ${endpoint}, using cached data`);
+    } catch (error: any) {
+      // On 429 error, return cached data if available
+      if (error?.response?.status === 429 && cached) {
+        console.warn(`[RequestManager] Rate limited for ${endpoint}, using cached data`);
         return cached.data;
       }
       throw error;
@@ -509,6 +521,13 @@ export const realApiService = {
       const response = await api.post('/admin/assign-therapist', data);
       return response.data;
     },
+    
+    assignTherapistToAppointment: async (requestId: string, data: {
+      therapistId: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/appointment-requests/${requestId}/assign`, data);
+      return response.data;
+    },
 
     // Smart Pairing
     getSmartPairingRecommendations: async (params: {
@@ -773,7 +792,7 @@ export const realApiService = {
       urgencyLevel?: string;
       reason: string;
     }): Promise<ApiResponse<{ id: string; status: string }>> => {
-      const response = await api.post('/client/appointments/request', data);
+      const response = await api.post('/client/appointment-request', data);
       return response.data;
     },
 
@@ -855,7 +874,7 @@ export const realApiService = {
     getResources: async (): Promise<ApiResponse<{ resources: any[] }>> => {
       const response = await api.get('/client/resources');
       return response.data;
-    }
+    },
 
     // Invoices (✅ WORKING)
     getInvoices: async (params?: { status?: string }): Promise<ApiResponse<any[]>> => {
@@ -940,6 +959,19 @@ export const realApiService = {
     getClientResources: async (): Promise<ApiResponse<any>> => {
       const response = await api.get('/client/resources');
       return response.data;
+    },
+    
+    // Track resource engagement
+    trackEngagement: async (resourceId: string, action: 'view' | 'complete' | { action: string; timeSpent?: number; completed?: boolean; rating?: number }): Promise<ApiResponse<any>> => {
+      const data = typeof action === 'string' ? { action } : action;
+      const response = await api.post(`/resources/${resourceId}/track`, data);
+      return response.data;
+    },
+    
+    // Update progress
+    updateProgress: async (resourceId: string, data: { isFavorite?: boolean }): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/resources/${resourceId}/progress`, data);
+      return response.data;
     }
   },
 
@@ -1011,6 +1043,31 @@ export const realApiService = {
     }): Promise<ApiResponse<any>> => {
       const response = await api.post(`/challenges/${id}/progress`, data);
       return response.data;
+    },
+
+    // Start challenge check-in
+    startCheckIn: async (challengeId: string, date: string, moodBefore?: number): Promise<ApiResponse<{ checkinId: string; timerStarted: boolean }>> => {
+      const response = await api.post(`/client/challenges/${challengeId}/check-in`, { 
+        date,
+        moodBefore: moodBefore || 5 
+      });
+      return response.data;
+    },
+
+    // Complete challenge check-in
+    completeCheckIn: async (challengeId: string, checkInId: string, data: { 
+      notes?: string; 
+      moodAfter?: number;
+      anxietyAfter?: number;
+      duration?: number;
+      difficulty?: string;
+      completed?: boolean;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/client/challenges/${challengeId}/check-in/complete`, { 
+        checkInId,
+        ...data 
+      });
+      return response.data;
     }
   },
 
@@ -1066,9 +1123,27 @@ export const realApiService = {
       return response.data;
     },
     
-    // Get responses (✅ WORKING)
-    getResponses: async (id: string): Promise<ApiResponse<any>> => {
+    // Submit survey (alternative endpoint)
+    submit: async (id: string, data: {
+      responses: any[];
+      completedAt: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/surveys/${id}/submit`, data);
+      return response.data;
+    },
+    
+    // Get survey responses
+    getResponses: async (id: string): Promise<ApiResponse<{ responses: any[] }>> => {
       const response = await api.get(`/surveys/${id}/responses`);
+      return response.data;
+    },
+    
+    // Save survey progress
+    saveProgress: async (id: string, data: {
+      responses: any[];
+      currentQuestionIndex: number;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/surveys/${id}/progress`, data);
       return response.data;
     }
   },
@@ -1109,6 +1184,67 @@ export const realApiService = {
 
     sendMessage: async (messageData: any): Promise<ApiResponse<{ id: string }>> => {
       const response = await api.post('/assistant/messages', messageData);
+      return response.data;
+    }
+  },
+
+  // Session Management endpoints
+  sessions: {
+    // Start a session
+    start: async (data: {
+      appointmentId: string;
+      clientPresent: boolean;
+      location: 'office' | 'online' | 'phone';
+      initialNotes?: string;
+    }): Promise<ApiResponse<{ session: any }>> => {
+      const response = await api.post('/sessions/start', data);
+      return response.data;
+    },
+
+    // Update session progress
+    updateProgress: async (sessionId: string, data: {
+      progressNotes: string;
+      goalsDiscussed?: string;
+      clientMoodStart?: number;
+      clientMoodEnd?: number;
+      techniquesUsed?: string[];
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/sessions/${sessionId}/progress`, data);
+      return response.data;
+    },
+
+    // End session
+    end: async (sessionId: string, data: {
+      summary: string;
+      homework?: string;
+      nextSessionRecommendation?: string;
+      duration?: number;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/sessions/${sessionId}/end`, data);
+      return response.data;
+    },
+
+    // Get session history
+    getHistory: async (params?: {
+      clientId?: string;
+      therapistId?: string;
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+    }): Promise<ApiResponse<{ sessions: any[] }>> => {
+      const response = await api.get('/sessions', { params });
+      return response.data;
+    },
+
+    // Get active sessions
+    getActive: async (): Promise<ApiResponse<{ session?: any }>> => {
+      const response = await api.get('/sessions/active');
+      return response.data;
+    },
+
+    // Get session statistics
+    getStatistics: async (params?: { period?: string }): Promise<ApiResponse<any>> => {
+      const response = await api.get('/sessions/statistics', { params });
       return response.data;
     }
   },
@@ -1322,6 +1458,10 @@ export const realApiService = {
 
     delete: async (id: string): Promise<ApiResponse<any>> => {
       const response = await api.delete(`/appointments/${id}`);
+      return response.data;
+    },
+    getAvailableSlots: async (params: { therapistId: string; date: string }): Promise<ApiResponse<{ slots: { time: string; available: boolean }[] }>> => {
+      const response = await api.get('/appointments/available-slots', { params });
       return response.data;
     }
   },

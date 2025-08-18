@@ -742,7 +742,11 @@ const UserManagement: React.FC = () => {
       subtitle="Manage all users in the system"
       icon={UserGroupIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       showCreateButton={viewMode === 'list'}
       createButtonText="Create User"
       isLoading={isLoading}

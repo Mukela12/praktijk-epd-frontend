@@ -162,7 +162,6 @@ const CompanySettings: React.FC = () => {
       // For now, just update local state
       setSettings(editedSettings);
       setIsEditing(false);
-      console.log('Settings saved:', editedSettings);
     } catch (error) {
       console.error('Failed to save settings:', error);
     } finally {

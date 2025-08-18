@@ -922,7 +922,11 @@ const AppointmentsManagement: React.FC = () => {
       subtitle="Manage all appointments in the system"
       icon={CalendarDaysIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       showCreateButton={viewMode === 'list'}
       createButtonText="Schedule Appointment"
       isLoading={isLoading}

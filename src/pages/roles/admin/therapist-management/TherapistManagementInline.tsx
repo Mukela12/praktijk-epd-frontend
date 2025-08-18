@@ -39,20 +39,13 @@ import {
   CheckboxField,
   NumberField
 } from '@/components/forms/FormFields';
+import { Therapist } from '@/types/entities';
 
-interface Therapist {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone?: string;
+interface TherapistData extends Therapist {
   user_status: 'active' | 'inactive' | 'pending';
   therapist_status?: 'active' | 'available' | 'on_leave' | 'unavailable';
-  specializations: string[];
-  languages?: string[];
   qualifications?: string;
   years_of_experience?: number;
-  bio?: string;
   consultation_rate?: number;
   street_address?: string;
   postal_code?: string;
@@ -66,20 +59,18 @@ interface Therapist {
   client_count?: number;
   rating?: number;
   total_reviews?: number;
-  created_at: string;
-  updated_at: string;
 }
 
-type ViewMode = 'list' | 'create' | 'edit' | 'view';
+type ViewMode = 'list' | 'create' | 'edit' | 'detail';
 
 const TherapistManagementInline: React.FC = () => {
   const { success, error: errorAlert, warning, info } = useAlert();
   
   // State
-  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const [therapists, setTherapists] = useState<TherapistData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null);
+  const [selectedTherapist, setSelectedTherapist] = useState<TherapistData | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSpecialization, setFilterSpecialization] = useState<string>('all');
@@ -119,7 +110,15 @@ const TherapistManagementInline: React.FC = () => {
       const response = await realApiService.admin.getTherapists();
       
       if (response.success && response.data) {
-        setTherapists(response.data.therapists || []);
+        // Map the API response to match our TherapistData interface
+        const therapistsData = response.data.therapists || [];
+        const mappedTherapists = therapistsData.map((therapist: any) => ({
+          ...therapist,
+          user_status: therapist.user_status || therapist.status || 'active',
+          created_at: therapist.created_at || new Date().toISOString(),
+          updated_at: therapist.updated_at || new Date().toISOString()
+        }));
+        setTherapists(mappedTherapists);
       }
     } catch (error) {
       console.error('Failed to load therapists:', error);
@@ -256,7 +255,7 @@ const TherapistManagementInline: React.FC = () => {
   };
 
   // Edit therapist
-  const handleEdit = (therapist: Therapist) => {
+  const handleEdit = (therapist: TherapistData) => {
     setSelectedTherapist(therapist);
     setFormData({
       email: therapist.email,
@@ -284,9 +283,9 @@ const TherapistManagementInline: React.FC = () => {
   };
 
   // View therapist details
-  const handleView = (therapist: Therapist) => {
+  const handleView = (therapist: TherapistData) => {
     setSelectedTherapist(therapist);
-    setViewMode('view');
+    setViewMode('detail');
   };
 
   // Filter therapists
@@ -295,7 +294,7 @@ const TherapistManagementInline: React.FC = () => {
       therapist.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       therapist.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       therapist.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      therapist.specializations.some(spec => spec.toLowerCase().includes(searchTerm.toLowerCase()));
+      therapist.specializations.some((spec: string) => spec.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = filterStatus === 'all' || therapist.user_status === filterStatus;
     const matchesSpecialization = filterSpecialization === 'all' || 
@@ -390,7 +389,7 @@ const TherapistManagementInline: React.FC = () => {
                   <div>
                     <dt className="text-sm text-gray-500">Specializations</dt>
                     <dd className="flex flex-wrap gap-1 mt-1">
-                      {selectedTherapist.specializations.map((spec, index) => (
+                      {selectedTherapist.specializations.map((spec: string, index: number) => (
                         <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                           {spec}
                         </span>
@@ -577,15 +576,6 @@ const TherapistManagementInline: React.FC = () => {
             value={formData.specializations}
             onChange={(value) => setFormData({ ...formData, specializations: value })}
             placeholder="Add specializations..."
-            suggestions={['CBT', 'DBT', 'EMDR', 'Trauma', 'Anxiety', 'Depression', 'Couples Therapy', 'Family Therapy']}
-          />
-          <TagsField
-            label="Languages"
-            name="languages"
-            value={formData.languages}
-            onChange={(value) => setFormData({ ...formData, languages: value })}
-            placeholder="Add languages..."
-            suggestions={['Dutch', 'English', 'French', 'German', 'Spanish', 'Arabic', 'Turkish']}
           />
           <TextField
             label="Qualifications"
@@ -685,7 +675,7 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'therapist',
       label: 'Therapist',
-      render: (therapist: Therapist) => (
+      render: (therapist: TherapistData) => (
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
             {therapist.first_name[0]}{therapist.last_name[0]}
@@ -702,9 +692,9 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'specializations',
       label: 'Specializations',
-      render: (therapist: Therapist) => (
+      render: (therapist: TherapistData) => (
         <div className="flex flex-wrap gap-1">
-          {therapist.specializations.slice(0, 3).map((spec, index) => (
+          {therapist.specializations.slice(0, 3).map((spec: string, index: number) => (
             <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
               {spec}
             </span>
@@ -720,7 +710,7 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'clients',
       label: 'Clients',
-      render: (therapist: Therapist) => (
+      render: (therapist: TherapistData) => (
         <div className="text-sm">
           <p className="font-medium text-gray-900">{therapist.client_count || 0}</p>
           <p className="text-gray-500">
@@ -732,7 +722,7 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'rate',
       label: 'Rate',
-      render: (therapist: Therapist) => (
+      render: (therapist: TherapistData) => (
         <span className="font-medium text-gray-900">
           €{therapist.consultation_rate || 0}
         </span>
@@ -741,7 +731,7 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (therapist: Therapist) => (
+      render: (therapist: TherapistData) => (
         <StatusBadge
           type="user"
           status={therapist.user_status}
@@ -757,7 +747,11 @@ const TherapistManagementInline: React.FC = () => {
       subtitle="Manage all therapists in the system"
       icon={UsersIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Add Therapist"
@@ -916,7 +910,7 @@ const TherapistManagementInline: React.FC = () => {
       )}
 
       {/* Detail View */}
-      {viewMode === 'view' && renderDetailView()}
+      {viewMode === 'detail' && renderDetailView()}
     </InlineCrudLayout>
   );
 };

@@ -55,9 +55,11 @@ import TherapistSurveysManagement from '@/pages/roles/therapist/surveys/SurveysM
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
 import TreatmentCodesManagement from '@/pages/roles/therapist/treatment-codes/TreatmentCodesManagement';
 import TherapistResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
+import SessionManagement from '@/pages/roles/therapist/sessions/SessionManagement';
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
+import BookAppointment from '@/pages/roles/client/appointments/BookAppointment';
 import ClientMessages from '@/pages/roles/client/messages/ClientMessages';
 import ClientTherapist from '@/pages/roles/client/therapist/ClientTherapist';
 import ClientSettings from '@/pages/roles/client/settings/ClientSettings';
@@ -70,6 +72,8 @@ import SessionHistory from '@/pages/roles/client/SessionHistory';
 import PaymentCenter from '@/pages/roles/client/PaymentCenter';
 import PaymentMethods from '@/pages/roles/client/PaymentMethods';
 import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
+import ClientResourcesImproved from '@/pages/roles/client/resources/ClientResourcesImproved';
+import ClientSurveysImproved from '@/pages/roles/client/surveys/ClientSurveysImproved';
 
 // Assistant Components
 import AssistantDashboard from '@/pages/roles/assistant/Dashboard';
@@ -300,6 +304,7 @@ const App: React.FC = () => {
                         <Route path="surveys" element={<TherapistSurveysManagement />} />
                         <Route path="resources" element={<TherapistResourcesManagementInline />} />
                         <Route path="availability" element={<AvailabilityManagement />} />
+                        <Route path="sessions" element={<SessionManagement />} />
                         <Route path="*" element={<Navigate to="/therapist/dashboard" replace />} />
                       </Routes>
                     </DashboardLayout>
@@ -317,6 +322,7 @@ const App: React.FC = () => {
                         <Route path="dashboard" element={<ClientDashboard />} />
                         <Route path="agenda" element={<ClientAppointments />} />
                         <Route path="appointments" element={<ClientAppointments />} />
+                        <Route path="appointments/new" element={<BookAppointment />} />
                         <Route path="therapist" element={<ClientTherapist />} />
                         <Route path="messages" element={<ClientMessages />} />
                         <Route path="profile" element={<ClientProfile />} />
@@ -329,6 +335,8 @@ const App: React.FC = () => {
                         <Route path="documents" element={<ClientDocuments />} />
                         <Route path="session-history" element={<SessionHistory />} />
                         <Route path="challenges" element={<ClientChallenges />} />
+                        <Route path="resources" element={<ClientResourcesImproved />} />
+                        <Route path="surveys" element={<ClientSurveysImproved />} />
                         <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
                       </Routes>
                     </DashboardLayout>

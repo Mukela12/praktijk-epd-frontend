@@ -10,7 +10,6 @@ const AppointmentDebugger: React.FC = () => {
   const testTherapistAPI = async () => {
     setIsLoading(true);
     try {
-      console.log('Testing therapist appointments API...');
       const response = await therapistApi.getAppointments();
       setDebugInfo((prev: any) => ({
         ...prev,
@@ -40,7 +39,6 @@ const AppointmentDebugger: React.FC = () => {
   const testClientAPI = async () => {
     setIsLoading(true);
     try {
-      console.log('Testing client appointments API...');
       const response = await clientApi.getAppointments();
       setDebugInfo((prev: any) => ({
         ...prev,

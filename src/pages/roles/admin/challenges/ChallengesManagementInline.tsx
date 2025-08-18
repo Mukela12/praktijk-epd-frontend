@@ -593,7 +593,11 @@ const ChallengesManagementInline: React.FC = () => {
       subtitle="Create and manage therapeutic challenges for clients"
       icon={TrophyIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Create Challenge"

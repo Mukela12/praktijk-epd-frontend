@@ -16,60 +16,11 @@ import { useTherapistDashboard, useTherapistAppointments, useTherapistClients } 
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import StatusIndicator from '@/components/ui/StatusIndicator';
 import PageTransition from '@/components/ui/PageTransition';
+import AnimatedMetricCard from '@/components/ui/AnimatedMetricCard';
 import { Appointment, Client } from '@/types/entities';
 import { formatTime, formatDate, formatCurrency } from '@/utils/dateFormatters';
 
-// Metric card component
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ComponentType<any>;
-  iconColor: string;
-  link?: string;
-  isLoading?: boolean;
-}
-
-const MetricCard: React.FC<MetricCardProps> = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  iconColor,
-  link,
-  isLoading
-}) => {
-  const content = (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          {isLoading ? (
-            <div className="mt-2">
-              <LoadingSpinner size="small" />
-            </div>
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-              )}
-            </>
-          )}
-        </div>
-        <div className={`p-3 rounded-lg ${iconColor}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </div>
-  );
-
-  if (link) {
-    return <Link to={link} className="block">{content}</Link>;
-  }
-
-  return content;
-};
+// Metric card component - replaced with AnimatedMetricCard
 
 // Appointment card component
 interface AppointmentCardProps {
@@ -82,7 +33,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment }) => {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg smooth-transition hover:bg-gray-100 hover:shadow-sm hover:translate-x-1">
       <div className="flex items-center space-x-4">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">
@@ -146,14 +97,14 @@ const TherapistDashboard: React.FC = () => {
           getClients({ status: 'active' })
         ]);
 
-        if (dashboardResult) {
+        if (dashboardResult && dashboardResult.stats) {
           setMetrics({
-            totalClients: dashboardResult.activeClients || clients.length || 0,
-            todayAppointments: dashboardResult.todayAppointments || 0,
-            weeklyAppointments: dashboardResult.weeklyAppointments || 0,
-            monthlyRevenue: dashboardResult.monthlyRevenue || 0,
-            completedSessions: dashboardResult.completedSessions || 0,
-            averageRating: dashboardResult.averageRating || 0
+            totalClients: dashboardResult.stats.activeClients || clients.length || 0,
+            todayAppointments: dashboardResult.stats.todayAppointments || 0,
+            weeklyAppointments: dashboardResult.stats.weeklyAppointments || 0,
+            monthlyRevenue: 0, // Not provided by API
+            completedSessions: dashboardResult.stats.completedSessions || 0,
+            averageRating: 0 // Not provided by API
           });
         }
       } catch (error) {
@@ -216,20 +167,20 @@ const TherapistDashboard: React.FC = () => {
     <PageTransition>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200 -mx-6 -mt-6 px-6 py-4">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white animated-gradient">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+            <div className="animate-fadeIn">
+              <h1 className="text-2xl font-bold">
                 {t('dashboard.welcome')}, {user?.first_name}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-indigo-100 mt-1">
                 {t('therapist.dashboardSubtitle')}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <Link
                 to="/therapist/appointments/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-white/20 text-sm font-medium rounded-lg shadow-sm text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm smooth-transition button-press"
               >
                 {t('therapist.scheduleAppointment')}
               </Link>
@@ -237,41 +188,57 @@ const TherapistDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* No Clients Assigned Message */}
+        {!isLoading && metrics.totalClients === 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 animate-slideInRight card-hover">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <UsersIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">No Clients Assigned</h3>
+                <p className="mt-2 text-sm text-blue-700">
+                  You haven't been assigned any clients yet. The administrator will assign clients to you based on your specializations and availability.
+                  Once assigned, you'll receive a notification and can start scheduling appointments.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
+          <AnimatedMetricCard
             title={t('therapist.myClients')}
             value={metrics.totalClients}
+            subtitle="Active clients"
             icon={UsersIcon}
-            iconColor="bg-blue-600"
-            link="/therapist/clients"
-            isLoading={isLoading}
+            color="blue"
+            delay={0}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title={t('therapist.todayAppointments')}
             value={metrics.todayAppointments}
             subtitle={`${todayAppointments.length} scheduled`}
             icon={CalendarIcon}
-            iconColor="bg-green-600"
-            link="/therapist/appointments"
-            isLoading={isLoading}
+            color="green"
+            delay={100}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title={t('dashboard.thisWeek') || 'This Week'}
             value={metrics.weeklyAppointments}
             subtitle={t('nav.appointments').toLowerCase()}
             icon={ClockIcon}
-            iconColor="bg-purple-600"
-            link="/therapist/calendar"
-            isLoading={isLoading}
+            color="purple"
+            delay={200}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title={t('therapist.monthlyRevenue')}
             value={`€${metrics.monthlyRevenue.toLocaleString()}`}
+            subtitle="This month"
             icon={CurrencyEuroIcon}
-            iconColor="bg-orange-600"
-            link="/therapist/invoices"
-            isLoading={isLoading}
+            color="yellow"
+            delay={300}
           />
         </div>
 

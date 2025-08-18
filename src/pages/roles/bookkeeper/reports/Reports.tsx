@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useAlert } from '@/components/ui/CustomAlert';
 import { realApiService } from "@/services/realApi";
 import { bookkeeperApi } from '@/services/endpoints';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -28,6 +29,7 @@ import { formatCurrency } from '@/utils/dateFormatters';
 const Reports: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
+  const { success, error, info } = useAlert();
   
   // State management
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -363,11 +365,11 @@ const Reports: React.FC = () => {
         document.body.removeChild(link);
       } else {
         // For PDF and Excel, show message (would require additional libraries)
-        alert(`Export to ${format.toUpperCase()} format coming soon!`);
+        info(`Export to ${format.toUpperCase()} format coming soon!`);
       }
-    } catch (error) {
-      console.error('Error exporting report:', error);
-      alert('Failed to export report. Please try again.');
+    } catch (err) {
+      console.error('Error exporting report:', err);
+      error('Failed to export report. Please try again.');
     }
   };
 

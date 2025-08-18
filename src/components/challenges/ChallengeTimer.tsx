@@ -38,6 +38,7 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
   const [showCompletion, setShowCompletion] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const [checkinId, setCheckinId] = useState<string | null>(null);
 
   const targetSeconds = targetMinutes * 60;
   const progress = Math.min((elapsedSeconds / targetSeconds) * 100, 100);
@@ -83,11 +84,16 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
 
     try {
       // Start challenge check-in via API
-      const response = await realApiService.challenges.startCheckIn(challengeId, {
-        moodBefore
-      });
+      const today = new Date().toISOString().split('T')[0];
+      const response = await realApiService.challenges.startCheckIn(challengeId, today, moodBefore);
 
-      if (response.success) {
+      if (response.success && response.data) {
+        // Store mood rating and checkin ID locally
+        localStorage.setItem(`challenge-${challengeId}-mood`, moodBefore.toString());
+        // Check for checkInId in nested data structure
+        const responseData = response.data as any;
+        const checkInId = responseData.data?.checkInId || responseData.checkInId || responseData.checkinId;
+        setCheckinId(checkInId);
         setIsRunning(true);
         setIsPaused(false);
         setShowMoodBefore(false);
@@ -128,14 +134,26 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
       return;
     }
 
+    if (!checkinId) {
+      error('No active check-in found');
+      return;
+    }
+
     try {
-      const response = await realApiService.challenges.completeCheckIn(challengeId, {
-        duration: elapsedSeconds,
-        moodAfter,
+      // Get stored mood before rating
+      const storedMoodBefore = localStorage.getItem(`challenge-${challengeId}-mood`);
+      const notes = `Duration: ${Math.floor(elapsedSeconds / 60)} minutes. Mood before: ${storedMoodBefore || 'N/A'}, Mood after: ${moodAfter}. ${elapsedSeconds >= targetSeconds ? 'Completed successfully!' : 'Partial completion.'}`;
+      
+      const response = await realApiService.challenges.completeCheckIn(challengeId, checkinId, {
+        notes,
+        moodAfter: moodAfter,
+        duration: Math.floor(elapsedSeconds / 60),
         completed: elapsedSeconds >= targetSeconds
       });
 
       if (response.success) {
+        // Clean up local storage
+        localStorage.removeItem(`challenge-${challengeId}-mood`);
         success('Challenge completed! Great job! 🎉');
         onComplete(elapsedSeconds);
       }

@@ -107,6 +107,32 @@ export interface Appointment extends BaseEntity {
   therapist?: Therapist;
 }
 
+// Session entity
+export interface Session extends BaseEntity {
+  appointment_id: string;
+  client_id: string;
+  therapist_id: string;
+  session_date: string;
+  started_at: string;
+  ended_at?: string;
+  duration?: number; // in minutes
+  status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'no_show';
+  client_present: boolean;
+  location: 'office' | 'online' | 'phone';
+  initial_notes?: string;
+  progress_notes?: string;
+  goals_discussed?: string;
+  client_mood_start?: number;
+  client_mood_end?: number;
+  techniques_used?: string[];
+  summary?: string;
+  homework?: string;
+  next_session_recommendation?: string;
+  client?: Client;
+  therapist?: Therapist;
+  appointment?: Appointment;
+}
+
 // Invoice entity
 export interface Invoice extends BaseEntity {
   invoice_number: string;

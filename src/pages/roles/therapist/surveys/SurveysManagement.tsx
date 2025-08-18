@@ -104,7 +104,8 @@ const TherapistSurveysManagement: React.FC = () => {
     try {
       const response = await realApiService.therapist.getClients();
       if (response.success && response.data) {
-        setClients(response.data.clients || []);
+        const clientsData = response.data as any;
+        setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
       }
     } catch (err) {
       console.error('Failed to load clients:', err);
@@ -289,9 +290,13 @@ const TherapistSurveysManagement: React.FC = () => {
       description: survey.description,
       type: survey.type,
       isAnonymous: survey.isAnonymous || false,
-      allowMultipleSubmissions: survey.allowMultipleSubmissions || false,
+      allowMultipleSubmissions: (survey as any).allowMultipleSubmissions || false,
       validUntil: survey.validUntil || '',
-      questions: survey.questions || []
+      questions: (survey.questions || []).map(q => ({
+        ...q,
+        isRequired: q.required ?? true,
+        order: q.order ?? 0
+      }))
     });
     setViewMode('edit');
   };
@@ -459,9 +464,9 @@ const TherapistSurveysManagement: React.FC = () => {
         <TextField
           label="Valid Until (Optional)"
           name="validUntil"
-          type="date"
           value={formData.validUntil}
           onChange={(value) => setFormData({ ...formData, validUntil: value })}
+          placeholder="YYYY-MM-DD"
         />
       </div>
 
@@ -748,7 +753,7 @@ const TherapistSurveysManagement: React.FC = () => {
             variant="primary"
             onClick={handleAssignSurvey}
             disabled={!selectedClientId}
-            isLoading={isSubmitting}
+            loading={isSubmitting}
           >
             Assign Survey
           </PremiumButton>

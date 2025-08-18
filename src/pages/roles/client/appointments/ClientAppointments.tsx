@@ -33,10 +33,10 @@ import {
 } from '@heroicons/react/24/solid';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
+import { useAlert } from '@/components/ui/CustomAlert';
 import { realApiService } from '@/services/realApi';
 import { clientApi } from '@/services/endpoints';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import AppointmentBookingInline from '@/components/appointments/AppointmentBookingInline';
 
 interface Appointment {
   id: string;
@@ -58,6 +58,7 @@ interface Appointment {
 const ClientAppointments: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
+  const { success, error, info } = useAlert();
   const navigate = useNavigate();
   
   // State management
@@ -71,7 +72,7 @@ const ClientAppointments: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [rescheduleAppointmentId, setRescheduleAppointmentId] = useState<string | null>(null);
-  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const hasErrorRef = useRef(false);
   const loadingRef = useRef(false);
 
@@ -85,15 +86,16 @@ const ClientAppointments: React.FC = () => {
         loadingRef.current = true;
         setIsLoading(true);
         hasErrorRef.current = false;
-        console.log('[ClientAppointments] Calling clientApi.getAppointments...');
         const response = await clientApi.getAppointments();
         
         if (response.success && response.data) {
-          // response.data is the appointments array directly
-          const appointmentsData = Array.isArray(response.data) ? response.data : [];
+          // response.data contains appointments array
+          const appointmentsData = response.data.appointments || response.data.data || response.data;
+          const appointmentsArray = Array.isArray(appointmentsData) ? appointmentsData : [];
           // Ensure each appointment has the required fields
-          const formattedAppointments = appointmentsData.map((apt: any) => ({
+          const formattedAppointments = appointmentsArray.map((apt: any) => ({
             ...apt,
+            date: apt.date || apt.appointment_date || apt.appointmentDate, // Map various date field names
             therapist_name: apt.therapist_name || `${apt.therapist_first_name || ''} ${apt.therapist_last_name || ''}`.trim() || 'Unknown Therapist',
             type: apt.type || apt.therapy_type || 'Regular Session',
             start_time: apt.start_time || apt.time || '09:00',
@@ -101,6 +103,7 @@ const ClientAppointments: React.FC = () => {
             location: apt.location || 'Main Office'
           }));
           setAppointments(formattedAppointments);
+          console.log('[ClientAppointments] Loaded appointments:', formattedAppointments);
         }
       } catch (error: any) {
         console.error('[ClientAppointments] Failed to load appointments:', error);
@@ -193,22 +196,17 @@ const ClientAppointments: React.FC = () => {
   // Handler functions
   const handleReschedule = async (appointmentId: string) => {
     try {
-      // For now, just open a confirmation dialog
-      if (window.confirm('Are you sure you want to request a reschedule for this appointment? This will notify your therapist.')) {
-        console.log('Requesting reschedule for appointment:', appointmentId);
-        // In a real implementation, this would call the API
-        // await realApiService.client.rescheduleAppointment(appointmentId, newDate, newTime);
-        alert('Reschedule request sent to your therapist. You will be contacted shortly to confirm the new time.');
-      }
-    } catch (error) {
-      console.error('Failed to request reschedule:', error);
-      alert('Failed to request reschedule. Please try again later.');
+      // Show reschedule modal
+      setSelectedAppointment(appointments.find(apt => apt.id === appointmentId) || null);
+      setShowRescheduleModal(true);
+    } catch (err) {
+      console.error('Failed to request reschedule:', err);
+      error('Failed to request reschedule. Please try again later.');
     }
   };
 
   const handleContactTherapist = (appointment: Appointment) => {
     // Navigate to messages or open contact modal
-    console.log('Contacting therapist for appointment:', appointment.id);
     // This could navigate to the messages page with pre-filled message
     navigate('/client/messages');
   };
@@ -216,7 +214,6 @@ const ClientAppointments: React.FC = () => {
   const handleConfirmAppointment = async (appointmentId: string) => {
     try {
       // Call API to confirm appointment
-      console.log('Confirming appointment:', appointmentId);
       // Update local state
       setAppointments(prev => prev.map(apt => 
         apt.id === appointmentId 
@@ -228,9 +225,6 @@ const ClientAppointments: React.FC = () => {
     }
   };
 
-  const handleBookSession = () => {
-    setShowBookingForm(true);
-  };
 
   const filteredAppointments = appointments.filter(appointment => {
     if (searchTerm) {
@@ -251,6 +245,9 @@ const ClientAppointments: React.FC = () => {
 
     return true;
   });
+  
+  // Debug log
+  console.log('[ClientAppointments] Filtered appointments:', filteredAppointments.length, 'from', appointments.length);
 
   // Calculate stats
   const upcomingAppointments = appointments.filter(apt => 
@@ -277,20 +274,6 @@ const ClientAppointments: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Debugger removed for production */}
       <div className="space-y-8 p-6">
-        {/* Show booking form if active */}
-        {showBookingForm ? (
-          <div className="max-w-5xl mx-auto">
-            <button
-              onClick={() => setShowBookingForm(false)}
-              className="mb-4 inline-flex items-center text-blue-600 hover:text-blue-700"
-            >
-              <ChevronLeftIcon className="w-5 h-5 mr-1" />
-              Back to Appointments
-            </button>
-            <AppointmentBookingInline />
-          </div>
-        ) : (
-          <>
         {/* Header with Glassmorphism */}
         <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl">
           <div className="absolute inset-0 bg-gradient-to-r from-violet-100/30 via-sky-100/30 to-emerald-100/30"></div>
@@ -339,11 +322,11 @@ const ClientAppointments: React.FC = () => {
                 </button>
                 
                 <button 
-                  onClick={handleBookSession}
+                  onClick={() => navigate('/client/appointments/new')}
                   className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <SparklesSolid className="w-5 h-5" />
-                  <span className="font-medium">Book Session</span>
+                  <span className="font-medium">Book New Appointment</span>
                 </button>
               </div>
             </div>
@@ -416,7 +399,7 @@ const ClientAppointments: React.FC = () => {
                     : "Begin your healing journey by scheduling your first session"}
                 </p>
                 <button 
-                  onClick={handleBookSession}
+                  onClick={() => navigate('/client/appointments/new')}
                   className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white px-8 py-4 rounded-2xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2 mx-auto"
                 >
                   <SparklesSolid className="w-5 h-5" />
@@ -478,9 +461,11 @@ const ClientAppointments: React.FC = () => {
                     const isSelected = selectedDate && day.toDateString() === selectedDate.toDateString();
                     const dateString = day.toISOString().split('T')[0];
                     
-                    const dayAppointments = filteredAppointments.filter(apt => 
-                      new Date(apt.date).toISOString().split('T')[0] === dateString
-                    );
+                    const dayAppointments = filteredAppointments.filter(apt => {
+                      const aptDate = new Date(apt.date);
+                      const aptDateString = aptDate.toISOString().split('T')[0];
+                      return aptDateString === dateString;
+                    });
                     
                     return (
                       <div
@@ -683,8 +668,6 @@ const ClientAppointments: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-        </>
         )}
       </div>
     </div>

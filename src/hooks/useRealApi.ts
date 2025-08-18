@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { adminApi, therapistApi, clientApi, assistantApi, bookkeeperApi, commonApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { useAuth } from '@/store/authStore';
 import { ApiResponse } from '@/types/auth';
 
@@ -22,7 +23,6 @@ export function useApiCall<T = any>(
 
   const execute = useCallback(async (...args: any[]) => {
     // Reduced logging - only log function name
-    console.log('[useApiCall] Executing:', apiFunction.name);
     setIsLoading(true);
     setError(null);
 
@@ -30,7 +30,6 @@ export function useApiCall<T = any>(
       const response = await apiFunction(...args);
       
       if (response.success && response.data) {
-        console.log('[useApiCall] Success');
         setData(response.data);
         
         if (options?.showSuccessToast) {
@@ -40,7 +39,6 @@ export function useApiCall<T = any>(
         options?.onSuccess?.(response.data);
         return response.data;
       } else {
-        console.log('[useApiCall] Failed:', response.message);
         throw new Error(response.message || 'Operation failed');
       }
     } catch (err: any) {
@@ -141,12 +139,12 @@ export function useAdminFinancialOverview() {
 
 // Therapist hooks
 export function useTherapistDashboard() {
-  return useApiCall(therapistApi.getDashboard);
+  return useApiCall(realApiService.therapist.getDashboard);
 }
 
 export function useTherapistProfile() {
-  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(therapistApi.getProfile);
-  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(therapistApi.updateProfile, {
+  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(realApiService.therapist.getProfile);
+  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(realApiService.therapist.updateProfile, {
     showSuccessToast: true,
     successMessage: 'Profile updated successfully'
   });
@@ -163,9 +161,10 @@ export function useTherapistProfile() {
 export function useTherapistClients() {
   const [clients, setClients] = useState<any[]>([]);
   
-  const { execute, isLoading, error } = useApiCall(therapistApi.getClients, {
+  const { execute, isLoading, error } = useApiCall(realApiService.therapist.getClients, {
     onSuccess: (data) => {
-      setClients(data.clients);
+      // API returns Client[] directly
+      setClients(Array.isArray(data) ? data : []);
     }
   });
 
@@ -175,19 +174,12 @@ export function useTherapistClients() {
 export function useTherapistAppointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   
-  const { execute: getAppointments, isLoading, error } = useApiCall(therapistApi.getAppointments, {
+  const { execute: getAppointments, isLoading, error } = useApiCall(realApiService.therapist.getAppointments, {
     onSuccess: (data) => {
-      console.log('[useTherapistAppointments] Success response data:', data);
       // Handle both direct array response and nested appointments property
       if (Array.isArray(data)) {
-        console.log('[useTherapistAppointments] Data is array, length:', data.length);
         setAppointments(data);
-      } else if (data?.appointments) {
-        console.log('[useTherapistAppointments] Data has appointments property:', data.appointments);
-        setAppointments(data.appointments);
       } else {
-        console.log('[useTherapistAppointments] Data format not recognized, setting empty array');
-        console.log('[useTherapistAppointments] Data structure:', JSON.stringify(data, null, 2));
         setAppointments([]);
       }
     },

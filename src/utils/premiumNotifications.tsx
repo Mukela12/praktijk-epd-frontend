@@ -90,7 +90,6 @@ export const usePremiumNotifications = () => {
             label: 'Resend Email',
             onClick: () => {
               // This can be connected to resend email functionality
-              console.log('Resending verification email...');
             }
           }
         }

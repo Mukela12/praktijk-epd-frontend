@@ -262,7 +262,6 @@ const InvoiceManagement: React.FC = () => {
   };
 
   const handleBulkAction = (action: string) => {
-    console.log(`Performing ${action} on invoices:`, selectedInvoices);
     // Implement bulk actions
     setSelectedInvoices([]);
   };

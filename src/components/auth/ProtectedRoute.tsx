@@ -102,7 +102,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <button
               onClick={() => {
                 // Implement resend verification email
-                console.log('Resend verification email');
               }}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >

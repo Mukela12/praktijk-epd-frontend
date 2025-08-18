@@ -162,10 +162,7 @@ export const therapistApi = {
   // Appointments
   getAppointments: async (params?: { date?: string; status?: string }): Promise<ApiResponse<any>> => {
     try {
-      console.log('[therapistApi.getAppointments] Making request with params:', params);
       const response = await api.get('/therapist/appointments', { params });
-      console.log('[therapistApi.getAppointments] Raw response:', response);
-      console.log('[therapistApi.getAppointments] Response data:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('[therapistApi.getAppointments] Error fetching appointments:', error);
@@ -311,10 +308,7 @@ export const clientApi = {
   // Appointments
   getAppointments: async (params?: { page?: number; limit?: number }): Promise<ApiResponse<any>> => {
     try {
-      console.log('[clientApi.getAppointments] Making request with params:', params);
       const response = await api.get('/client/appointments', { params });
-      console.log('[clientApi.getAppointments] Raw response:', response);
-      console.log('[clientApi.getAppointments] Response data:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('[clientApi.getAppointments] Error fetching appointments:', error);

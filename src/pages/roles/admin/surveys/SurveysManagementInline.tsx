@@ -721,7 +721,11 @@ const SurveysManagementInline: React.FC = () => {
       subtitle="Create and manage surveys and assessments"
       icon={ClipboardDocumentCheckIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Create Survey"

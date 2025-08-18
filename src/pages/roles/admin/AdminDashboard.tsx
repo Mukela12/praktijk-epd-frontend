@@ -19,71 +19,11 @@ import { useAdminDashboard, useAdminWaitingList, useAdminFinancialOverview } fro
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import StatusIndicator from '@/components/ui/StatusIndicator';
 import PageTransition from '@/components/ui/PageTransition';
+import AnimatedMetricCard from '@/components/ui/AnimatedMetricCard';
 import { DashboardMetrics, WaitingListApplication, FinancialOverview } from '@/types/entities';
 import { formatDate, formatCurrency, formatFullDate } from '@/utils/dateFormatters';
 
-// Metric card component
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
-  icon: React.ComponentType<any>;
-  iconColor: string;
-  link?: string;
-  isLoading?: boolean;
-}
-
-const MetricCard: React.FC<MetricCardProps> = ({
-  title,
-  value,
-  change,
-  changeType = 'neutral',
-  icon: Icon,
-  iconColor,
-  link,
-  isLoading
-}) => {
-  const content = (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${iconColor}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <div className="ml-4 flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <div className="flex items-baseline justify-between">
-            {isLoading ? (
-              <div className="flex items-center space-x-2 mt-1">
-                <LoadingSpinner size="small" />
-              </div>
-            ) : (
-              <>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-                {change && (
-                  <div className={`flex items-center text-sm font-medium ${
-                    changeType === 'positive' ? 'text-green-600' : 
-                    changeType === 'negative' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {changeType === 'positive' && <ArrowUpIcon className="w-4 h-4 mr-1" />}
-                    {changeType === 'negative' && <ArrowDownIcon className="w-4 h-4 mr-1" />}
-                    {change}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (link) {
-    return <Link to={link} className="block">{content}</Link>;
-  }
-
-  return content;
-};
+// Metric card component - replaced with AnimatedMetricCard
 
 // Quick action button
 interface QuickActionProps {
@@ -97,7 +37,7 @@ const QuickAction: React.FC<QuickActionProps> = ({ icon: Icon, label, onClick, c
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center p-4 rounded-lg ${color} hover:opacity-90 transition-opacity`}
+      className={`flex flex-col items-center p-4 rounded-lg ${color} smooth-transition hover:scale-105 hover:shadow-lg button-press`}
     >
       <Icon className="w-6 h-6 text-white mb-2" />
       <span className="text-sm font-medium text-white">{label}</span>
@@ -188,17 +128,17 @@ const AdminDashboard: React.FC = () => {
     <PageTransition>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200 -mx-6 -mt-6 px-6 py-4">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white animated-gradient">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+            <div className="animate-fadeIn">
+              <h1 className="text-2xl font-bold">
                 Welcome back, {user?.first_name || 'Admin'}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-blue-100 mt-1">
                 Here's what's happening in your practice today
               </p>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-blue-100">
               {formatFullDate(new Date())}
             </div>
           </div>
@@ -206,45 +146,41 @@ const AdminDashboard: React.FC = () => {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
+          <AnimatedMetricCard
             title="Active Clients"
             value={metrics?.activeClients || 0}
-            change={metrics && metrics.activeClients > 0 ? `${metrics.activeClients} active` : undefined}
-            changeType="neutral"
+            subtitle={metrics && metrics.activeClients > 0 ? `${metrics.activeClients} active` : "No active clients"}
             icon={UsersIcon}
-            iconColor="bg-blue-600"
-            link="/admin/clients"
-            isLoading={isLoading}
+            color="blue"
+            delay={0}
+            trend={metrics && previousMetrics ? {
+              value: ((metrics.activeClients - (previousMetrics?.activeClients || 0)) / (previousMetrics?.activeClients || 1)) * 100,
+              isPositive: metrics.activeClients > (previousMetrics?.activeClients || 0)
+            } : undefined}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title="Monthly Revenue"
             value={`€${financial?.totalRevenue?.toLocaleString() || '0'}`}
-            change={financial && financial.totalRevenue > 0 ? "YTD" : "No revenue"}
-            changeType={financial && financial.totalRevenue > 0 ? "neutral" : "negative"}
+            subtitle={financial && financial.totalRevenue > 0 ? "Year to date" : "No revenue"}
             icon={CurrencyEuroIcon}
-            iconColor="bg-green-600"
-            link="/admin/financial"
-            isLoading={isLoading}
+            color="green"
+            delay={100}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title="Today's Appointments"
             value={metrics?.appointmentsToday || 0}
-            change={metrics && (metrics.appointmentsToday || 0) > 0 ? "scheduled" : "No appointments"}
-            changeType={metrics && (metrics.appointmentsToday || 0) > 0 ? "positive" : "neutral"}
+            subtitle={metrics && (metrics.appointmentsToday || 0) > 0 ? "scheduled" : "No appointments"}
             icon={CalendarIcon}
-            iconColor="bg-purple-600"
-            link="/admin/agenda"
-            isLoading={isLoading}
+            color="purple"
+            delay={200}
           />
-          <MetricCard
+          <AnimatedMetricCard
             title="Waiting List"
             value={metrics?.waitingListCount || waitingList?.length || 0}
-            change={(metrics?.waitingListCount ?? 0) > 5 ? "High" : "Normal"}
-            changeType={(metrics?.waitingListCount ?? 0) > 5 ? "negative" : "neutral"}
+            subtitle={(metrics?.waitingListCount ?? 0) > 5 ? "High demand" : "Normal capacity"}
             icon={ClockIcon}
-            iconColor="bg-orange-600"
-            link="/admin/waiting-list"
-            isLoading={isLoading}
+            color={(metrics?.waitingListCount ?? 0) > 5 ? "red" : "yellow"}
+            delay={300}
           />
         </div>
 
@@ -276,9 +212,9 @@ const AdminDashboard: React.FC = () => {
                 <LoadingSpinner />
               </div>
             ) : recentWaitingList.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-3 fade-in-stagger">
                 {recentWaitingList.map((application) => (
-                  <div key={application.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={application.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg smooth-transition hover:bg-gray-100 hover:shadow-sm">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
                         {application.first_name} {application.last_name}
@@ -294,7 +230,7 @@ const AdminDashboard: React.FC = () => {
                         size="sm"
                       />
                       {application.urgency_level === 'critical' && (
-                        <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                        <ExclamationTriangleIcon className="w-5 h-5 text-red-600 pulse" />
                       )}
                     </div>
                   </div>

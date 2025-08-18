@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   CalendarIcon, 
   UserIcon, 
@@ -8,7 +8,9 @@ import {
   TrophyIcon,
   HeartIcon,
   ChartBarIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  BookOpenIcon,
+  PuzzlePieceIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
@@ -17,53 +19,11 @@ import { useClientDashboard, useClientAppointments, useClientMessages } from '@/
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import StatusIndicator from '@/components/ui/StatusIndicator';
 import PageTransition from '@/components/ui/PageTransition';
+import AnimatedMetricCard from '@/components/ui/AnimatedMetricCard';
 import { Appointment, Message, Therapist } from '@/types/entities';
 import { formatDate, formatTime, formatFullDate } from '@/utils/dateFormatters';
 
-// Progress card component
-interface ProgressCardProps {
-  title: string;
-  value: number;
-  total: number;
-  icon: React.ComponentType<any>;
-  color?: string;
-}
-
-const ProgressCard: React.FC<ProgressCardProps> = ({ title, value, total, icon: Icon, color }) => {
-  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-  
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <Icon className={`w-5 h-5 ${color}`} />
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <span className="text-2xl font-bold text-gray-900">{value}</span>
-          <span className="text-sm text-gray-500">of {total}</span>
-        </div>
-        {total > 0 ? (
-          <>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  percentage >= 80 ? 'bg-green-500' : 
-                  percentage >= 50 ? 'bg-yellow-500' : 
-                  'bg-red-500'
-                }`}
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500">{percentage}% complete</p>
-          </>
-        ) : (
-          <p className="text-xs text-gray-500">No data available</p>
-        )}
-      </div>
-    </div>
-  );
-};
+// Progress card component - replaced with AnimatedMetricCard
 
 // Quick action card
 interface QuickActionProps {
@@ -78,9 +38,9 @@ const QuickAction: React.FC<QuickActionProps> = ({ title, description, icon: Ico
   return (
     <Link 
       to={link}
-      className="block bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+      className="block bg-white rounded-xl shadow-sm border border-gray-100 p-6 card-hover smooth-transition"
     >
-      <div className={`inline-flex p-3 rounded-lg ${color} mb-4`}>
+      <div className={`inline-flex p-3 rounded-lg ${color} mb-4 smooth-transition group-hover:scale-110`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
@@ -109,13 +69,25 @@ const ClientDashboard: React.FC = () => {
     treatmentProgress: 0,
     wellnessScore: 0,
     resourcesCompleted: 0,
-    totalResources: 0
+    totalResources: 0,
+    surveysCompleted: 0,
+    totalSurveys: 0,
+    challengesActive: 0,
+    challengesCompleted: 0
   });
   const [hasCompletedIntake, setHasCompletedIntake] = useState(true);
+  const isLoadingRef = useRef(false);
+  const hasMountedRef = useRef(false);
 
   // Load dashboard data
   useEffect(() => {
+    // Prevent multiple simultaneous loads
+    if (isLoadingRef.current || hasMountedRef.current) return;
+    
     const loadData = async () => {
+      isLoadingRef.current = true;
+      hasMountedRef.current = true;
+      
       try {
         // Load dashboard data first
         const dashboardResult = await getDashboard();
@@ -129,11 +101,18 @@ const ClientDashboard: React.FC = () => {
             treatmentProgress: dashboardResult.treatmentProgress || 0,
             wellnessScore: dashboardResult.wellnessScore || 0,
             resourcesCompleted: dashboardResult.resourcesCompleted || 0,
-            totalResources: dashboardResult.totalResources || 0
+            totalResources: dashboardResult.totalResources || 0,
+            surveysCompleted: dashboardResult.surveysCompleted || 0,
+            totalSurveys: dashboardResult.totalSurveys || 0,
+            challengesActive: dashboardResult.challengesActive || 0,
+            challengesCompleted: dashboardResult.challengesCompleted || 0
           });
           // Check if intake form is completed
           setHasCompletedIntake(dashboardResult.hasCompletedIntake !== false);
         }
+        
+        // Add delay between API calls to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Load appointments separately
         try {
@@ -142,22 +121,27 @@ const ClientDashboard: React.FC = () => {
           console.warn('Failed to load appointments:', error);
         }
         
-        // Load messages separately and handle 403 gracefully
+        // Add delay between API calls
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Load messages separately and handle errors gracefully
         try {
           await getMessages({ page: 1, limit: 5 });
         } catch (error: any) {
-          // Don't spam console for 403 errors
-          if (error?.response?.status !== 403) {
+          // Don't spam console for 403/404 errors - messages might not be available for all users
+          if (error?.response?.status !== 403 && error?.response?.status !== 404) {
             console.warn('Failed to load messages:', error);
           }
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
+      } finally {
+        isLoadingRef.current = false;
       }
     };
 
     loadData();
-  }, [getDashboard, getAppointments, getMessages]);
+  }, []); // Remove dependencies to prevent re-runs
 
   // Process appointments and messages
   useEffect(() => {
@@ -201,16 +185,30 @@ const ClientDashboard: React.FC = () => {
     {
       title: t('dashboard.viewResources'),
       description: t('dashboard.accessMaterials'),
-      icon: DocumentTextIcon,
+      icon: BookOpenIcon,
       link: '/client/resources',
       color: 'bg-purple-600'
+    },
+    {
+      title: t('nav.surveys') || 'Surveys',
+      description: 'Complete assigned surveys',
+      icon: ClipboardDocumentCheckIcon,
+      link: '/client/surveys',
+      color: 'bg-indigo-600'
+    },
+    {
+      title: t('nav.challenges') || 'Challenges',
+      description: 'Track your wellness challenges',
+      icon: PuzzlePieceIcon,
+      link: '/client/challenges',
+      color: 'bg-orange-600'
     },
     {
       title: t('dashboard.progressTracking'),
       description: t('dashboard.monitorJourney'),
       icon: ChartBarIcon,
-      link: '/client/progress',
-      color: 'bg-orange-600'
+      link: '/client/session-history',
+      color: 'bg-pink-600'
     }
   ];
 
@@ -218,7 +216,7 @@ const ClientDashboard: React.FC = () => {
     <PageTransition>
       <div className="space-y-6">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white animated-gradient">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold">
@@ -264,7 +262,7 @@ const ClientDashboard: React.FC = () => {
 
         {/* Therapist Info */}
         {therapist && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fadeIn card-hover">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
                 <UserIcon className="w-8 h-8 text-gray-500" />
@@ -296,34 +294,54 @@ const ClientDashboard: React.FC = () => {
         )}
 
         {/* Progress Overview */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <ProgressCard
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <AnimatedMetricCard
             title={t('dashboard.sessionsCompleted')}
-            value={metrics.completedSessions}
-            total={metrics.totalSessions}
+            value={`${metrics.completedSessions}/${metrics.totalSessions}`}
+            subtitle={`${metrics.totalSessions > 0 ? Math.round((metrics.completedSessions / metrics.totalSessions) * 100) : 0}% complete`}
             icon={CalendarIcon}
-            color="text-blue-600"
+            color="blue"
+            delay={0}
           />
-          <ProgressCard
+          <AnimatedMetricCard
             title={t('dashboard.treatmentGoals')}
             value={metrics.treatmentProgress}
-            total={100}
+            subtitle="Progress towards goals"
             icon={TrophyIcon}
-            color="text-yellow-600"
+            color="yellow"
+            delay={100}
           />
-          <ProgressCard
+          <AnimatedMetricCard
             title={t('dashboard.wellnessScore')}
             value={metrics.wellnessScore}
-            total={100}
+            subtitle="Overall wellness"
             icon={HeartIcon}
-            color="text-red-600"
+            color="red"
+            delay={200}
           />
-          <ProgressCard
+          <AnimatedMetricCard
             title={t('dashboard.resourcesCompleted')}
-            value={metrics.resourcesCompleted}
-            total={metrics.totalResources}
+            value={`${metrics.resourcesCompleted}/${metrics.totalResources}`}
+            subtitle={`${metrics.totalResources > 0 ? Math.round((metrics.resourcesCompleted / metrics.totalResources) * 100) : 0}% complete`}
+            icon={BookOpenIcon}
+            color="purple"
+            delay={300}
+          />
+          <AnimatedMetricCard
+            title="Surveys Completed"
+            value={`${metrics.surveysCompleted}/${metrics.totalSurveys}`}
+            subtitle={`${metrics.totalSurveys > 0 ? Math.round((metrics.surveysCompleted / metrics.totalSurveys) * 100) : 0}% complete`}
             icon={ClipboardDocumentCheckIcon}
-            color="text-green-600"
+            color="indigo"
+            delay={400}
+          />
+          <AnimatedMetricCard
+            title="Active Challenges"
+            value={metrics.challengesActive}
+            subtitle={`${metrics.challengesCompleted} completed`}
+            icon={PuzzlePieceIcon}
+            color="yellow"
+            delay={500}
           />
         </div>
 
@@ -339,7 +357,7 @@ const ClientDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upcoming Appointments */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fadeIn">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.upcomingAppointments')}</h2>
               <Link 
@@ -355,12 +373,12 @@ const ClientDashboard: React.FC = () => {
                 <LoadingSpinner />
               </div>
             ) : appointments && appointments.filter(apt => apt.status === 'scheduled').length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-3 fade-in-stagger">
                 {appointments
                   .filter(apt => apt.status === 'scheduled')
                   .slice(0, 3)
                   .map((appointment) => (
-                    <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg smooth-transition hover:bg-gray-100 hover:shadow-sm">
                       <div>
                         <p className="font-medium text-gray-900">
                           {new Date(appointment.appointment_date).toLocaleDateString()}
@@ -392,7 +410,7 @@ const ClientDashboard: React.FC = () => {
           </div>
 
           {/* Recent Messages */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-fadeIn">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
                 {t('nav.messages')}
@@ -415,12 +433,12 @@ const ClientDashboard: React.FC = () => {
                 <LoadingSpinner />
               </div>
             ) : messages && messages.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-3 fade-in-stagger">
                 {messages.slice(0, 3).map((message) => (
                   <Link
                     key={message.id}
                     to={`/client/messages/${message.id}`}
-                    className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 smooth-transition hover:shadow-md"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -435,7 +453,7 @@ const ClientDashboard: React.FC = () => {
                         </p>
                       </div>
                       {!message.read && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full ml-3 mt-1" />
+                        <div className="w-2 h-2 bg-blue-600 rounded-full ml-3 mt-1 notification-badge" />
                       )}
                     </div>
                   </Link>
@@ -452,16 +470,16 @@ const ClientDashboard: React.FC = () => {
 
         {/* Wellness Tips - Only show if we have data */}
         {dashboardData?.wellnessTip && (
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 animate-fadeIn">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Wellness Tip</h2>
-            <div className="bg-white rounded-lg p-4">
+            <div className="bg-white rounded-lg p-4 card-hover">
               <p className="text-gray-700">
                 {dashboardData.wellnessTip}
               </p>
               {dashboardData.wellnessTipLink && (
                 <Link 
                   to={dashboardData.wellnessTipLink}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 inline-block"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 inline-block smooth-transition"
                 >
                   Learn more →
                 </Link>

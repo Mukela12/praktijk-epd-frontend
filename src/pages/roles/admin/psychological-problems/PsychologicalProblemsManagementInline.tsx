@@ -73,7 +73,7 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
   const loadProblems = async () => {
     try {
       setIsLoading(true);
-      const response = await realApiService.getPsychologicalProblems();
+      const response = await realApiService.admin.getPsychologicalProblems();
       if (response.data) {
         setProblems(response.data);
       }
@@ -94,12 +94,12 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
       }
 
       if (viewMode === 'create') {
-        const response = await realApiService.createPsychologicalProblem(formData);
+        const response = await realApiService.admin.createPsychologicalProblem(formData);
         if (response.data) {
           success('Psychological problem created successfully');
         }
       } else if (viewMode === 'edit' && selectedProblem) {
-        const response = await realApiService.updatePsychologicalProblem(selectedProblem.id, formData);
+        const response = await realApiService.admin.updatePsychologicalProblem(selectedProblem.id, formData);
         if (response.data) {
           success('Psychological problem updated successfully');
         }
@@ -117,7 +117,7 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this psychological problem?')) return;
     
     try {
-      await realApiService.deletePsychologicalProblem(problemId);
+      await realApiService.admin.deletePsychologicalProblem(problemId);
       success('Psychological problem deleted successfully');
       await loadProblems();
     } catch (error) {
@@ -326,13 +326,6 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
         value={formData.severity_levels}
         onChange={(value) => setFormData({ ...formData, severity_levels: value })}
         placeholder="Add severity levels..."
-        suggestions={[
-          'Mild',
-          'Moderate',
-          'Severe',
-          'Very Severe',
-          'Critical'
-        ]}
       />
 
       <TagsField
@@ -341,18 +334,6 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
         value={formData.symptoms}
         onChange={(value) => setFormData({ ...formData, symptoms: value })}
         placeholder="Add common symptoms..."
-        suggestions={[
-          'Sadness',
-          'Anxiety',
-          'Fatigue',
-          'Irritability',
-          'Sleep problems',
-          'Appetite changes',
-          'Concentration issues',
-          'Social withdrawal',
-          'Panic attacks',
-          'Flashbacks'
-        ]}
       />
 
       <TagsField
@@ -361,17 +342,6 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
         value={formData.treatments}
         onChange={(value) => setFormData({ ...formData, treatments: value })}
         placeholder="Add treatment options..."
-        suggestions={[
-          'CBT',
-          'EMDR',
-          'Medication',
-          'Group therapy',
-          'Mindfulness',
-          'Exposure therapy',
-          'DBT',
-          'Family therapy',
-          'Psychoeducation'
-        ]}
       />
 
       <TagsField
@@ -380,13 +350,6 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
         value={formData.age_groups}
         onChange={(value) => setFormData({ ...formData, age_groups: value })}
         placeholder="Add affected age groups..."
-        suggestions={[
-          'Children (5-12)',
-          'Adolescents (13-17)',
-          'Young Adults (18-25)',
-          'Adults (26-64)',
-          'Seniors (65+)'
-        ]}
       />
     </div>
   );
@@ -484,7 +447,11 @@ const PsychologicalProblemsManagementInline: React.FC = () => {
       subtitle="Manage psychological problems and conditions"
       icon={PuzzlePieceIcon}
       viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          setViewMode(mode);
+        }
+      }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
       createButtonText="Add Problem"

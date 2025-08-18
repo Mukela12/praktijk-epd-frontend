@@ -37,9 +37,7 @@ export function useApiWithErrorHandling<T = any>(
     setError(null);
     
     try {
-      console.log('[API] Executing request with args:', args);
       const result = await apiFunction(...args);
-      console.log('[API] Request successful:', result);
       
       setData(result);
       

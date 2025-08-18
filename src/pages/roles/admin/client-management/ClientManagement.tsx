@@ -819,7 +819,11 @@ const ClientManagement: React.FC = () => {
       subtitle={`${stats.total} total clients`}
       icon={UsersIcon}
       viewMode={viewMode}
-      onViewModeChange={handleViewModeChange}
+      onViewModeChange={(mode) => {
+        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+          handleViewModeChange(mode);
+        }
+      }}
       showCreateButton={viewMode === 'list'}
       createButtonText="Add Client"
       isLoading={isLoading}

@@ -54,7 +54,6 @@ const createAuthNavigation = (): AuthNavigation => {
 
   const navigateWithAuth = (path: string, replace = false): void => {
     // Navigation will be handled by the component that subscribes to the store
-    console.log('Navigation request:', path, replace);
   };
 
   return {
@@ -126,7 +125,6 @@ export const useAuthStore = create<AuthStore>()(
 
       // Actions
       login: async (credentials: LoginCredentials): Promise<boolean | 'email_not_verified'> => {
-        console.log('[AuthStore] Login attempt started for:', credentials.email);
         try {
           // Set authenticating state
           set({ 
@@ -137,11 +135,9 @@ export const useAuthStore = create<AuthStore>()(
           });
           
           const response = await authApi.login(credentials);
-          console.log('[AuthStore] Login response:', response);
           
           // Handle 2FA requirement (can come with success: false if 2FA is needed)
           if (response.requiresTwoFactor) {
-            console.log('[AuthStore] 2FA verification required, response:', response);
             // For 2FA verification, we might not have full user data yet
             // Try to use existing user data or create minimal user object
             const userData = response.user || { email: credentials.email } as any;
@@ -153,7 +149,6 @@ export const useAuthStore = create<AuthStore>()(
               rememberDevice: credentials.rememberDevice
             };
             localStorage.setItem('pendingLogin', JSON.stringify(pendingLogin));
-            console.log('[AuthStore] Stored pending login credentials for 2FA verification');
             
             set({ 
               authenticationState: AuthenticationState.REQUIRES_2FA_VERIFICATION,
@@ -178,7 +173,6 @@ export const useAuthStore = create<AuthStore>()(
             if (roleRequires2FA) {
               // If user hasn't completed 2FA setup, require setup
               if (!user.two_factor_setup_completed) {
-                console.log('[AuthStore] 2FA setup required for user:', user.email, 'Role:', user.role);
                 set({
                   user,
                   accessToken: response.accessToken || null,
@@ -404,10 +398,8 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       setup2FA: async (): Promise<TwoFactorSetup | null> => {
-        console.log('[AuthStore] Starting 2FA setup');
         try {
           const setup = await authApi.setup2FA();
-          console.log('[AuthStore] 2FA setup response:', setup);
           PremiumNotifications.info('2FA setup initiated', { description: 'Scan the QR code with your authenticator app' });
           return setup;
         } catch (error: any) {
@@ -436,7 +428,6 @@ export const useAuthStore = create<AuthStore>()(
           }
           
           const pendingLogin = JSON.parse(pendingLoginStr);
-          console.log('[AuthStore] Completing 2FA login for:', pendingLogin.email);
           
           // Retry login with 2FA code
           const loginWithMFA = {
@@ -445,13 +436,10 @@ export const useAuthStore = create<AuthStore>()(
           };
           
           const response = await authApi.login(loginWithMFA);
-          console.log('[AuthStore] 2FA login response:', response);
           
           if (response.success && response.user && response.accessToken) {
-            console.log('[AuthStore] Setting auth state to AUTHENTICATED_COMPLETE for user:', response.user.email, 'role:', response.user.role);
             const navigation = get().navigation;
             const dashboardPath = navigation.getDashboardPath(response.user.role);
-            console.log('[AuthStore] Dashboard path:', dashboardPath);
             
             set({
               user: response.user,
@@ -474,14 +462,8 @@ export const useAuthStore = create<AuthStore>()(
             get().startTokenRefreshTimer();
             
             PremiumNotifications.auth.loginSuccess(response.user.first_name);
-            console.log('[AuthStore] Auth state updated successfully');
             return true;
           } else {
-            console.log('[AuthStore] Login response missing required fields:', {
-              success: response.success,
-              hasUser: !!response.user,
-              hasAccessToken: !!response.accessToken
-            });
           }
           
           PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });
@@ -509,12 +491,10 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       verify2FA: async (code: string, secret?: string): Promise<boolean> => {
-        console.log('[AuthStore] Verifying 2FA code, isSetup:', !!secret);
         try {
           const response = await authApi.verify2FA(code, secret);
           
           if (response.success) {
-            console.log('[AuthStore] 2FA verification successful, response:', response);
             const navigation = get().navigation;
             
             // Update user 2FA status if this was setup verification
@@ -541,9 +521,7 @@ export const useAuthStore = create<AuthStore>()(
               // This is a login 2FA verification
               // Update authentication state if we have user data in response
               if (response.user && response.accessToken) {
-                console.log('[AuthStore] Setting authenticated state with user:', response.user.email, 'role:', response.user.role);
                 const dashboardPath = navigation.getDashboardPath(response.user.role);
-                console.log('[AuthStore] Dashboard path:', dashboardPath);
                 set({
                   user: response.user,
                   accessToken: response.accessToken,
@@ -558,7 +536,6 @@ export const useAuthStore = create<AuthStore>()(
                 localStorage.setItem('accessToken', response.accessToken);
                 localStorage.setItem('user', JSON.stringify(response.user));
               } else {
-                console.log('[AuthStore] No user data in response, keeping current state');
                 // Clear requiresTwoFactor flag but keep current user
                 set({ 
                   authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
@@ -661,7 +638,6 @@ export const useAuthStore = create<AuthStore>()(
           const token = localStorage.getItem('accessToken');
           if (token) {
             try {
-              console.log('[AuthStore] Periodic token refresh check');
               await get().refreshAuth();
             } catch (error) {
               console.error('[AuthStore] Periodic token refresh failed:', error);

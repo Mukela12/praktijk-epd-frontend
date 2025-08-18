@@ -163,7 +163,7 @@ const FinancialOverview: React.FC = () => {
       success('Financial report exported successfully', {
         action: {
           label: 'Download',
-          onClick: () => console.log('Download report')
+          onClick: () => {}
         }
       });
     }, 2000);
@@ -426,7 +426,7 @@ const FinancialOverview: React.FC = () => {
               description="There are no invoices matching your current filters."
               action={{
                 label: 'Create Invoice',
-                onClick: () => console.log('Create invoice')
+                onClick: () => {}
               }}
             />
           </div>
@@ -498,7 +498,6 @@ const FinancialOverview: React.FC = () => {
                           <PremiumButton
                             size="sm"
                             variant="outline"
-                            onClick={() => console.log('View invoice', invoice.id)}
                           >
                             View
                           </PremiumButton>

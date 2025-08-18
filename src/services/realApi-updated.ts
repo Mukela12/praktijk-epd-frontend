@@ -40,20 +40,17 @@ class RequestManager {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && this.isValidCache(cached)) {
-      console.log(`[RequestManager] Using cached data for ${endpoint}`);
       return cached.data;
     }
 
     // Check if request is already pending
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
-      console.log(`[RequestManager] Request already pending for ${endpoint}, waiting...`);
       return pending;
     }
 
     // Throttle requests to prevent 429 errors
     if (this.shouldThrottle(endpoint)) {
-      console.log(`[RequestManager] Throttling request to ${endpoint}, using cache or waiting...`);
       if (cached) {
         return cached.data; // Use expired cache if available
       }

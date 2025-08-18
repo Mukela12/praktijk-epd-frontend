@@ -139,7 +139,7 @@ const WaitingListManagement: React.FC = () => {
       success('Smart pairing completed! Found 3 optimal matches.', {
         action: {
           label: 'View Results',
-          onClick: () => console.log('View smart pairing results')
+          onClick: () => {}
         }
       });
     }, 2000);

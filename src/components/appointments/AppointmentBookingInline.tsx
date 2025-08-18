@@ -17,6 +17,7 @@ import { PremiumCard, PremiumButton, StatusBadge } from '@/components/layout/Pre
 import { TextField, TextareaField, SelectField } from '@/components/forms/FormFields';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
+import { motion } from 'framer-motion';
 
 interface TimeSlot {
   time: string;
@@ -75,12 +76,13 @@ const AppointmentBookingInline: React.FC = () => {
         setAssignedTherapist({
           id: response.data.id,
           name: `${response.data.first_name} ${response.data.last_name}`,
-          specializations: response.data.specializations || []
+          specializations: response.data.specializations || [],
+          availability: true
         });
         setBookingData(prev => ({
           ...prev,
-          therapistId: response.data.id,
-          therapistName: `${response.data.first_name} ${response.data.last_name}`
+          therapistId: response.data?.id,
+          therapistName: response.data ? `${response.data.first_name} ${response.data.last_name}` : ''
         }));
         // Automatically move to datetime step if therapist is assigned
         setCurrentStep('datetime');
@@ -489,7 +491,7 @@ const AppointmentBookingInline: React.FC = () => {
               <PremiumButton
                 variant="primary"
                 onClick={handleSubmitAppointment}
-                isLoading={isLoading}
+                loading={isLoading}
               >
                 Submit Appointment Request
               </PremiumButton>
