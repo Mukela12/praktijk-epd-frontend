@@ -6,6 +6,7 @@ import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
+import { useAuthMonitor } from '@/hooks/useAuthMonitor';
 
 // Layout Components
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -49,38 +50,39 @@ import TherapistCalendar from '@/pages/roles/therapist/calendar/TherapistCalenda
 import TherapistMessages from '@/pages/roles/therapist/messages/TherapistMessages';
 import TherapistClients from '@/pages/roles/therapist/clients/TherapistClients';
 import TherapistAppointments from '@/pages/roles/therapist/appointments/TherapistAppointments';
-import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSettings';
-import TherapistChallengesManagement from '@/pages/roles/therapist/challenges/ChallengesManagement';
-import TherapistSurveysManagement from '@/pages/roles/therapist/surveys/SurveysManagement';
+// Removed imports for non-existent therapist components
+import TherapistProfile from '@/pages/roles/therapist/profile/TherapistProfile';
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
-import TreatmentCodesManagement from '@/pages/roles/therapist/treatment-codes/TreatmentCodesManagement';
-import TherapistResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
-import SessionManagement from '@/pages/roles/therapist/sessions/SessionManagement';
+import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSettings';
+// Removed imports for non-existent therapist reports and notes
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
 import BookAppointment from '@/pages/roles/client/appointments/BookAppointment';
 import ClientMessages from '@/pages/roles/client/messages/ClientMessages';
-import ClientTherapist from '@/pages/roles/client/therapist/ClientTherapist';
-import ClientSettings from '@/pages/roles/client/settings/ClientSettings';
-import AddressChangeRequest from '@/pages/roles/client/AddressChangeRequest';
-import IntakeForm from '@/pages/roles/client/IntakeForm';
-import BankInformation from '@/pages/roles/client/BankInformation';
-import ClientInvoices from '@/pages/roles/client/invoices/ClientInvoices';
+import ClientProfile from '@/pages/roles/client/profile/ClientProfile';
 import ClientDocuments from '@/pages/roles/client/documents/ClientDocuments';
-import SessionHistory from '@/pages/roles/client/SessionHistory';
+// Removed import for non-existent ClientBilling
+import ClientInvoices from '@/pages/roles/client/invoices/ClientInvoices';
+// Removed import for non-existent ClientBillingHistory
 import PaymentCenter from '@/pages/roles/client/PaymentCenter';
 import PaymentMethods from '@/pages/roles/client/PaymentMethods';
-import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
+import SessionHistory from '@/pages/roles/client/SessionHistory';
+// Removed import for non-existent TherapyJourney
 import ClientResourcesImproved from '@/pages/roles/client/resources/ClientResourcesImproved';
-import ClientSurveysImproved from '@/pages/roles/client/surveys/ClientSurveysImproved';
+import ClientResources from '@/pages/roles/client/resources/ClientResources';
+import IntakeForm from '@/pages/roles/client/IntakeForm';
+import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
+import ClientSurveys from '@/pages/roles/client/surveys/ClientSurveys';
+import ClientTherapist from '@/pages/roles/client/therapist/ClientTherapist';
+// Removed import for non-existent ClientProgress
+import AddressChangeRequest from '@/pages/roles/client/AddressChangeRequest';
+// Removed import for non-existent ClientQuestionnaires
+// Removed import for non-existent ClientNotes
+import ClientSettings from '@/pages/roles/client/settings/ClientSettings';
 
 // Assistant Components
-import AssistantDashboard from '@/pages/roles/assistant/Dashboard';
-import ClientSupport from '@/pages/roles/assistant/client-support/ClientSupport';
 import AssistantMessages from '@/pages/roles/assistant/messages/AssistantMessages';
-import AssistantScheduling from '@/pages/roles/assistant/scheduling/AssistantScheduling';
-import AssistantSettings from '@/pages/roles/assistant/settings/AssistantSettings';
 
 // Bookkeeper Components
 import BookkeeperDashboard from '@/pages/roles/bookkeeper/Dashboard';
@@ -90,34 +92,31 @@ import Reports from '@/pages/roles/bookkeeper/reports/Reports';
 import BookkeeperMessages from '@/pages/roles/bookkeeper/messages/BookkeeperMessages';
 import BookkeeperSettings from '@/pages/roles/bookkeeper/settings/BookkeeperSettings';
 
-// Profile Components
-import TherapistProfile from '@/pages/roles/therapist/profile/TherapistProfile';
-import TherapistInvoices from '@/pages/roles/therapist/invoices/TherapistInvoices';
-import ClientProfile from '@/pages/roles/client/profile/ClientProfile';
-
-// Utility Components
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+// Other Components
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import RoleRedirect from '@/components/auth/RoleRedirect';
-import ErrorBoundary from '@/components/error/ErrorBoundary';
-import NetworkErrorHandler from '@/components/error/NetworkErrorHandler';
+import NetworkErrorHandler from '@/components/NetworkErrorHandler';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-// Create React Query client
+// Create a query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
 
-// Component to initialize the premium notifications
+// Component to initialize notification system
 const NotificationInitializer: React.FC = () => {
   const { addNotification, removeNotification, clearAll } = useNotifications();
   
   useEffect(() => {
+    // Initialize PremiumNotifications with the notification methods
     PremiumNotifications.init({
       addNotification,
       removeNotification,
@@ -126,6 +125,235 @@ const NotificationInitializer: React.FC = () => {
   }, [addNotification, removeNotification, clearAll]);
   
   return null;
+};
+
+// Component that renders routes and uses auth monitor
+const AppRoutes: React.FC = () => {
+  const { 
+    isAuthenticated, 
+    authenticationState, 
+    refreshAuth, 
+    user, 
+    requiresTwoFactor, 
+    twoFactorSetupRequired 
+  } = useAuth();
+  
+  // Use auth monitor to handle automatic logout
+  useAuthMonitor();
+  
+  return (
+    <div className="App">
+      <Routes>
+        {/* Auth routes - Only render when on auth paths */}
+        <Route 
+          path="/auth/*" 
+          element={
+            <AuthLayout>
+              <Routes>
+                <Route 
+                  path="login" 
+                  element={
+                    authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+                      <RoleRedirect />
+                    ) : (
+                      <LoginPage />
+                    )
+                  } 
+                />
+                <Route 
+                  path="register" 
+                  element={
+                    authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+                      <RoleRedirect />
+                    ) : (
+                      <RegisterPage />
+                    )
+                  } 
+                />
+                <Route path="forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="verify-email/:token" element={<VerifyEmailPage />} />
+                <Route 
+                  path="email-verification-pending" 
+                  element={<EmailVerificationPendingPage />} 
+                />
+                <Route 
+                  path="2fa" 
+                  element={
+                    requiresTwoFactor || twoFactorSetupRequired ? (
+                      <TwoFactorPage />
+                    ) : (
+                      <Navigate to="/" replace />
+                    )
+                  } 
+                />
+                <Route path="*" element={<Navigate to="/auth/login" replace />} />
+              </Routes>
+            </AuthLayout>
+          }
+        />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute roles={[UserRole.ADMIN]}>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="agenda" element={<AgendaPage />} />
+                  <Route path="clients" element={<AllClients />} />
+                  <Route path="clients/:clientId" element={<ClientManagement />} />
+                  <Route path="therapists" element={<AllTherapists />} />
+                  <Route path="waiting-list" element={<WaitingListManagement />} />
+                  <Route path="financial" element={<FinancialOverview />} />
+                  <Route path="financial-dashboard" element={<FinancialDashboard />} />
+                  <Route path="reports" element={<AdminReports />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="resources" element={<ResourcesManagement />} />
+                  <Route path="challenges" element={<ChallengesManagement />} />
+                  <Route path="surveys" element={<SurveysManagement />} />
+                  <Route path="therapies" element={<TherapiesManagement />} />
+                  <Route path="psychological-problems" element={<PsychologicalProblemsManagement />} />
+                  <Route path="address-changes" element={<AddressChangeManagement />} />
+                  <Route path="users" element={<UserManagement />} />
+                  <Route path="appointments" element={<AdminAppointmentsManagement />} />
+                  <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Therapist routes */}
+        <Route
+          path="/therapist/*"
+          element={
+            <ProtectedRoute roles={[UserRole.THERAPIST, UserRole.SUBSTITUTE]}>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="dashboard" element={<TherapistDashboard />} />
+                  <Route path="calendar" element={<TherapistCalendar />} />
+                  <Route path="messages" element={<TherapistMessages />} />
+                  <Route path="appointments" element={<TherapistAppointments />} />
+                  <Route path="clients" element={<TherapistClients />} />
+                  {/* <Route path="clients/:clientId" element={<TherapistClientProfile />} /> */}
+                  {/* <Route path="client/:clientId" element={<ClientOverview />} /> */}
+                  {/* <Route path="billing" element={<TherapistBilling />} /> */}
+                  <Route path="profile" element={<TherapistProfile />} />
+                  <Route path="availability" element={<AvailabilityManagement />} />
+                  <Route path="settings" element={<TherapistSettings />} />
+                  {/* <Route path="reports" element={<TherapistReports />} /> */}
+                  {/* <Route path="notes" element={<TherapistNotes />} /> */}
+                  <Route path="*" element={<Navigate to="/therapist/dashboard" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Client routes */}
+        <Route
+          path="/client/*"
+          element={
+            <ProtectedRoute roles={[UserRole.CLIENT]}>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="dashboard" element={<ClientDashboard />} />
+                  <Route path="appointments" element={<ClientAppointments />} />
+                  <Route path="appointments/new" element={<BookAppointment />} />
+                  <Route path="messages" element={<ClientMessages />} />
+                  <Route path="profile" element={<ClientProfile />} />
+                  <Route path="documents" element={<ClientDocuments />} />
+                  {/* <Route path="billing" element={<ClientBilling />} /> */}
+                  <Route path="invoices" element={<ClientInvoices />} />
+                  {/* <Route path="billing-history" element={<ClientBillingHistory />} /> */}
+                  <Route path="payment-center" element={<PaymentCenter />} />
+                  <Route path="payment-methods" element={<PaymentMethods />} />
+                  <Route path="session-history" element={<SessionHistory />} />
+                  {/* <Route path="therapy-journey" element={<TherapyJourney />} /> */}
+                  <Route path="resources" element={<ClientResourcesImproved />} />
+                  <Route path="resources-old" element={<ClientResources />} />
+                  <Route path="intake" element={<IntakeForm />} />
+                  <Route path="challenges" element={<ClientChallenges />} />
+                  <Route path="surveys" element={<ClientSurveys />} />
+                  <Route path="therapist" element={<ClientTherapist />} />
+                  {/* <Route path="progress" element={<ClientProgress />} /> */}
+                  <Route path="address-change" element={<AddressChangeRequest />} />
+                  {/* <Route path="questionnaires" element={<ClientQuestionnaires />} /> */}
+                  {/* <Route path="notes" element={<ClientNotes />} /> */}
+                  <Route path="settings" element={<ClientSettings />} />
+                  <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Assistant routes */}
+        <Route
+          path="/assistant/*"
+          element={
+            <ProtectedRoute roles={[UserRole.ASSISTANT]}>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="agenda" element={<AgendaPage />} />
+                  <Route path="messages" element={<AssistantMessages />} />
+                  <Route path="*" element={<Navigate to="/assistant/dashboard" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Bookkeeper routes */}
+        <Route
+          path="/bookkeeper/*"
+          element={
+            <ProtectedRoute roles={[UserRole.BOOKKEEPER]}>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="dashboard" element={<BookkeeperDashboard />} />
+                  <Route path="agenda" element={<BookkeeperFinancialDashboard />} />
+                  <Route path="financial" element={<BookkeeperFinancialDashboard />} />
+                  <Route path="invoices" element={<InvoiceManagement />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="messages" element={<BookkeeperMessages />} />
+                  <Route path="settings" element={<BookkeeperSettings />} />
+                  <Route path="*" element={<Navigate to="/bookkeeper/dashboard" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Root route - redirect based on auth status */}
+        <Route
+          path="/"
+          element={
+            authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+              <RoleRedirect />
+            ) : (
+              <Navigate to="/auth/login" replace />
+            )
+          }
+        />
+
+        {/* Catch all route */}
+        <Route
+          path="*"
+          element={
+            authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+              <RoleRedirect />
+            ) : (
+              <Navigate to="/auth/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </div>
+  );
 };
 
 const App: React.FC = () => {
@@ -180,7 +408,7 @@ const App: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [authenticationState]);
 
-  // Show loading spinner during authentication (with timeout)
+  // Show loading screen while initializing
   if (authenticationState === AuthenticationState.AUTHENTICATING && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -197,222 +425,8 @@ const App: React.FC = () => {
             <LanguageProvider>
               <NotificationInitializer />
               <Router>
-              <div className="App">
-            <Routes>
-              {/* Auth routes - Only render when on auth paths */}
-              <Route 
-                path="/auth/*" 
-                element={
-                  <AuthLayout>
-                    <Routes>
-                      <Route 
-                        path="login" 
-                        element={
-                          authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
-                            <RoleRedirect />
-                          ) : (
-                            <LoginPage />
-                          )
-                        } 
-                      />
-                      <Route 
-                        path="register" 
-                        element={
-                          authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
-                            <RoleRedirect />
-                          ) : (
-                            <RegisterPage />
-                          )
-                        } 
-                      />
-                      <Route path="forgot-password" element={<ForgotPasswordPage />} />
-                      <Route path="reset-password/:token" element={<ResetPasswordPage />} />
-                      <Route path="verify-email/:token" element={<VerifyEmailPage />} />
-                      <Route 
-                        path="email-verification-pending" 
-                        element={<EmailVerificationPendingPage />} 
-                      />
-                      <Route 
-                        path="2fa" 
-                        element={
-                          [
-                            AuthenticationState.REQUIRES_2FA_SETUP,
-                            AuthenticationState.REQUIRES_2FA_VERIFICATION,
-                            AuthenticationState.AUTHENTICATED
-                          ].includes(authenticationState) ? (
-                            <TwoFactorPage />
-                          ) : (
-                            <Navigate to="login" replace />
-                          )
-                        } 
-                      />
-                      <Route path="" element={<Navigate to="login" replace />} />
-                    </Routes>
-                  </AuthLayout>
-                } 
-              />
-
-              {/* Protected dashboard routes */}
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="" element={<AdminDashboard />} />
-                        <Route path="dashboard" element={<AdminDashboard />} />
-                        <Route path="agenda" element={<AgendaPage />} />
-                        <Route path="users" element={<UserManagement />} />
-                        <Route path="appointments" element={<AdminAppointmentsManagement />} />
-                        <Route path="clients" element={<AllClients />} />
-                        <Route path="client-management" element={<ClientManagement />} />
-                        <Route path="therapists" element={<AllTherapists />} />
-                        <Route path="financial" element={<FinancialDashboard />} />
-                        <Route path="waiting-list" element={<WaitingListManagement />} />
-                        <Route path="reports" element={<AdminReports />} />
-                        <Route path="settings" element={<AdminSettings />} />
-                        <Route path="resources" element={<ResourcesManagement />} />
-                        <Route path="challenges" element={<ChallengesManagement />} />
-                        <Route path="surveys" element={<SurveysManagement />} />
-                        <Route path="therapies" element={<TherapiesManagement />} />
-                        <Route path="psychological-problems" element={<PsychologicalProblemsManagement />} />
-                        <Route path="address-changes" element={<AddressChangeManagement />} />
-                        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/therapist/*"
-                element={
-                  <ProtectedRoute allowedRoles={[UserRole.THERAPIST, UserRole.SUBSTITUTE]}>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="" element={<TherapistDashboard />} />
-                        <Route path="dashboard" element={<TherapistDashboard />} />
-                        <Route path="agenda" element={<TherapistCalendar />} />
-                        <Route path="clients" element={<TherapistClients />} />
-                        <Route path="appointments" element={<TherapistAppointments />} />
-                        <Route path="treatment-codes" element={<TreatmentCodesManagement />} />
-                        <Route path="messages" element={<TherapistMessages />} />
-                        <Route path="profile" element={<TherapistProfile />} />
-                        <Route path="invoices" element={<TherapistInvoices />} />
-                        <Route path="settings" element={<TherapistSettings />} />
-                        <Route path="challenges" element={<TherapistChallengesManagement />} />
-                        <Route path="surveys" element={<TherapistSurveysManagement />} />
-                        <Route path="resources" element={<TherapistResourcesManagementInline />} />
-                        <Route path="availability" element={<AvailabilityManagement />} />
-                        <Route path="sessions" element={<SessionManagement />} />
-                        <Route path="*" element={<Navigate to="/therapist/dashboard" replace />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/client/*"
-                element={
-                  <ProtectedRoute allowedRoles={[UserRole.CLIENT]}>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="" element={<ClientDashboard />} />
-                        <Route path="dashboard" element={<ClientDashboard />} />
-                        <Route path="agenda" element={<ClientAppointments />} />
-                        <Route path="appointments" element={<ClientAppointments />} />
-                        <Route path="appointments/new" element={<BookAppointment />} />
-                        <Route path="therapist" element={<ClientTherapist />} />
-                        <Route path="messages" element={<ClientMessages />} />
-                        <Route path="profile" element={<ClientProfile />} />
-                        <Route path="settings" element={<ClientSettings />} />
-                        <Route path="address-change" element={<AddressChangeRequest />} />
-                        <Route path="intake-form" element={<IntakeForm />} />
-                        <Route path="payment-methods" element={<PaymentMethods />} />
-                        <Route path="payment-center" element={<PaymentCenter />} />
-                        <Route path="invoices" element={<ClientInvoices />} />
-                        <Route path="documents" element={<ClientDocuments />} />
-                        <Route path="session-history" element={<SessionHistory />} />
-                        <Route path="challenges" element={<ClientChallenges />} />
-                        <Route path="resources" element={<ClientResourcesImproved />} />
-                        <Route path="surveys" element={<ClientSurveysImproved />} />
-                        <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/assistant/*"
-                element={
-                  <ProtectedRoute allowedRoles={[UserRole.ASSISTANT]}>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="" element={<AssistantDashboard />} />
-                        <Route path="dashboard" element={<AssistantDashboard />} />
-                        <Route path="agenda" element={<AssistantScheduling />} />
-                        <Route path="client-support" element={<ClientSupport />} />
-                        <Route path="messages" element={<AssistantMessages />} />
-                        <Route path="scheduling" element={<AssistantScheduling />} />
-                        <Route path="settings" element={<AssistantSettings />} />
-                        <Route path="*" element={<Navigate to="/assistant/dashboard" replace />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/bookkeeper/*"
-                element={
-                  <ProtectedRoute allowedRoles={[UserRole.BOOKKEEPER]}>
-                    <DashboardLayout>
-                      <Routes>
-                        <Route path="" element={<BookkeeperDashboard />} />
-                        <Route path="dashboard" element={<BookkeeperDashboard />} />
-                        <Route path="agenda" element={<BookkeeperFinancialDashboard />} />
-                        <Route path="financial" element={<BookkeeperFinancialDashboard />} />
-                        <Route path="invoices" element={<InvoiceManagement />} />
-                        <Route path="reports" element={<Reports />} />
-                        <Route path="messages" element={<BookkeeperMessages />} />
-                        <Route path="settings" element={<BookkeeperSettings />} />
-                        <Route path="*" element={<Navigate to="/bookkeeper/dashboard" replace />} />
-                      </Routes>
-                    </DashboardLayout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Root route - redirect based on auth status */}
-              <Route
-                path="/"
-                element={
-                  authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
-                    <RoleRedirect />
-                  ) : (
-                    <Navigate to="/auth/login" replace />
-                  )
-                }
-              />
-
-              {/* Catch all route */}
-              <Route
-                path="*"
-                element={
-                  authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
-                    <RoleRedirect />
-                  ) : (
-                    <Navigate to="/auth/login" replace />
-                  )
-                }
-              />
-            </Routes>
-
-            
-              </div>
-            </Router>
+                <AppRoutes />
+              </Router>
             </LanguageProvider>
           </NetworkErrorHandler>
         </NotificationProvider>

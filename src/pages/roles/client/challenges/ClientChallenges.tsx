@@ -166,7 +166,7 @@ const ClientChallenges: React.FC = () => {
           ← Back to Challenges
         </button>
         <ChallengeTimer
-          challengeId={selectedChallenge.id}
+          challengeId={selectedChallenge.challenge_id}
           challengeTitle={selectedChallenge.title}
           targetMinutes={selectedChallenge.duration_minutes || 15}
           onComplete={handleChallengeComplete}

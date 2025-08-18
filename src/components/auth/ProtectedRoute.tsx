@@ -1,183 +1,75 @@
-import React from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
-import { UserRole, UserStatus, AuthenticationState } from '@/types/auth';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { useTranslation } from '@/contexts/LanguageContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: UserRole[];
-  requireEmailVerification?: boolean;
-  require2FA?: boolean;
+  allowedRoles?: string[];
+  roles?: string[]; // Support both prop names
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  allowedRoles = [],
-  requireEmailVerification = true,
-  require2FA = false
-}) => {
-  const { 
-    authenticationState, 
-    user, 
-    canAccess
-  } = useAuth();
-  const { t } = useTranslation();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles, roles }) => {
+  // Use either allowedRoles or roles prop
+  const requiredRoles = allowedRoles || roles;
+  const { user, isAuthenticated, isLoading, refreshAuth } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Show loading spinner while authenticating
-  if (authenticationState === AuthenticationState.AUTHENTICATING) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="large" text={t('action.loading')} />
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Try to refresh auth on mount if we have a token but no user
+    const token = localStorage.getItem('accessToken');
+    if (token && !user && !isLoading) {
+      refreshAuth().catch(() => {
+        // If refresh fails, the API interceptor will handle redirect
+        console.log('[ProtectedRoute] Auth refresh failed');
+      });
+    }
+  }, []);
 
-  // Redirect to login if not authenticated
-  if (!user || authenticationState === AuthenticationState.IDLE || authenticationState === AuthenticationState.ERROR) {
+  // Check for token on every render
+  const hasToken = localStorage.getItem('accessToken');
+
+  // If no token at all, redirect immediately
+  if (!hasToken) {
+    console.log('[ProtectedRoute] No token found, redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Handle 2FA requirements
-  if (authenticationState === AuthenticationState.REQUIRES_2FA_SETUP) {
-    return <Navigate to="/auth/2fa" state={{ from: location }} replace />;
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="large" />
+      </div>
+    );
   }
 
-  if (authenticationState === AuthenticationState.REQUIRES_2FA_VERIFICATION) {
-    return <Navigate to="/auth/2fa" state={{ from: location }} replace />;
-  }
-
-  // Only allow access if authentication is complete
-  if (authenticationState !== AuthenticationState.AUTHENTICATED_COMPLETE) {
+  // If not authenticated after loading, redirect to login
+  if (!isAuthenticated || !user) {
+    console.log('[ProtectedRoute] Not authenticated, redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Check if user's role has access
-  if (allowedRoles.length > 0 && !canAccess(allowedRoles)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Access Denied
-          </h3>
-          <p className="text-gray-600 mb-4">
-            You don't have permission to access this page. Your current role is: {t(`role.${user.role.toLowerCase()}`)}
-          </p>
-          <button
-            onClick={() => window.history.back()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
+  // Check role-based access
+  if (requiredRoles && requiredRoles.length > 0) {
+    if (!requiredRoles.includes(user.role)) {
+      console.log('[ProtectedRoute] User role not allowed, redirecting to dashboard');
+      // Redirect to appropriate dashboard based on user role
+      const dashboardPath = user.role === 'admin' ? '/admin/dashboard' :
+                          user.role === 'therapist' ? '/therapist/dashboard' :
+                          user.role === 'client' ? '/client/dashboard' :
+                          user.role === 'bookkeeper' ? '/bookkeeper/dashboard' :
+                          user.role === 'assistant' ? '/assistant/dashboard' :
+                          '/';
+      return <Navigate to={dashboardPath} replace />;
+    }
   }
 
-  // Check email verification
-  if (requireEmailVerification && !user.email_verified) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Email Verification Required
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Please verify your email address to access the dashboard. Check your inbox for a verification link.
-          </p>
-          <div className="space-y-2">
-            <button
-              onClick={() => {
-                // Implement resend verification email
-              }}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Resend Verification Email
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              I've Verified My Email
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-
-  // Check if account is suspended
-  if (user.status === UserStatus.SUSPENDED) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636A9 9 0 015.636 18.364" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Account Suspended
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Your account has been suspended. Please contact the administrator for more information.
-          </p>
-          <button
-            onClick={() => {
-              // Implement contact support
-              window.location.href = 'mailto:support@praktijkepd.nl';
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Contact Support
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if account is inactive
-  if (user.status === UserStatus.INACTIVE) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Account Inactive
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Your account is currently inactive. Please contact the administrator to activate your account.
-          </p>
-          <button
-            onClick={() => {
-              // Implement contact support
-              window.location.href = 'mailto:support@praktijkepd.nl';
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Contact Support
-          </button>
-        </div>
-      </div>
-    );
+  // Check for 2FA requirements
+  if (user.two_factor_enabled && !user.two_factor_setup_completed) {
+    if (!location.pathname.includes('/auth/2fa')) {
+      return <Navigate to="/auth/2fa" state={{ from: location }} replace />;
+    }
   }
 
   // All checks passed, render children

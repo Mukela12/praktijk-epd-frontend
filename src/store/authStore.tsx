@@ -819,3 +819,8 @@ export const useAuthStatus = () => {
     accountStatus: user?.status,
   };
 };
+
+// Make auth store available globally for API interceptor
+if (typeof window !== 'undefined') {
+  (window as any).useAuthStore = useAuthStore;
+}

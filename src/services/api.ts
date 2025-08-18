@@ -150,7 +150,12 @@ const refreshAccessToken = async (): Promise<string> => {
     // Clear tokens and redirect to login
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
-    window.location.href = '/auth/login';
+    
+    // Clear auth store if available
+    if ((window as any).useAuthStore) {
+      (window as any).useAuthStore.getState().clearAuth();
+    }
+    
     throw error;
   } finally {
     isRefreshingToken = false;
@@ -208,24 +213,39 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry && !isSkipEndpoint) {
       originalRequest._retry = true;
       
+      // Check if we have an access token
+      const accessToken = localStorage.getItem('accessToken');
+      
+      // If no token, just reject without redirect (let the app handle it)
+      if (!accessToken) {
+        console.log('[API] No access token found for 401 response');
+        // Clear auth store if available
+        if ((window as any).useAuthStore) {
+          (window as any).useAuthStore.getState().clearAuth();
+        }
+        return Promise.reject(error);
+      }
+      
       try {
-        // Try to refresh token
-        const refreshResponse = await api.post('/auth/refresh-token', {});
-        
-        if (refreshResponse.data.success && refreshResponse.data.accessToken) {
-          const newToken = refreshResponse.data.accessToken;
-          localStorage.setItem('accessToken', newToken);
+        // Try to refresh token once
+        if (!isRefreshingToken) {
+          const newToken = await refreshAccessToken();
           
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
+        } else {
+          // Wait for existing refresh to complete
+          if (refreshTokenPromise) {
+            const newToken = await refreshTokenPromise;
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return api(originalRequest);
+          }
         }
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        window.location.href = '/auth/login';
-        return Promise.reject(refreshError);
+        console.log('[API] Token refresh failed');
+        // Don't redirect here, let the app handle navigation
+        return Promise.reject(error);
       }
     }
     

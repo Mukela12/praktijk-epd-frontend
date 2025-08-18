@@ -1,0 +1,35 @@
+PraktijkEPD Backend API Test Results
+=====================================
+Test Date: 8/18/2025, 9:50:09 AM
+API Base URL: https://praktijk-epd-backend-production.up.railway.app/api
+Total Duration: 3.39 seconds
+
+Test Summary
+------------
+Total Tests: 4
+Passed: 2
+Failed: 2
+Success Rate: 50.00%
+
+
+
+Failed Tests Detail
+===================
+
+Test: Admin login with 2FA
+Timestamp: 2025-08-18T07:50:07.569Z
+Status Code: 401
+Error: {
+  "success": false,
+  "message": "Invalid two-factor authentication code"
+}
+--------------------------------------------------
+
+Test: Therapist login with 2FA
+Timestamp: 2025-08-18T07:50:08.403Z
+Status Code: 401
+Error: {
+  "success": false,
+  "message": "Invalid two-factor authentication code"
+}
+--------------------------------------------------
