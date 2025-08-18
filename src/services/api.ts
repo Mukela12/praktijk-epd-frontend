@@ -294,11 +294,25 @@ export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
     
+    // Debug logging
+    if ((window as any).loginDebug) {
+      (window as any).loginDebug.logLoginResponse(response);
+    }
+    
     if (response.data.success && response.data.accessToken) {
+      console.log('[authApi.login] Storing access token');
       localStorage.setItem('accessToken', response.data.accessToken);
       if (response.data.user) {
+        console.log('[authApi.login] Storing user data');
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
+      
+      // Debug check storage
+      setTimeout(() => {
+        if ((window as any).loginDebug) {
+          (window as any).loginDebug.checkStorageAfterLogin();
+        }
+      }, 100);
     }
     
     return response.data;

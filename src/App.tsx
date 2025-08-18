@@ -8,6 +8,7 @@ import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
 import { useAuthMonitor } from '@/hooks/useAuthMonitor';
 import '@/utils/authDebug'; // Import auth debug utilities
+import '@/utils/loginDebug'; // Import login debug utilities
 
 // Layout Components
 import AuthLayout from '@/components/layout/AuthLayout';
