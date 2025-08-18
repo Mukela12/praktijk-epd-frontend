@@ -213,7 +213,12 @@ const TwoFactorPage: React.FC = () => {
         const success = await complete2FALogin(data.code);
         
         if (success) {
-          // Navigation will be handled by the auth state change useEffect
+          // Get the latest auth state after successful login
+          const currentState = useAuthStore.getState();
+          if (currentState.user && currentState.user.role) {
+            const dashboardPath = navigation.getDashboardPath(currentState.user.role);
+            navigate(dashboardPath, { replace: true });
+          }
         }
       }
     } catch (error: any) {

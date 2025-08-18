@@ -93,54 +93,83 @@ const ClientDashboard: React.FC = () => {
         const dashboardResult = await getDashboard();
         
         if (dashboardResult) {
-          setTherapist(dashboardResult.therapist || null);
-          setMetrics({
-            totalSessions: dashboardResult.totalSessions || 0,
-            completedSessions: dashboardResult.completedSessions || 0,
-            upcomingAppointments: dashboardResult.upcomingAppointments || 0,
-            treatmentProgress: dashboardResult.treatmentProgress || 0,
-            wellnessScore: dashboardResult.wellnessScore || 0,
-            resourcesCompleted: dashboardResult.resourcesCompleted || 0,
-            totalResources: dashboardResult.totalResources || 0,
-            surveysCompleted: dashboardResult.surveysCompleted || 0,
-            totalSurveys: dashboardResult.totalSurveys || 0,
-            challengesActive: dashboardResult.challengesActive || 0,
-            challengesCompleted: dashboardResult.challengesCompleted || 0
-          });
-          // Check if intake form is completed
-          setHasCompletedIntake(dashboardResult.hasCompletedIntake !== false);
+          // Extract the correct data from the dashboard response
+          const dashData = dashboardResult.success === false ? null : dashboardResult;
+          
+          if (dashData) {
+            setTherapist(dashData.therapist || null);
+            
+            // Use the correct property names from the API response
+            const metricsData = dashData.metrics || {};
+            const progressData = dashData.progress || {};
+            
+            setMetrics({
+              totalSessions: parseInt(progressData.total_sessions || '0'),
+              completedSessions: parseInt(progressData.completed_sessions || '0'),
+              upcomingAppointments: dashData.upcomingAppointments?.length || 0,
+              treatmentProgress: metricsData.treatmentProgress || 0,
+              wellnessScore: metricsData.wellnessScore || 0,
+              resourcesCompleted: dashData.resourcesCompleted || 0,
+              totalResources: dashData.totalResources || 0,
+              surveysCompleted: dashData.surveysCompleted || 0,
+              totalSurveys: dashData.totalSurveys || 0,
+              challengesActive: dashData.challengesActive || 0,
+              challengesCompleted: dashData.challengesCompleted || 0
+            });
+            
+            // Check if intake form is completed from profile data
+            const profileData = dashData.profile || {};
+            setHasCompletedIntake(profileData.intake_completed !== false);
+          }
         }
         
-        // Add delay between API calls to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add longer delay between API calls to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Load appointments separately
         try {
           await getAppointments({ page: 1, limit: 10 });
-        } catch (error) {
-          console.warn('Failed to load appointments:', error);
+        } catch (error: any) {
+          // Check if it's a rate limit error
+          if (error?.response?.status === 429) {
+            console.warn('Rate limited on appointments, will retry later');
+          } else {
+            console.warn('Failed to load appointments:', error);
+          }
         }
         
-        // Add delay between API calls
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add longer delay between API calls
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Load messages separately and handle errors gracefully
         try {
           await getMessages({ page: 1, limit: 5 });
         } catch (error: any) {
-          // Don't spam console for 403/404 errors - messages might not be available for all users
-          if (error?.response?.status !== 403 && error?.response?.status !== 404) {
+          // Check if it's a rate limit error
+          if (error?.response?.status === 429) {
+            console.warn('Rate limited on messages, will retry later');
+          } else if (error?.response?.status !== 403 && error?.response?.status !== 404) {
             console.warn('Failed to load messages:', error);
           }
         }
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
+      } catch (error: any) {
+        // Check if it's a rate limit error
+        if (error?.response?.status === 429) {
+          console.error('Rate limited on dashboard load. Please refresh the page in a minute.');
+        } else {
+          console.error('Failed to load dashboard data:', error);
+        }
       } finally {
         isLoadingRef.current = false;
       }
     };
 
-    loadData();
+    // Add a small initial delay to ensure auth is fully initialized
+    const timer = setTimeout(() => {
+      loadData();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []); // Remove dependencies to prevent re-runs
 
   // Process appointments and messages

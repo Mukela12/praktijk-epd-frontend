@@ -753,8 +753,10 @@ export const realApiService = {
       };
       pendingInvoices: any[];
     }>> => {
-      const response = await api.get('/client/dashboard');
-      return response.data;
+      return managedApiCall('/client/dashboard', async () => {
+        const response = await api.get('/client/dashboard');
+        return response.data;
+      }, 60000); // Cache for 1 minute
     },
 
     // Profile (✅ WORKING)
@@ -781,8 +783,10 @@ export const realApiService = {
       page?: number;
       limit?: number;
     }): Promise<ApiResponse<Appointment[]>> => {
-      const response = await api.get('/client/appointments', { params });
-      return response.data;
+      return managedApiCall('/client/appointments', async () => {
+        const response = await api.get('/client/appointments', { params });
+        return response.data;
+      }, 30000, params); // Cache for 30 seconds
     },
 
     requestAppointment: async (data: {
@@ -808,8 +812,10 @@ export const realApiService = {
       limit?: number;
       unreadOnly?: boolean;
     }): Promise<ApiResponse<{ messages: Message[]; total: number }>> => {
-      const response = await api.get('/client/messages', { params });
-      return response.data;
+      return managedApiCall('/client/messages', async () => {
+        const response = await api.get('/client/messages', { params });
+        return response.data;
+      }, 30000, params); // Cache for 30 seconds
     },
 
     sendMessage: async (data: {
