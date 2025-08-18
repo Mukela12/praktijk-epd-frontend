@@ -1,8 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { AxiosError } from 'axios';
-import { adminApi, therapistApi, clientApi, assistantApi, bookkeeperApi, commonApi } from '@/services/endpoints';
 import { realApiService } from '@/services/realApi';
+// Use realApiService instead of old endpoints
+const adminApi = realApiService.admin;
+const therapistApi = realApiService.therapist;
+const clientApi = realApiService.client;
+const assistantApi = realApiService.assistant;
+const bookkeeperApi = realApiService.bookkeeper;
+const commonApi = realApiService.common;
 import { useAuth } from '@/store/authStore';
 import { ApiResponse } from '@/types/auth';
 

@@ -54,21 +54,25 @@ class RequestManager {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && this.isValidCache(cached)) {
+      console.log(`[RequestManager] Using cached data for ${endpoint}`);
       return cached.data;
     }
 
     // Check if request is already pending
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
+      console.log(`[RequestManager] Request already pending for ${endpoint}`);
       return pending;
     }
 
     // Throttle requests to prevent 429 errors
     if (this.shouldThrottle(endpoint)) {
       if (cached) {
+        console.warn(`[RequestManager] Throttling ${endpoint}, using expired cache`);
         return cached.data; // Use expired cache if available
       }
       // Wait before making request
+      console.log(`[RequestManager] Throttling ${endpoint}, waiting ${this.MIN_REQUEST_INTERVAL}ms`);
       await new Promise(resolve => setTimeout(resolve, this.MIN_REQUEST_INTERVAL));
     }
 
@@ -89,12 +93,22 @@ class RequestManager {
         timestamp: Date.now(),
         expiry: Date.now() + cacheDuration
       });
+      console.log(`[RequestManager] Request successful for ${endpoint}, cached for ${cacheDuration}ms`);
       return result;
     } catch (error: any) {
       // On 429 error, return cached data if available
-      if (error?.response?.status === 429 && cached) {
-        console.warn(`[RequestManager] Rate limited for ${endpoint}, using cached data`);
-        return cached.data;
+      if (error?.response?.status === 429) {
+        const retryAfter = error.response.headers['retry-after'];
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 60000;
+        
+        // Update throttle time for this endpoint
+        this.lastRequestTimes.set(endpoint, Date.now() + waitTime - this.MIN_REQUEST_INTERVAL);
+        console.error(`[RequestManager] Rate limited for ${endpoint}, retry after ${waitTime}ms`);
+        
+        if (cached) {
+          console.warn(`[RequestManager] Using expired cache for ${endpoint}`);
+          return cached.data;
+        }
       }
       throw error;
     }

@@ -129,6 +129,14 @@ api.interceptors.request.use(
 // Helper function to refresh access token
 const refreshAccessToken = async (): Promise<string> => {
   try {
+    // Check if we have a refresh token or session cookie
+    const hasRefreshToken = document.cookie.includes('refreshToken') || localStorage.getItem('refreshToken');
+    
+    if (!hasRefreshToken) {
+      console.warn('[API] No refresh token available, cannot refresh');
+      throw new Error('No refresh token available');
+    }
+    
     // Send empty body with POST request, cookies will be sent automatically
     const response = await api.post('/auth/refresh-token', {});
     
@@ -141,19 +149,26 @@ const refreshAccessToken = async (): Promise<string> => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
+      console.log('[API] Token refreshed successfully');
       return newToken;
     } else {
-      throw new Error('Token refresh failed');
+      throw new Error('Token refresh failed - no access token in response');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Token refresh failed:', error);
-    // Clear tokens and redirect to login
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
     
-    // Clear auth store if available
-    if ((window as any).useAuthStore) {
-      (window as any).useAuthStore.getState().clearAuth();
+    // Only clear auth if it's a 401 (unauthorized) error
+    if (error.response?.status === 401) {
+      // Clear tokens and redirect to login
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('tempToken');
+      localStorage.removeItem('pendingLogin');
+      
+      // Clear auth store if available
+      if ((window as any).useAuthStore) {
+        (window as any).useAuthStore.getState().clearAuth();
+      }
     }
     
     throw error;
