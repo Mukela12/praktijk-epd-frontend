@@ -92,9 +92,11 @@ const TwoFactorPage: React.FC = () => {
   const watchedCode = watch('code');
   const watchedBackupCode = backupCodeForm.watch('code');
 
-  // Determine mode based on auth state
+  // Determine mode based on auth state - simplified without dependencies
   useEffect(() => {
-    switch (authenticationState) {
+    const currentAuthState = useAuthStore.getState().authenticationState;
+    
+    switch (currentAuthState) {
       case AuthenticationState.REQUIRES_2FA_SETUP:
         setMode('setup');
         initializeSetup();
@@ -103,37 +105,22 @@ const TwoFactorPage: React.FC = () => {
         setMode('verify');
         break;
       case AuthenticationState.AUTHENTICATED_COMPLETE:
-        // User is fully authenticated, redirect to dashboard
-        // Force check current state to ensure we have latest data
-        const currentState = useAuthStore.getState();
-        if (currentState.user && currentState.user.role) {
-          const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-          navigate(dashboardPath, { replace: true });
-        } else if (user && user.role) {
-          // Fallback to prop user if state user not available
-          const dashboardPath = navigation.getDashboardPath(user.role);
-          navigate(dashboardPath, { replace: true });
-        } else {
-        }
+        // Don't navigate here - let the auth flow complete naturally
+        console.log('[TwoFactorPage] Already authenticated, should not be on this page');
         break;
       case AuthenticationState.IDLE:
       case AuthenticationState.ERROR:
-        // Auth state was cleared (likely due to session expiration)
+        // Auth state was cleared - redirect to login
         navigate('/auth/login', { replace: true });
         break;
       default:
-        // If user is not in a 2FA state, redirect to login
-        navigate('/auth/login', { replace: true });
+        // For any other state, check if we should be on this page
+        console.log('[TwoFactorPage] Unexpected auth state:', currentAuthState);
         break;
     }
-  }, [authenticationState, user, navigation, navigate]);
+  }, []); // Empty dependency array - only run once on mount
 
-  // Handle pending navigation
-  useEffect(() => {
-    if (pendingNavigation) {
-      navigate(pendingNavigation, { replace: true });
-    }
-  }, [pendingNavigation, navigate]);
+  // Removed pendingNavigation useEffect - navigation is handled after 2FA completion
 
   const initializeSetup = async () => {
     if (setupData) {
@@ -183,15 +170,22 @@ const TwoFactorPage: React.FC = () => {
         const success = await complete2FALogin(data.code);
         
         if (success) {
-          // Force navigation since the auth state change isn't triggering the useEffect
-          const currentState = useAuthStore.getState();
+          console.log('[TwoFactorPage] 2FA verification successful');
           
-          if (currentState.authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE && currentState.user?.role) {
-            const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-            navigate(dashboardPath, { replace: true });
-          } else if (currentState.pendingNavigation) {
-            navigate(currentState.pendingNavigation, { replace: true });
-          }
+          // Force a complete page reload to ensure all state is refreshed
+          // This breaks out of any React Router loops and ensures clean navigation
+          setTimeout(() => {
+            const currentState = useAuthStore.getState();
+            if (currentState.user?.role) {
+              const dashboardPath = navigation.getDashboardPath(currentState.user.role);
+              console.log('[TwoFactorPage] Forcing navigation to:', dashboardPath);
+              window.location.replace(dashboardPath);
+            } else {
+              // Fallback - refresh the page to reinitialize auth state
+              console.log('[TwoFactorPage] No user data, refreshing page');
+              window.location.reload();
+            }
+          }, 100);
         }
       }
     } catch (error: any) {
@@ -213,12 +207,7 @@ const TwoFactorPage: React.FC = () => {
         const success = await complete2FALogin(data.code);
         
         if (success) {
-          // Get the latest auth state after successful login
-          const currentState = useAuthStore.getState();
-          if (currentState.user && currentState.user.role) {
-            const dashboardPath = navigation.getDashboardPath(currentState.user.role);
-            navigate(dashboardPath, { replace: true });
-          }
+          // Navigation will be handled by the auth state change useEffect
         }
       }
     } catch (error: any) {

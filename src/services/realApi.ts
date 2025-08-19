@@ -1,5 +1,6 @@
 import api from './api';
 import { ApiResponse } from '@/types/auth';
+import therapistApi from './therapistApi';
 
 // Request cache and debouncing to prevent 429 errors
 interface CacheEntry {
@@ -54,25 +55,21 @@ class RequestManager {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && this.isValidCache(cached)) {
-      console.log(`[RequestManager] Using cached data for ${endpoint}`);
       return cached.data;
     }
 
     // Check if request is already pending
     const pending = this.pendingRequests.get(cacheKey);
     if (pending) {
-      console.log(`[RequestManager] Request already pending for ${endpoint}`);
       return pending;
     }
 
     // Throttle requests to prevent 429 errors
     if (this.shouldThrottle(endpoint)) {
       if (cached) {
-        console.warn(`[RequestManager] Throttling ${endpoint}, using expired cache`);
         return cached.data; // Use expired cache if available
       }
       // Wait before making request
-      console.log(`[RequestManager] Throttling ${endpoint}, waiting ${this.MIN_REQUEST_INTERVAL}ms`);
       await new Promise(resolve => setTimeout(resolve, this.MIN_REQUEST_INTERVAL));
     }
 
@@ -93,22 +90,12 @@ class RequestManager {
         timestamp: Date.now(),
         expiry: Date.now() + cacheDuration
       });
-      console.log(`[RequestManager] Request successful for ${endpoint}, cached for ${cacheDuration}ms`);
       return result;
     } catch (error: any) {
       // On 429 error, return cached data if available
-      if (error?.response?.status === 429) {
-        const retryAfter = error.response.headers['retry-after'];
-        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 60000;
-        
-        // Update throttle time for this endpoint
-        this.lastRequestTimes.set(endpoint, Date.now() + waitTime - this.MIN_REQUEST_INTERVAL);
-        console.error(`[RequestManager] Rate limited for ${endpoint}, retry after ${waitTime}ms`);
-        
-        if (cached) {
-          console.warn(`[RequestManager] Using expired cache for ${endpoint}`);
-          return cached.data;
-        }
+      if (error?.response?.status === 429 && cached) {
+        console.warn(`[RequestManager] Rate limited for ${endpoint}, using cached data`);
+        return cached.data;
       }
       throw error;
     }
@@ -572,8 +559,39 @@ export const realApiService = {
     }
   },
 
-  // Therapist endpoints (✅ All verified working)
-  therapist: {
+  // Therapist endpoints - using the new implementation with correct backend paths
+  therapist: therapistApi,
+
+  // Session management
+  sessions: {
+    start: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/sessions/start', data);
+      return response.data;
+    },
+    
+    end: async (sessionId: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/sessions/${sessionId}/end`, data);
+      return response.data;
+    },
+    
+    updateProgress: async (sessionId: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/sessions/${sessionId}/progress`, data);
+      return response.data;
+    },
+    
+    getActive: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/sessions/active');
+      return response.data;
+    },
+    
+    getHistory: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/sessions', { params });
+      return response.data;
+    }
+  },
+
+  // Old therapist implementation (kept for reference)
+  therapist_old: {
     // Dashboard (✅ WORKING)
     getDashboard: async (): Promise<ApiResponse<{
       stats: {
@@ -767,10 +785,8 @@ export const realApiService = {
       };
       pendingInvoices: any[];
     }>> => {
-      return managedApiCall('/client/dashboard', async () => {
-        const response = await api.get('/client/dashboard');
-        return response.data;
-      }, 60000); // Cache for 1 minute
+      const response = await api.get('/client/dashboard');
+      return response.data;
     },
 
     // Profile (✅ WORKING)
@@ -797,10 +813,8 @@ export const realApiService = {
       page?: number;
       limit?: number;
     }): Promise<ApiResponse<Appointment[]>> => {
-      return managedApiCall('/client/appointments', async () => {
-        const response = await api.get('/client/appointments', { params });
-        return response.data;
-      }, 30000, params); // Cache for 30 seconds
+      const response = await api.get('/client/appointments', { params });
+      return response.data;
     },
 
     requestAppointment: async (data: {
@@ -826,10 +840,8 @@ export const realApiService = {
       limit?: number;
       unreadOnly?: boolean;
     }): Promise<ApiResponse<{ messages: Message[]; total: number }>> => {
-      return managedApiCall('/client/messages', async () => {
-        const response = await api.get('/client/messages', { params });
-        return response.data;
-      }, 30000, params); // Cache for 30 seconds
+      const response = await api.get('/client/messages', { params });
+      return response.data;
     },
 
     sendMessage: async (data: {
@@ -1204,67 +1216,6 @@ export const realApiService = {
 
     sendMessage: async (messageData: any): Promise<ApiResponse<{ id: string }>> => {
       const response = await api.post('/assistant/messages', messageData);
-      return response.data;
-    }
-  },
-
-  // Session Management endpoints
-  sessions: {
-    // Start a session
-    start: async (data: {
-      appointmentId: string;
-      clientPresent: boolean;
-      location: 'office' | 'online' | 'phone';
-      initialNotes?: string;
-    }): Promise<ApiResponse<{ session: any }>> => {
-      const response = await api.post('/sessions/start', data);
-      return response.data;
-    },
-
-    // Update session progress
-    updateProgress: async (sessionId: string, data: {
-      progressNotes: string;
-      goalsDiscussed?: string;
-      clientMoodStart?: number;
-      clientMoodEnd?: number;
-      techniquesUsed?: string[];
-    }): Promise<ApiResponse<any>> => {
-      const response = await api.post(`/sessions/${sessionId}/progress`, data);
-      return response.data;
-    },
-
-    // End session
-    end: async (sessionId: string, data: {
-      summary: string;
-      homework?: string;
-      nextSessionRecommendation?: string;
-      duration?: number;
-    }): Promise<ApiResponse<any>> => {
-      const response = await api.post(`/sessions/${sessionId}/end`, data);
-      return response.data;
-    },
-
-    // Get session history
-    getHistory: async (params?: {
-      clientId?: string;
-      therapistId?: string;
-      startDate?: string;
-      endDate?: string;
-      limit?: number;
-    }): Promise<ApiResponse<{ sessions: any[] }>> => {
-      const response = await api.get('/sessions', { params });
-      return response.data;
-    },
-
-    // Get active sessions
-    getActive: async (): Promise<ApiResponse<{ session?: any }>> => {
-      const response = await api.get('/sessions/active');
-      return response.data;
-    },
-
-    // Get session statistics
-    getStatistics: async (params?: { period?: string }): Promise<ApiResponse<any>> => {
-      const response = await api.get('/sessions/statistics', { params });
       return response.data;
     }
   },

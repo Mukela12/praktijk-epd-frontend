@@ -103,6 +103,7 @@ interface AuthStore extends AuthState {
 
 // Token refresh timer
 let tokenRefreshTimer: NodeJS.Timeout | null = null;
+let isLogoutInProgress = false;
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -304,6 +305,14 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: async (): Promise<void> => {
+        // Prevent multiple simultaneous logout attempts
+        if (isLogoutInProgress) {
+          console.log('[AuthStore] Logout already in progress, skipping');
+          return;
+        }
+        
+        isLogoutInProgress = true;
+        
         try {
           // Stop token refresh timer first
           get().stopTokenRefreshTimer();
@@ -312,6 +321,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
+          isLogoutInProgress = false;
           // Clear all auth state
           set({
             user: null,
@@ -441,7 +451,18 @@ export const useAuthStore = create<AuthStore>()(
             const navigation = get().navigation;
             const dashboardPath = navigation.getDashboardPath(response.user.role);
             
-            set({
+            console.log('[complete2FALogin] Setting auth state with token:', response.accessToken);
+            console.log('[complete2FALogin] User role:', response.user.role);
+            console.log('[complete2FALogin] Dashboard path:', dashboardPath);
+            
+            // Store token in localStorage FIRST
+            console.log('[complete2FALogin] Storing token in localStorage');
+            localStorage.setItem('accessToken', response.accessToken);
+            localStorage.setItem('user', JSON.stringify(response.user));
+            localStorage.removeItem('pendingLogin'); // Clean up
+            
+            // Force persist the state immediately
+            const newState = {
               user: response.user,
               accessToken: response.accessToken,
               authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
@@ -452,11 +473,25 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false,
               requiresTwoFactor: false,
               twoFactorSetupRequired: false
-            });
+            };
             
-            localStorage.setItem('accessToken', response.accessToken);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            localStorage.removeItem('pendingLogin'); // Clean up
+            // Store the auth state in localStorage manually to ensure persistence
+            const storeState = {
+              state: {
+                user: response.user,
+                accessToken: response.accessToken,
+                authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+                isAuthenticated: true,
+                requiresTwoFactor: false,
+                twoFactorSetupRequired: false
+              }
+            };
+            localStorage.setItem('praktijk-epd-auth', JSON.stringify(storeState));
+            
+            set(newState);
+            
+            console.log('[complete2FALogin] Verifying token storage:', localStorage.getItem('accessToken'));
+            console.log('[complete2FALogin] Auth state stored successfully');
             
             // Start token refresh timer
             get().startTokenRefreshTimer();
@@ -464,6 +499,7 @@ export const useAuthStore = create<AuthStore>()(
             PremiumNotifications.auth.loginSuccess(response.user.first_name);
             return true;
           } else {
+            console.log('[complete2FALogin] Response not successful:', response);
           }
           
           PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });

@@ -1,8 +1,8 @@
 import React from 'react';
-import TherapistDashboard from './TherapistDashboard';
+import ProfessionalTherapistDashboard from './ProfessionalTherapistDashboard';
 
 const Dashboard: React.FC = () => {
-  return <TherapistDashboard />;
+  return <ProfessionalTherapistDashboard />;
 };
 
 export default Dashboard;

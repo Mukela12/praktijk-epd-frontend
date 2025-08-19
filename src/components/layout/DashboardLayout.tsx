@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bars3Icon,
@@ -21,12 +21,14 @@ import {
   ClipboardDocumentCheckIcon,
   HeartIcon,
   ClockIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
 import { UserRole } from '@/types/auth';
 import { ROLE_COLORS } from '@/types/auth';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import realApiService from '@/services/realApi';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -43,6 +45,7 @@ interface NavItem {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [clientCount, setClientCount] = useState<number | null>(null);
   const { user, logout, getDisplayName, getRoleColor } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
@@ -51,6 +54,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     await logout();
     navigate('/auth/login');
+  };
+
+  // Load client count for therapists
+  useEffect(() => {
+    if (user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) {
+      loadClientCount();
+    }
+  }, [user]);
+
+  const loadClientCount = async () => {
+    try {
+      const response = await realApiService.therapist.getClients();
+      if (response.success) {
+        const clients = response.data || [];
+        setClientCount((clients as any[]).length);
+      }
+    } catch (error) {
+      console.error('Error loading client count:', error);
+      setClientCount(0);
+    }
   };
 
   // Navigation items based on user role
@@ -64,9 +87,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.BOOKKEEPER, UserRole.SUBSTITUTE],
       },
       {
-        name: 'Agenda',
+        name: 'Calendar',
         nameKey: 'nav.calendar',
-        href: `${getRoleBasePath()}/agenda`,
+        href: user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE ? '/therapist/calendar' : `${getRoleBasePath()}/agenda`,
         icon: CalendarIcon,
         roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.SUBSTITUTE],
       },
@@ -185,6 +208,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           nameKey: 'nav.sessions',
           href: '/therapist/sessions',
           icon: ClockIcon,
+          roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
+        },
+        {
+          name: 'Session Notes',
+          nameKey: 'nav.sessionNotes',
+          href: '/therapist/notes',
+          icon: DocumentTextIcon,
           roles: [UserRole.THERAPIST, UserRole.SUBSTITUTE],
         },
         {
@@ -441,7 +471,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
-                    {t(item.nameKey)}
+                    <span className="flex-1">{t(item.nameKey)}</span>
+                    {/* Red dot indicator for therapist clients tab */}
+                    {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && 
+                     item.href === '/therapist/clients' && 
+                     clientCount === 0 && (
+                      <span className="ml-2 h-2 w-2 bg-red-600 rounded-full animate-pulse" title="No clients assigned" />
+                    )}
                   </Link>
                 ))}
               </nav>
@@ -503,7 +539,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   style={item.current ? { backgroundColor: getActiveColor(user?.role || UserRole.CLIENT) } : undefined}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
-                  {t(item.nameKey)}
+                  <span className="flex-1">{t(item.nameKey)}</span>
+                  {/* Red dot indicator for therapist clients tab */}
+                  {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && 
+                   item.href === '/therapist/clients' && 
+                   clientCount === 0 && (
+                    <span className="ml-2 h-2 w-2 bg-red-600 rounded-full animate-pulse" title="No clients assigned" />
+                  )}
                 </Link>
               ))}
             </nav>

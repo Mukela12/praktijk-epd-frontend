@@ -88,6 +88,7 @@ const translations = {
   'nav.users': { en: 'Users', nl: 'Gebruikers' },
   'nav.therapies': { en: 'Therapies', nl: 'Therapieën' },
   'nav.psychologicalProblems': { en: 'Psychological Problems', nl: 'Hulpvragen' },
+  'nav.sessions': { en: 'Sessions', nl: 'Sessies' },
   
   // Common actions
   'action.save': { en: 'Save', nl: 'Opslaan' },

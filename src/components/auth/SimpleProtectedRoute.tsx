@@ -1,69 +1,112 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useSimpleAuth } from '@/store/simpleAuthStore';
+import { useAuthStore } from '@/store/authStore';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { AuthenticationState } from '@/types/auth';
 
 interface SimpleProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
+  roles?: string[]; // Support both prop names
 }
 
 export const SimpleProtectedRoute: React.FC<SimpleProtectedRouteProps> = ({ 
   children, 
-  allowedRoles 
+  allowedRoles,
+  roles 
 }) => {
-  const { user, isAuthenticated, checkAuth } = useSimpleAuth();
+  const requiredRoles = allowedRoles || roles;
   const location = useLocation();
-  const [isChecking, setIsChecking] = React.useState(true);
-
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Get store state directly to avoid hook dependencies
+  const authState = useAuthStore.getState();
+  const { user, authenticationState, refreshAuth } = authState;
+  
+  // Check for token
+  const hasToken = localStorage.getItem('accessToken');
+  
+  // Initialize auth on mount if we have a token but no user
   useEffect(() => {
-    const verifyAuth = async () => {
-      await checkAuth();
-      setIsChecking(false);
+    const initAuth = async () => {
+      if (hasToken && !user && authenticationState === AuthenticationState.IDLE) {
+        console.log('[SimpleProtectedRoute] Initializing auth with token');
+        try {
+          await refreshAuth();
+        } catch (error) {
+          console.error('[SimpleProtectedRoute] Auth refresh failed:', error);
+        }
+      }
+      setIsInitialized(true);
     };
-    verifyAuth();
-  }, [checkAuth]);
-
-  // Show loading while checking auth
-  if (isChecking) {
+    
+    initAuth();
+  }, []); // Empty dependency array - only run once on mount
+  
+  // Don't render anything until initialized
+  if (!isInitialized) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="large" />
       </div>
     );
   }
-
-  // Not authenticated
-  if (!isAuthenticated || !user) {
+  
+  // If in 2FA verification state, don't redirect - let 2FA page handle it
+  if (authenticationState === AuthenticationState.REQUIRES_2FA_VERIFICATION) {
+    console.log('[SimpleProtectedRoute] In 2FA verification state, not redirecting');
+    return null;
+  }
+  
+  // If authenticating, show loading
+  if (authenticationState === AuthenticationState.AUTHENTICATING) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="large" />
+      </div>
+    );
+  }
+  
+  // If no token, redirect to login
+  if (!hasToken) {
+    console.log('[SimpleProtectedRoute] No token found, redirecting to login');
+    // Don't navigate if we're already on the login page
+    if (location.pathname === '/auth/login') {
+      return null;
+    }
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
-
-  // Role check
-  if (allowedRoles && allowedRoles.length > 0) {
-    if (!allowedRoles.includes(user.role)) {
-      // Redirect to user's dashboard
-      const dashboardRoutes: Record<string, string> = {
-        admin: '/admin/dashboard',
-        therapist: '/therapist/dashboard',
-        substitute: '/therapist/dashboard',
-        client: '/client/dashboard',
-        assistant: '/assistant/dashboard',
-        bookkeeper: '/bookkeeper/dashboard',
-      };
+  
+  // If we have token but no user after initialization, redirect to login
+  if (!user) {
+    console.log('[SimpleProtectedRoute] Have token but no user after init, redirecting to login');
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  }
+  
+  // Check role-based access
+  if (requiredRoles && requiredRoles.length > 0) {
+    if (!requiredRoles.includes(user.role)) {
+      // Redirect to user's own dashboard
+      const dashboardPath = 
+        user.role === 'admin' ? '/admin/dashboard' :
+        user.role === 'therapist' ? '/therapist/dashboard' :
+        user.role === 'substitute' ? '/therapist/dashboard' :
+        user.role === 'client' ? '/client/dashboard' :
+        user.role === 'bookkeeper' ? '/bookkeeper/dashboard' :
+        user.role === 'assistant' ? '/assistant/dashboard' :
+        '/';
       
-      const userDashboard = dashboardRoutes[user.role] || '/';
-      return <Navigate to={userDashboard} replace />;
+      return <Navigate to={dashboardPath} replace />;
     }
   }
-
-  // Check 2FA setup for roles that require it
-  const requires2FA = ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(user.role);
-  if (requires2FA && user.two_factor_enabled && !user.two_factor_setup_completed) {
-    if (!location.pathname.includes('/auth/2fa-setup')) {
-      return <Navigate to="/auth/2fa-setup" state={{ from: location }} replace />;
+  
+  // Check if 2FA setup is required
+  if (authenticationState === AuthenticationState.REQUIRES_2FA_SETUP) {
+    if (!location.pathname.includes('/auth/2fa')) {
+      return <Navigate to="/auth/2fa" state={{ from: location }} replace />;
     }
   }
-
+  
   // All checks passed
   return <>{children}</>;
 };

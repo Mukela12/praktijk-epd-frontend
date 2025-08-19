@@ -6,10 +6,7 @@ import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
-// Remove auth monitor that's causing issues
-// import { useAuthMonitor } from '@/hooks/useAuthMonitor';
-import '@/utils/authDebug'; // Import auth debug utilities
-import '@/utils/loginDebug'; // Import login debug utilities
+// Removed useAuthMonitor import - it was causing infinite loops
 
 // Layout Components
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -17,7 +14,6 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Auth Components
 import LoginPage from '@/pages/auth/LoginPage';
-import SimpleLoginPage from '@/pages/auth/SimpleLoginPage'; // New simple login
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
@@ -27,7 +23,7 @@ import EmailVerificationPendingPage from '@/pages/auth/EmailVerificationPendingP
 
 // Dashboard Components
 import AdminDashboard from '@/pages/roles/admin/Dashboard';
-import TherapistDashboard from '@/pages/roles/therapist/Dashboard';
+import ProfessionalTherapistDashboard from '@/pages/roles/therapist/ProfessionalTherapistDashboard';
 import ClientDashboard from '@/pages/roles/client/Dashboard';
 
 // Admin Components
@@ -52,13 +48,25 @@ import AdminAppointmentsManagement from '@/pages/roles/admin/appointments/Appoin
 // Therapist Components
 import TherapistCalendar from '@/pages/roles/therapist/calendar/TherapistCalendar';
 import TherapistMessages from '@/pages/roles/therapist/messages/TherapistMessages';
-import TherapistClients from '@/pages/roles/therapist/clients/TherapistClients';
-import TherapistAppointments from '@/pages/roles/therapist/appointments/TherapistAppointments';
+import ProfessionalTherapistClients from '@/pages/roles/therapist/clients/ProfessionalTherapistClients';
+import ClientPsychologicalBehavior from '@/pages/roles/therapist/clients/ClientPsychologicalBehavior';
+import ProfessionalTherapistAppointments from '@/pages/roles/therapist/appointments/ProfessionalTherapistAppointments';
+import CreateAppointment from '@/pages/roles/therapist/appointments/CreateAppointment';
+import RescheduleAppointment from '@/pages/roles/therapist/appointments/RescheduleAppointment';
 // Removed imports for non-existent therapist components
-import TherapistProfile from '@/pages/roles/therapist/profile/TherapistProfile';
+import ProfessionalTherapistProfile from '@/pages/roles/therapist/profile/ProfessionalTherapistProfile';
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
 import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSettings';
-// Removed imports for non-existent therapist reports and notes
+import ProfessionalSessionNotes from '@/pages/roles/therapist/notes/ProfessionalSessionNotes';
+import SessionManagement from '@/pages/roles/therapist/sessions/SessionManagement';
+import ProfessionalTherapistSurveys from '@/pages/roles/therapist/surveys/ProfessionalTherapistSurveys';
+import CreateSurvey from '@/pages/roles/therapist/surveys/CreateSurvey';
+import AssignSurvey from '@/pages/roles/therapist/surveys/AssignSurvey';
+import SurveyResponses from '@/pages/roles/therapist/surveys/SurveyResponses';
+import ProfessionalTherapistChallenges from '@/pages/roles/therapist/challenges/ProfessionalTherapistChallenges';
+import CreateChallenge from '@/pages/roles/therapist/challenges/CreateChallenge';
+import AssignChallenge from '@/pages/roles/therapist/challenges/AssignChallenge';
+import ResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
@@ -97,8 +105,7 @@ import BookkeeperMessages from '@/pages/roles/bookkeeper/messages/BookkeeperMess
 import BookkeeperSettings from '@/pages/roles/bookkeeper/settings/BookkeeperSettings';
 
 // Other Components
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import SimpleProtectedRoute from '@/components/auth/SimpleProtectedRoute'; // New simple protected route
+import SimpleProtectedRoute from '@/components/auth/SimpleProtectedRoute';
 import RoleRedirect from '@/components/auth/RoleRedirect';
 import NetworkErrorHandler from '@/components/NetworkErrorHandler';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -143,8 +150,7 @@ const AppRoutes: React.FC = () => {
     twoFactorSetupRequired 
   } = useAuth();
   
-  // Use auth monitor to handle automatic logout
-  // Removed auth monitor - was causing logout loops
+  // Removed useAuthMonitor - it was causing infinite loops
   
   return (
     <div className="App">
@@ -157,7 +163,13 @@ const AppRoutes: React.FC = () => {
               <Routes>
                 <Route 
                   path="login" 
-                  element={<SimpleLoginPage />} 
+                  element={
+                    authenticationState === AuthenticationState.AUTHENTICATED_COMPLETE ? (
+                      <RoleRedirect />
+                    ) : (
+                      <LoginPage />
+                    )
+                  } 
                 />
                 <Route 
                   path="register" 
@@ -196,7 +208,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute roles={[UserRole.ADMIN]}>
+            <SimpleProtectedRoute roles={[UserRole.ADMIN]}>
               <DashboardLayout>
                 <Routes>
                   <Route path="dashboard" element={<AdminDashboard />} />
@@ -220,7 +232,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
-            </ProtectedRoute>
+            </SimpleProtectedRoute>
           }
         />
 
@@ -228,26 +240,41 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/therapist/*"
           element={
-            <SimpleProtectedRoute allowedRoles={['therapist', 'substitute']}>
+            <SimpleProtectedRoute roles={[UserRole.THERAPIST, UserRole.SUBSTITUTE]}>
               <DashboardLayout>
                 <Routes>
-                  <Route path="dashboard" element={<TherapistDashboard />} />
+                  <Route path="dashboard" element={<ProfessionalTherapistDashboard />} />
                   <Route path="calendar" element={<TherapistCalendar />} />
                   <Route path="messages" element={<TherapistMessages />} />
-                  <Route path="appointments" element={<TherapistAppointments />} />
-                  <Route path="clients" element={<TherapistClients />} />
+                  <Route path="appointments" element={<ProfessionalTherapistAppointments />} />
+                  <Route path="appointments/new" element={<CreateAppointment />} />
+                  <Route path="appointments/:appointmentId/reschedule" element={<RescheduleAppointment />} />
+                  <Route path="clients" element={<ProfessionalTherapistClients />} />
+                  <Route path="clients/:clientId/psychological-behaviors" element={<ClientPsychologicalBehavior />} />
                   {/* <Route path="clients/:clientId" element={<TherapistClientProfile />} /> */}
                   {/* <Route path="client/:clientId" element={<ClientOverview />} /> */}
                   {/* <Route path="billing" element={<TherapistBilling />} /> */}
-                  <Route path="profile" element={<TherapistProfile />} />
+                  <Route path="profile" element={<ProfessionalTherapistProfile />} />
                   <Route path="availability" element={<AvailabilityManagement />} />
                   <Route path="settings" element={<TherapistSettings />} />
                   {/* <Route path="reports" element={<TherapistReports />} /> */}
-                  {/* <Route path="notes" element={<TherapistNotes />} /> */}
+                  <Route path="notes" element={<ProfessionalSessionNotes />} />
+                  <Route path="sessions" element={<SessionManagement />} />
+                  {/* Survey Routes */}
+                  <Route path="surveys" element={<ProfessionalTherapistSurveys />} />
+                  <Route path="surveys/new" element={<CreateSurvey />} />
+                  <Route path="surveys/:surveyId/assign" element={<AssignSurvey />} />
+                  <Route path="surveys/:surveyId/responses" element={<SurveyResponses />} />
+                  {/* Challenge Routes */}
+                  <Route path="challenges" element={<ProfessionalTherapistChallenges />} />
+                  <Route path="challenges/new" element={<CreateChallenge />} />
+                  <Route path="challenges/:challengeId/assign" element={<AssignChallenge />} />
+                  {/* Resources Route */}
+                  <Route path="resources" element={<ResourcesManagementInline />} />
                   <Route path="*" element={<Navigate to="/therapist/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
-            </ProtectedRoute>
+            </SimpleProtectedRoute>
           }
         />
 
@@ -255,7 +282,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/client/*"
           element={
-            <ProtectedRoute roles={[UserRole.CLIENT]}>
+            <SimpleProtectedRoute roles={[UserRole.CLIENT]}>
               <DashboardLayout>
                 <Routes>
                   <Route path="dashboard" element={<ClientDashboard />} />
@@ -285,7 +312,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
-            </ProtectedRoute>
+            </SimpleProtectedRoute>
           }
         />
 
@@ -293,7 +320,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/assistant/*"
           element={
-            <ProtectedRoute roles={[UserRole.ASSISTANT]}>
+            <SimpleProtectedRoute roles={[UserRole.ASSISTANT]}>
               <DashboardLayout>
                 <Routes>
                   <Route path="dashboard" element={<AdminDashboard />} />
@@ -302,7 +329,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="*" element={<Navigate to="/assistant/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
-            </ProtectedRoute>
+            </SimpleProtectedRoute>
           }
         />
 
@@ -310,7 +337,7 @@ const AppRoutes: React.FC = () => {
         <Route
           path="/bookkeeper/*"
           element={
-            <ProtectedRoute roles={[UserRole.BOOKKEEPER]}>
+            <SimpleProtectedRoute roles={[UserRole.BOOKKEEPER]}>
               <DashboardLayout>
                 <Routes>
                   <Route path="dashboard" element={<BookkeeperDashboard />} />
@@ -323,7 +350,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="*" element={<Navigate to="/bookkeeper/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
-            </ProtectedRoute>
+            </SimpleProtectedRoute>
           }
         />
 

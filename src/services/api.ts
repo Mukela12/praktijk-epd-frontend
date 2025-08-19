@@ -129,14 +129,6 @@ api.interceptors.request.use(
 // Helper function to refresh access token
 const refreshAccessToken = async (): Promise<string> => {
   try {
-    // Check if we have a refresh token or session cookie
-    const hasRefreshToken = document.cookie.includes('refreshToken') || localStorage.getItem('refreshToken');
-    
-    if (!hasRefreshToken) {
-      console.warn('[API] No refresh token available, cannot refresh');
-      throw new Error('No refresh token available');
-    }
-    
     // Send empty body with POST request, cookies will be sent automatically
     const response = await api.post('/auth/refresh-token', {});
     
@@ -149,26 +141,19 @@ const refreshAccessToken = async (): Promise<string> => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      console.log('[API] Token refreshed successfully');
       return newToken;
     } else {
-      throw new Error('Token refresh failed - no access token in response');
+      throw new Error('Token refresh failed');
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API] Token refresh failed:', error);
+    // Clear tokens and redirect to login
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
     
-    // Only clear auth if it's a 401 (unauthorized) error
-    if (error.response?.status === 401) {
-      // Clear tokens and redirect to login
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('tempToken');
-      localStorage.removeItem('pendingLogin');
-      
-      // Clear auth store if available
-      if ((window as any).useAuthStore) {
-        (window as any).useAuthStore.getState().clearAuth();
-      }
+    // Clear auth store if available
+    if ((window as any).useAuthStore) {
+      (window as any).useAuthStore.getState().clearAuth();
     }
     
     throw error;
@@ -294,25 +279,11 @@ export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
     
-    // Debug logging
-    if ((window as any).loginDebug) {
-      (window as any).loginDebug.logLoginResponse(response);
-    }
-    
     if (response.data.success && response.data.accessToken) {
-      console.log('[authApi.login] Storing access token');
       localStorage.setItem('accessToken', response.data.accessToken);
       if (response.data.user) {
-        console.log('[authApi.login] Storing user data');
         localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-      
-      // Debug check storage
-      setTimeout(() => {
-        if ((window as any).loginDebug) {
-          (window as any).loginDebug.checkStorageAfterLogin();
-        }
-      }, 100);
     }
     
     return response.data;
@@ -333,15 +304,21 @@ export const authApi = {
    * Logout user
    */
   logout: async (): Promise<void> => {
-    try {
-      await api.delete('/auth/logout');
-    } catch (error) {
-      // Continue with logout even if API call fails
-      console.error('Logout API call failed:', error);
-    } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+    // Check if we have a token before trying to logout
+    const token = localStorage.getItem('accessToken');
+    
+    if (token) {
+      try {
+        await api.delete('/auth/logout');
+      } catch (error) {
+        // Continue with logout even if API call fails
+        console.error('Logout API call failed:', error);
+      }
     }
+    
+    // Always clear local storage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
   },
 
   /**
