@@ -78,6 +78,14 @@ const ClientAppointments: React.FC = () => {
   const hasErrorRef = useRef(false);
   const loadingRef = useRef(false);
 
+  // Handle view mode from URL
+  useEffect(() => {
+    const view = searchParams.get('view');
+    if (view === 'calendar' || view === 'list') {
+      setViewMode(view);
+    }
+  }, [searchParams]);
+
   // Load appointments data
   useEffect(() => {
     const loadAppointments = async () => {
@@ -105,6 +113,7 @@ const ClientAppointments: React.FC = () => {
             location: apt.location || 'Main Office'
           }));
           setAppointments(formattedAppointments);
+          // Debug logging removed for production
         }
       } catch (error: any) {
         // Silent error handling

@@ -29,6 +29,7 @@ import { UserRole } from '@/types/auth';
 import { ROLE_COLORS } from '@/types/auth';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import realApiService from '@/services/realApi';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -486,7 +487,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <div className="flex-shrink-0 border-t border-gray-200 p-4">
                 <div className="flex items-center mb-3">
                   <div className="flex-shrink-0">
-                    <UserCircleIcon className="w-8 h-8 text-gray-400" />
+                    <ProfilePhotoUpload
+                      userId={user?.id}
+                      currentPhotoUrl={user?.profile_photo_url}
+                      size="small"
+                      editable={false}
+                    />
                   </div>
                   <div className="ml-3 flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
@@ -554,7 +560,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <div className="flex-shrink-0 border-t border-gray-200 p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <UserCircleIcon className="w-8 h-8 text-gray-400" />
+                  <ProfilePhotoUpload
+                    userId={user?.id}
+                    currentPhotoUrl={user?.profile_photo_url}
+                    size="small"
+                    editable={false}
+                  />
                 </div>
                 <div className="ml-3 flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -607,7 +618,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 
                 <div className="relative group">
                   <button className="flex items-center text-gray-400 hover:text-gray-600">
-                    <UserCircleIcon className="w-8 h-8" />
+                    <ProfilePhotoUpload
+                      userId={user?.id}
+                      currentPhotoUrl={user?.profile_photo_url}
+                      size="small"
+                      editable={false}
+                    />
                   </button>
                   
                   {/* Dropdown menu */}

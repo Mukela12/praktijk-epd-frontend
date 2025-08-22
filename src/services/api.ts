@@ -58,7 +58,7 @@ api.interceptors.request.use(
     const skipAuthEndpoints = [
       '/auth/login',
       '/auth/register',
-      '/auth/refresh-token',
+      '/auth/refresh',
       '/auth/verify-email',
       '/auth/resend-verification',
       '/health'
@@ -92,7 +92,7 @@ api.interceptors.request.use(
             }
           }
         } catch (error) {
-          console.warn('[API] Could not parse token:', error);
+          // Token parsing failed - attempt refresh
           // Token is malformed, try to refresh
           if (!isRefreshingToken) {
             isRefreshingToken = true;
@@ -333,7 +333,7 @@ export const authApi = {
    * Refresh access token
    */
   refreshToken: async (): Promise<{ accessToken: string; user: User }> => {
-    const response = await api.post<ApiResponse<{ accessToken: string; user: User }>>('/auth/refresh-token');
+    const response = await api.post<ApiResponse<{ accessToken: string; user: User }>>('/auth/refresh');
     
     if (response.data.success && response.data.data?.accessToken) {
       localStorage.setItem('accessToken', response.data.data.accessToken);

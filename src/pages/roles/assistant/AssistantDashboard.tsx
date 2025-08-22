@@ -25,6 +25,7 @@ import { useDashboard, useClients, useAppointments, useInvoices } from '@/hooks/
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumMetric, PremiumListItem } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { realApiService } from '@/services/realApi';
 
 // Types
 interface Task {
@@ -65,6 +66,7 @@ const AssistantDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'contacts' | 'scheduling'>('overview');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Mock data for assistant tasks
   const mockTasks: Task[] = [
@@ -146,43 +148,71 @@ const AssistantDashboard: React.FC = () => {
   // Load data
   useEffect(() => {
     const loadDashboardData = async () => {
+      setIsLoading(true);
       try {
-        const [stats, clients, appointments, invoices] = await Promise.all([
-          getStats().catch(() => null),
-          getClients().catch(() => []),
-          getAppointments().catch(() => []),
-          getInvoices().catch(() => [])
-        ]);
-
-        const assistantStats = {
-          totalClients: Array.isArray(clients) ? clients.length : 0,
-          todayAppointments: Array.isArray(appointments) ? 
-            appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length : 0,
-          pendingTasks: mockTasks.filter(task => task.status === 'pending').length,
-          pendingContacts: mockClientContacts.filter(contact => contact.status === 'pending').length,
-          completedTasks: mockTasks.filter(task => task.status === 'completed').length,
-          ...(stats && typeof stats === 'object' ? stats : {})
-        };
-
-        setDashboardStats(assistantStats);
-        setTasks(mockTasks);
-        setClientContacts(mockClientContacts);
+        // Get dashboard data from real API
+        const dashboardResponse = await realApiService.assistant.getDashboard();
+        
+        if (dashboardResponse.success && dashboardResponse.data) {
+          const dashboardData = dashboardResponse.data;
+          
+          // Extract metrics from dashboard response
+          const assistantStats = {
+            totalClients: dashboardData.metrics?.totalClients || dashboardData.totalClients || 0,
+            todayAppointments: dashboardData.metrics?.todayAppointments || dashboardData.todaysAppointments || 0,
+            pendingTasks: dashboardData.metrics?.pendingTasks || dashboardData.pendingTasks || mockTasks.filter(task => task.status === 'pending').length,
+            pendingContacts: dashboardData.metrics?.pendingContacts || dashboardData.pendingContacts || mockClientContacts.filter(contact => contact.status === 'pending').length,
+            completedTasks: dashboardData.metrics?.completedTasks || dashboardData.completedTasks || mockTasks.filter(task => task.status === 'completed').length,
+            upcomingAppointments: dashboardData.upcomingAppointments || [],
+            recentActivity: dashboardData.recentActivity || []
+          };
+          
+          setDashboardStats(assistantStats);
+          
+          // Use real tasks if available, otherwise mock data
+          if (dashboardData.tasks && Array.isArray(dashboardData.tasks)) {
+            setTasks(dashboardData.tasks);
+          } else {
+            setTasks(mockTasks);
+          }
+          
+          // Use real client contacts if available, otherwise mock data
+          if (dashboardData.clientContacts && Array.isArray(dashboardData.clientContacts)) {
+            setClientContacts(dashboardData.clientContacts);
+          } else {
+            setClientContacts(mockClientContacts);
+          }
+        } else {
+          // Fallback to mock data
+          setDashboardStats({
+            totalClients: 0,
+            todayAppointments: 0,
+            pendingTasks: mockTasks.filter(task => task.status === 'pending').length,
+            pendingContacts: mockClientContacts.filter(contact => contact.status === 'pending').length,
+            completedTasks: mockTasks.filter(task => task.status === 'completed').length
+          });
+          setTasks(mockTasks);
+          setClientContacts(mockClientContacts);
+        }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
+        // Fallback to mock data on error
         setDashboardStats({
           totalClients: 0,
           todayAppointments: 0,
-          pendingTasks: 0,
-          pendingContacts: 0,
-          completedTasks: 0
+          pendingTasks: mockTasks.filter(task => task.status === 'pending').length,
+          pendingContacts: mockClientContacts.filter(contact => contact.status === 'pending').length,
+          completedTasks: mockTasks.filter(task => task.status === 'completed').length
         });
         setTasks(mockTasks);
         setClientContacts(mockClientContacts);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadDashboardData();
-  }, [getStats, getClients, getAppointments, getInvoices]);
+  }, []);
 
   // Handle task status update
   const handleTaskUpdate = (taskId: string, newStatus: string) => {
@@ -191,7 +221,7 @@ const AssistantDashboard: React.FC = () => {
         task.id === taskId ? { ...task, status: newStatus as any } : task
       )
     );
-    success(`Task marked as ${newStatus}`);
+    success(`${t('assistant.dashboard.taskMarkedAs')} ${newStatus}`);
   };
 
   // Handle contact status update
@@ -201,7 +231,7 @@ const AssistantDashboard: React.FC = () => {
         contact.id === contactId ? { ...contact, status: newStatus as any } : contact
       )
     );
-    success(`Contact status updated to ${newStatus}`);
+    success(`${t('assistant.dashboard.contactStatusUpdated')} ${newStatus}`);
   };
 
   // Get priority color
@@ -241,7 +271,7 @@ const AssistantDashboard: React.FC = () => {
     return matchesStatus && matchesSearch;
   });
 
-  if (statsLoading || clientsLoading || appointmentsLoading || invoicesLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="large" />
@@ -257,11 +287,9 @@ const AssistantDashboard: React.FC = () => {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center">
               <ClipboardDocumentListIcon className="w-8 h-8 mr-3" />
-              Assistant Dashboard
+              {t('assistant.dashboard.title')}
             </h1>
-            <p className="text-yellow-100 mt-1">
-              Practice support, client communication, and administrative tasks
-            </p>
+            <p className="text-yellow-100 mt-1">{t('assistant.dashboard.welcome')}</p>
           </div>
           <div className="flex space-x-3">
             <PremiumButton
@@ -285,33 +313,33 @@ const AssistantDashboard: React.FC = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <PremiumMetric
-          title="Pending Tasks"
+          title={t('assistant.dashboard.pendingTasks')}
           value={dashboardStats?.pendingTasks || 0}
-          change={{ value: 'High priority', type: dashboardStats?.pendingTasks > 5 ? 'negative' : 'neutral' }}
+          change={{ value: t('assistant.dashboard.highPriority'), type: dashboardStats?.pendingTasks > 5 ? 'negative' : 'neutral' }}
           icon={ExclamationTriangleIcon}
           iconColor="text-red-600"
           isLoading={!dashboardStats}
         />
         <PremiumMetric
-          title="Client Contacts"
+          title={t('assistant.dashboard.clientContacts')}
           value={dashboardStats?.pendingContacts || 0}
-          change={{ value: 'Need follow-up', type: 'neutral' }}
+          change={{ value: t('assistant.dashboard.needFollowUp'), type: 'neutral' }}
           icon={PhoneIcon}
           iconColor="text-blue-600"
           isLoading={!dashboardStats}
         />
         <PremiumMetric
-          title="Today's Appointments"
+          title={t('assistant.dashboard.todayAppointments')}
           value={dashboardStats?.todayAppointments || 0}
-          change={{ value: 'Scheduled', type: 'positive' }}
+          change={{ value: t('assistant.dashboard.scheduled'), type: 'positive' }}
           icon={CalendarIcon}
           iconColor="text-green-600"
           isLoading={!dashboardStats}
         />
         <PremiumMetric
-          title="Completed Tasks"
+          title={t('assistant.dashboard.completedTasks')}
           value={dashboardStats?.completedTasks || 0}
-          change={{ value: 'This week', type: 'positive' }}
+          change={{ value: t('assistant.dashboard.thisWeek'), type: 'positive' }}
           icon={CheckCircleIcon}
           iconColor="text-purple-600"
           isLoading={!dashboardStats}
@@ -322,10 +350,10 @@ const AssistantDashboard: React.FC = () => {
       <PremiumCard>
         <div className="flex flex-wrap items-center space-x-1 bg-gray-100 rounded-lg p-1">
           {[
-            { id: 'overview', label: 'Overview', icon: ClipboardDocumentListIcon },
-            { id: 'tasks', label: 'My Tasks', icon: CheckCircleIcon },
-            { id: 'contacts', label: 'Client Contacts', icon: PhoneIcon },
-            { id: 'scheduling', label: 'Scheduling', icon: CalendarIcon }
+            { id: 'overview', label: t('assistant.dashboard.overview'), icon: ClipboardDocumentListIcon },
+            { id: 'tasks', label: t('assistant.dashboard.tasks'), icon: CheckCircleIcon },
+            { id: 'contacts', label: t('assistant.dashboard.clientContacts'), icon: PhoneIcon },
+            { id: 'scheduling', label: t('assistant.dashboard.scheduling'), icon: CalendarIcon }
           ].map((tab) => (
             <button
               key={tab.id}

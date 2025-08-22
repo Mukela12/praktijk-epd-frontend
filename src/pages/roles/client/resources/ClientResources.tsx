@@ -23,6 +23,8 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import { PremiumCard, PremiumButton, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate } from '@/utils/dateFormatters';
+import DOMPurify from 'dompurify';
+import { marked as markedParser } from 'marked';
 
 interface Resource {
   id: string;
@@ -521,7 +523,7 @@ const ClientResources: React.FC = () => {
             <div className="border-t pt-6">
               {selectedResource.type === 'article' && (
                 <div className="prose prose-blue max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: marked.parse(selectedResource.content) }} />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(markedParser.parse(selectedResource.content) as string) }} />
                 </div>
               )}
               

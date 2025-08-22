@@ -7,7 +7,10 @@ import {
   DocumentTextIcon,
   ChartBarIcon,
   BellIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  UserPlusIcon,
+  ChatBubbleLeftRightIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
@@ -135,33 +138,73 @@ const TherapistDashboard: React.FC = () => {
 
   const isLoading = isDashboardLoading || isAppointmentsLoading || isClientsLoading;
 
-  // Recent activities
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'session_completed',
-      message: 'Session completed with Emma Williams',
-      time: '2 hours ago',
-      icon: CheckCircleIcon,
-      iconColor: 'text-green-600'
-    },
-    {
-      id: 2,
-      type: 'new_appointment',
-      message: 'New appointment scheduled with John Smith',
-      time: '4 hours ago',
-      icon: CalendarIcon,
-      iconColor: 'text-blue-600'
-    },
-    {
-      id: 3,
-      type: 'document_received',
-      message: 'Insurance document received from Sarah Johnson',
-      time: 'Yesterday',
-      icon: DocumentTextIcon,
-      iconColor: 'text-purple-600'
+  // Process recent activities from dashboard data
+  const recentActivities = React.useMemo(() => {
+    if (dashboardData?.recentActivity && Array.isArray(dashboardData.recentActivity)) {
+      return dashboardData.recentActivity.map((activity: any, index: number) => {
+        // Map activity types to icons and colors
+        const getActivityDetails = (type: string) => {
+          switch (type) {
+            case 'session_completed':
+              return { icon: CheckCircleIcon, iconColor: 'text-green-600' };
+            case 'new_appointment':
+            case 'appointment_scheduled':
+              return { icon: CalendarIcon, iconColor: 'text-blue-600' };
+            case 'document_received':
+            case 'document_uploaded':
+              return { icon: DocumentTextIcon, iconColor: 'text-purple-600' };
+            case 'client_registered':
+            case 'new_client':
+              return { icon: UserPlusIcon, iconColor: 'text-indigo-600' };
+            case 'payment_received':
+              return { icon: CurrencyDollarIcon, iconColor: 'text-yellow-600' };
+            case 'message_received':
+              return { icon: ChatBubbleLeftRightIcon, iconColor: 'text-pink-600' };
+            default:
+              return { icon: ClockIcon, iconColor: 'text-gray-600' };
+          }
+        };
+
+        const details = getActivityDetails(activity.type || activity.activityType);
+        
+        return {
+          id: activity.id || index,
+          type: activity.type || activity.activityType,
+          message: activity.message || activity.description || activity.title,
+          time: activity.time || activity.timestamp || activity.createdAt,
+          ...details
+        };
+      }).slice(0, 5); // Show only the most recent 5 activities
     }
-  ];
+    
+    // Fallback to mock data if no real data available
+    return [
+      {
+        id: 1,
+        type: 'session_completed',
+        message: 'Session completed with Emma Williams',
+        time: '2 hours ago',
+        icon: CheckCircleIcon,
+        iconColor: 'text-green-600'
+      },
+      {
+        id: 2,
+        type: 'new_appointment',
+        message: 'New appointment scheduled with John Smith',
+        time: '4 hours ago',
+        icon: CalendarIcon,
+        iconColor: 'text-blue-600'
+      },
+      {
+        id: 3,
+        type: 'document_received',
+        message: 'Insurance document received from Sarah Johnson',
+        time: 'Yesterday',
+        icon: DocumentTextIcon,
+        iconColor: 'text-purple-600'
+      }
+    ];
+  }, [dashboardData]);
 
   return (
     <PageTransition>
@@ -283,7 +326,7 @@ const TherapistDashboard: React.FC = () => {
             </div>
             
             <div className="space-y-4">
-              {recentActivities.map((activity) => (
+              {recentActivities.map((activity: any) => (
                 <div key={activity.id} className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
                     <activity.icon className={`w-5 h-5 ${activity.iconColor}`} />

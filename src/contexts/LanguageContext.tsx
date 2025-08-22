@@ -25,6 +25,33 @@ const translations = {
   'role.therapist': { en: 'Therapist', nl: 'Therapeut' },
   'role.client': { en: 'Client', nl: 'Cliënt' },
   'role.assistant': { en: 'Assistant', nl: 'Assistent' },
+  
+  // Assistant Dashboard
+  'assistant.dashboard.title': { en: 'Assistant Dashboard', nl: 'Assistent Dashboard' },
+  'assistant.dashboard.welcome': { en: 'Manage appointments, client communications, and administrative tasks', nl: 'Beheer afspraken, cliënt communicatie en administratieve taken' },
+  'assistant.dashboard.pendingTasks': { en: 'Pending Tasks', nl: 'Openstaande Taken' },
+  'assistant.dashboard.todayAppointments': { en: "Today's Appointments", nl: 'Afspraken Vandaag' },
+  'assistant.dashboard.clientContacts': { en: 'Client Contacts', nl: 'Cliënt Contacten' },
+  'assistant.dashboard.completedTasks': { en: 'Completed Tasks', nl: 'Voltooide Taken' },
+  'assistant.dashboard.taskMarkedAs': { en: 'Task marked as', nl: 'Taak gemarkeerd als' },
+  'assistant.dashboard.contactStatusUpdated': { en: 'Contact status updated to', nl: 'Contact status bijgewerkt naar' },
+  'assistant.dashboard.overview': { en: 'Overview', nl: 'Overzicht' },
+  'assistant.dashboard.tasks': { en: 'Tasks', nl: 'Taken' },
+  'assistant.dashboard.contacts': { en: 'Contacts', nl: 'Contacten' },
+  'assistant.dashboard.scheduling': { en: 'Scheduling', nl: 'Planning' },
+  'assistant.dashboard.urgent': { en: 'Urgent', nl: 'Urgent' },
+  'assistant.dashboard.high': { en: 'High', nl: 'Hoog' },
+  'assistant.dashboard.normal': { en: 'Normal', nl: 'Normaal' },
+  'assistant.dashboard.low': { en: 'Low', nl: 'Laag' },
+  'assistant.dashboard.pending': { en: 'Pending', nl: 'In afwachting' },
+  'assistant.dashboard.inProgress': { en: 'In Progress', nl: 'In uitvoering' },
+  'assistant.dashboard.completed': { en: 'Completed', nl: 'Voltooid' },
+  'assistant.dashboard.contacted': { en: 'Contacted', nl: 'Gecontacteerd' },
+  'assistant.dashboard.resolved': { en: 'Resolved', nl: 'Opgelost' },
+  'assistant.dashboard.highPriority': { en: 'High priority', nl: 'Hoge prioriteit' },
+  'assistant.dashboard.needFollowUp': { en: 'Need follow-up', nl: 'Opvolging nodig' },
+  'assistant.dashboard.scheduled': { en: 'Scheduled', nl: 'Gepland' },
+  'assistant.dashboard.thisWeek': { en: 'This week', nl: 'Deze week' },
   'role.bookkeeper': { en: 'Bookkeeper', nl: 'Boekhouder' },
   'role.substitute': { en: 'Substitute', nl: 'Vervanger' },
   
@@ -580,6 +607,19 @@ const translations = {
   'ui.tryAgain': { en: 'Try Again', nl: 'Probeer Opnieuw' },
   'ui.refresh': { en: 'Refresh', nl: 'Vernieuwen' },
   'ui.goBack': { en: 'Go Back', nl: 'Ga Terug' },
+  
+  // Profile Photo
+  'profile.photo.alt': { en: 'Profile photo', nl: 'Profielfoto' },
+  'profile.photo.upload': { en: 'Upload Photo', nl: 'Foto Uploaden' },
+  'profile.photo.delete': { en: 'Delete', nl: 'Verwijderen' },
+  'profile.photo.invalidType': { en: 'Please select a valid image file (JPG, PNG, or WebP)', nl: 'Selecteer een geldig afbeeldingsbestand (JPG, PNG of WebP)' },
+  'profile.photo.tooLarge': { en: 'Image must be less than 5MB', nl: 'Afbeelding moet kleiner zijn dan 5MB' },
+  'profile.photo.uploadSuccess': { en: 'Profile photo updated successfully', nl: 'Profielfoto succesvol bijgewerkt' },
+  'profile.photo.uploadError': { en: 'Failed to upload photo', nl: 'Foto uploaden mislukt' },
+  'profile.photo.deleteSuccess': { en: 'Profile photo deleted successfully', nl: 'Profielfoto succesvol verwijderd' },
+  'profile.photo.deleteError': { en: 'Failed to delete photo', nl: 'Foto verwijderen mislukt' },
+  'profile.photo.deleteConfirm': { en: 'Are you sure you want to delete your profile photo?', nl: 'Weet u zeker dat u uw profielfoto wilt verwijderen?' },
+  'profile.photo.helpText': { en: 'Upload a professional photo. Images will be automatically cropped to a square. Maximum file size: 5MB.', nl: 'Upload een professionele foto. Afbeeldingen worden automatisch bijgesneden tot een vierkant. Maximale bestandsgrootte: 5MB.' },
 } as const;
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

@@ -7,9 +7,10 @@
  * role-based access control, and saves results to a file.
  */
 
-import axios from 'axios';
-import { writeFileSync } from 'fs';
-import path from 'path';
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
 
 // Configuration
 const API_BASE_URL = 'https://praktijk-epd-backend-production.up.railway.app/api';
@@ -36,12 +37,12 @@ const testUsers = {
   admin: {
     email: 'banturide5@gmail.com',
     password: 'Milan18$',
-    twoFactorCode: '300116' // Replace with fresh 2FA code before running
+    twoFactorCode: '260265' // Replace with fresh 2FA code before running
   },
   therapist: {
     email: 'codelibrary21@gmail.com',
     password: 'Milan18$',
-    twoFactorCode: '687435' // Replace with fresh 2FA code before running
+    twoFactorCode: '876285' // Replace with fresh 2FA code before running
   },
   client: {
     email: 'mukelathegreat@gmail.com',
@@ -162,6 +163,7 @@ function saveResults() {
   const categories = {
     'Authentication': [],
     'Profile Management': [],
+    'Dashboard': [],
     'Appointment System': [],
     'Session Management': [],
     'Notification System': [],
@@ -224,7 +226,7 @@ function saveResults() {
   }
   
   // Write to file
-  writeFileSync(RESULTS_FILE, output);
+  fs.writeFileSync(RESULTS_FILE, output);
   console.log(`\n📄 Results saved to ${colors.green(RESULTS_FILE)}`);
 }
 
@@ -886,6 +888,69 @@ async function testSmartPairing() {
   }
 }
 
+async function testDashboardEndpoints() {
+  console.log(`\n${colors.cyan(colors.bold('📊 Testing Dashboard Endpoints'))}`);
+  
+  // Test client dashboard
+  const clientDashboard = await apiRequest('GET', '/client/dashboard', null, clientToken);
+  logTestResult('Get client dashboard', clientDashboard, 
+    clientDashboard.success ? 
+    `Wellness Score: ${clientDashboard.data?.data?.metrics?.wellnessScore || 0}, Treatment Progress: ${clientDashboard.data?.data?.metrics?.treatmentProgress || 0}%` : 
+    null);
+
+  // Test therapist dashboard
+  const therapistDashboard = await apiRequest('GET', '/therapist/dashboard', null, therapistToken);
+  logTestResult('Get therapist dashboard', therapistDashboard,
+    therapistDashboard.success ?
+    `Monthly Revenue: €${therapistDashboard.data?.data?.stats?.monthlyRevenue || 0}, Average Rating: ${therapistDashboard.data?.data?.stats?.averageRating || 0}` :
+    null);
+
+  // Test admin dashboard
+  const adminDashboard = await apiRequest('GET', '/admin/dashboard', null, adminToken);
+  logTestResult('Get admin dashboard', adminDashboard,
+    adminDashboard.success ?
+    `Active Clients: ${adminDashboard.data?.data?.stats?.activeClients || 0}, Total Revenue: €${adminDashboard.data?.data?.stats?.totalRevenue || 0}` :
+    null);
+
+  // Test assistant dashboard
+  const assistantDashboard = await apiRequest('GET', '/assistant/dashboard', null, adminToken); // Using admin token as we don't have assistant token
+  logTestResult('Get assistant dashboard', assistantDashboard,
+    assistantDashboard.success ?
+    `Pending Tasks: ${assistantDashboard.data?.data?.stats?.pendingTasks || 0}, Completed Today: ${assistantDashboard.data?.data?.stats?.completedTasks || 0}` :
+    null);
+
+  // Test bookkeeper dashboard
+  const bookkeeperDashboard = await apiRequest('GET', '/bookkeeper/dashboard', null, adminToken); // Using admin token as we don't have bookkeeper token
+  logTestResult('Get bookkeeper dashboard', bookkeeperDashboard);
+
+  // Test client dashboard metrics details
+  if (clientDashboard.success) {
+    const metrics = clientDashboard.data.data.metrics;
+    console.log(colors.gray(`   Client Metrics: Resources (${metrics.resourcesCompleted}/${metrics.totalResources}), Surveys (${metrics.surveysCompleted}/${metrics.totalSurveys}), Active Challenges: ${metrics.challengesActive}`));
+  }
+
+  // Test therapist dashboard recent activity
+  if (therapistDashboard.success && therapistDashboard.data.data.recentActivity) {
+    console.log(colors.gray(`   Recent Activities: ${therapistDashboard.data.data.recentActivity.length} items`));
+  }
+
+  // Test admin dashboard alerts
+  if (adminDashboard.success && adminDashboard.data.data.alerts) {
+    console.log(colors.gray(`   System Alerts: ${adminDashboard.data.data.alerts.length} alerts`));
+  }
+
+  // Test client messages endpoint
+  const clientMessages = await apiRequest('GET', '/client/messages', null, clientToken);
+  logTestResult('Get client messages', clientMessages,
+    clientMessages.success ?
+    `Messages: ${clientMessages.data?.data?.messages?.length || 0}` :
+    null);
+
+  // Test client therapist endpoint (alias)
+  const clientTherapist = await apiRequest('GET', '/client/therapist', null, clientToken);
+  logTestResult('Get client therapist (alias)', clientTherapist);
+}
+
 async function testAdditionalEndpoints() {
   console.log(`\n${colors.cyan(colors.bold('🔧 Testing Additional Endpoints'))}`);
   
@@ -903,7 +968,7 @@ async function testAdditionalEndpoints() {
   }
 
   // Test database schema check
-  const schemaCheck = await apiRequest('GET', '/test/check-schema?token=final-fix-2025-temp', null, null);
+  const schemaCheck = await apiRequest('GET', '/migration/check-schema?token=praktijk-epd-migration-2025', null, null);
   logTestResult('Database schema check', schemaCheck);
 
   // Test statistics endpoints
@@ -921,6 +986,94 @@ async function testAdditionalEndpoints() {
   // Test audit logs
   const auditLogs = await apiRequest('GET', '/admin/audit-logs?limit=10', null, adminToken);
   logTestResult('Get audit logs', auditLogs);
+}
+
+async function testProfilePhotoUpload() {
+  console.log(`\n${colors.cyan(colors.bold('📸 Testing Profile Photo Upload'))}`);
+  
+  // Test database migration first
+  const runMigration = await apiRequest('POST', '/migration/run-migrations', {
+    token: 'praktijk-epd-migration-2025'
+  });
+  logTestResult('Run database migrations', runMigration);
+
+  // Check migration status
+  const checkSchema = await apiRequest('GET', '/migration/check-schema?token=praktijk-epd-migration-2025');
+  logTestResult('Check database schema', checkSchema);
+
+  // Test get profile photo (should be null initially)
+  const getPhoto = await apiRequest('GET', `/profile/photo/${testClientId}`, null, clientToken);
+  logTestResult('Get profile photo (initial)', getPhoto);
+
+  // Test actual photo upload with nurse.jpg
+  try {
+    const form = new FormData();
+    const imagePath = path.join(__dirname, 'nurse.jpg');
+    
+    // Check if image exists
+    if (fs.existsSync(imagePath)) {
+      form.append('photo', fs.createReadStream(imagePath));
+      
+      const uploadResponse = await axios.post(
+        `${API_BASE_URL}/profile/photo`,
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            'Authorization': `Bearer ${clientToken}`
+          },
+          timeout: TEST_TIMEOUT
+        }
+      );
+      
+      logTestResult('Upload profile photo', { 
+        success: true, 
+        data: uploadResponse.data,
+        status: uploadResponse.status 
+      });
+    } else {
+      logTestResult('Upload profile photo', { 
+        success: false, 
+        error: 'nurse.jpg file not found',
+        status: 0 
+      });
+    }
+  } catch (error) {
+    logTestResult('Upload profile photo', { 
+      success: false, 
+      error: error.response?.data || error.message,
+      status: error.response?.status || 0 
+    });
+  }
+
+  // Test get profile photo after upload (should have photo URL)
+  const getPhotoAfterUpload = await apiRequest('GET', `/profile/photo/${testClientId}`, null, clientToken);
+  logTestResult('Get profile photo (after upload)', getPhotoAfterUpload);
+  
+  // Test delete profile photo
+  const deletePhoto = await apiRequest('DELETE', '/profile/photo', null, clientToken);
+  logTestResult('Delete profile photo', deletePhoto);
+  
+  // Test get profile photo after delete (should be null)
+  const getPhotoAfterDelete = await apiRequest('GET', `/profile/photo/${testClientId}`, null, clientToken);
+  logTestResult('Get profile photo (after delete)', getPhotoAfterDelete);
+
+  // Test therapist listing with photos
+  const therapistsWithPhotos = await apiRequest('GET', '/client/therapists', null, clientToken);
+  logTestResult('Get therapists with photos', therapistsWithPhotos);
+  
+  if (therapistsWithPhotos.success && therapistsWithPhotos.data?.data?.therapists?.length > 0) {
+    const firstTherapist = therapistsWithPhotos.data.data.therapists[0];
+    console.log(colors.gray(`   First therapist: ${firstTherapist.name}, Photo: ${firstTherapist.photo ? 'Yes' : 'No'}`));
+  }
+
+  // Test assigned therapist with photo
+  const assignedTherapist = await apiRequest('GET', '/client/assigned-therapist', null, clientToken);
+  logTestResult('Get assigned therapist with photo', assignedTherapist);
+  
+  if (assignedTherapist.success && assignedTherapist.data?.data) {
+    console.log(colors.gray(`   Therapist photo URL: ${assignedTherapist.data.data.profile_photo_url || 'None'}`));
+  }
 }
 
 async function testEnhancedFeatures() {
@@ -1078,6 +1231,7 @@ async function runAllTests() {
     }
 
     await testProfileManagement();
+    await testDashboardEndpoints();
     await testAppointmentSystem();
     await testSessionManagement();
     await testNotificationSystem();
@@ -1086,6 +1240,7 @@ async function runAllTests() {
     await testChallengeSystem();
     await testSmartPairing();
     await testAdditionalEndpoints();
+    await testProfilePhotoUpload();
     await testEnhancedFeatures();
 
     console.log(colors.green(colors.bold('\n✨ All tests completed!')));

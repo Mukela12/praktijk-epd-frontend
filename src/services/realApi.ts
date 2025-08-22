@@ -918,6 +918,41 @@ export const realApiService = {
     getSessionHistory: async (params?: any): Promise<ApiResponse<any[]>> => {
       const response = await api.get('/client/sessions', { params });
       return response.data;
+    },
+
+    // Book appointment directly with therapist (for direct booking flow)
+    bookAppointment: async (data: {
+      therapistId: string;
+      date: string;
+      time: string;
+      therapyType: string;
+      notes?: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/client/appointments/book', data);
+      return response.data;
+    },
+
+    // Submit completion survey
+    submitCompletionSurvey: async (surveyId: string, data: {
+      overallRating: number;
+      wouldRecommend: boolean;
+      responses: Record<string, any>;
+      additionalFeedback?: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/client/completion-survey/${surveyId}/submit`, data);
+      return response.data;
+    },
+
+    // Get all therapists (for client self-booking)
+    getTherapists: async (params?: { status?: string }): Promise<ApiResponse<{ therapists: Array<Therapist & { profile_photo_url?: string }> }>> => {
+      const response = await api.get('/client/therapists', { params });
+      return response.data;
+    },
+
+    // Get assigned therapist with photo
+    getAssignedTherapist: async (): Promise<ApiResponse<Therapist & { profile_photo_url?: string }>> => {
+      const response = await api.get('/client/assigned-therapist');
+      return response.data;
     }
   },
 
@@ -1559,6 +1594,34 @@ export const realApiService = {
     // Health check
     healthCheck: async (): Promise<any> => {
       const response = await api.get('/health');
+      return response.data;
+    }
+  },
+
+  // Profile photo endpoints
+  profile: {
+    // Upload profile photo
+    uploadPhoto: async (file: File): Promise<ApiResponse<{ photoUrl: string }>> => {
+      const formData = new FormData();
+      formData.append('photo', file);
+      
+      const response = await api.post('/profile/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    },
+
+    // Get profile photo
+    getPhoto: async (userId: string): Promise<ApiResponse<{ photoUrl: string | null }>> => {
+      const response = await api.get(`/profile/photo/${userId}`);
+      return response.data;
+    },
+
+    // Delete profile photo
+    deletePhoto: async (): Promise<ApiResponse> => {
+      const response = await api.delete('/profile/photo');
       return response.data;
     }
   }

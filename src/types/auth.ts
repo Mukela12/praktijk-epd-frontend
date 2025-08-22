@@ -37,6 +37,7 @@ export enum UserRole {
     last_login?: string;
     created_at: string;
     updated_at: string;
+    profile_photo_url?: string;
   }
   
   // Authentication state machine

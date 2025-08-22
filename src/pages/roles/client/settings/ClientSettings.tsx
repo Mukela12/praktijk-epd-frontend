@@ -23,6 +23,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { PremiumCard, PremiumButton, StatusBadge } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 import { realApiService } from '@/services/realApi';
 
 // Types
@@ -365,10 +366,26 @@ const ClientSettings: React.FC = () => {
       {/* Tab Content */}
       {activeTab === 'profile' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Profile Photo Section */}
+          <PremiumCard className="lg:col-span-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <UserIcon className="w-5 h-5 mr-2 text-purple-600" />
+              {t('settings.profilePhoto') || 'Profile Photo'}
+            </h3>
+            <div className="flex justify-center">
+              <ProfilePhotoUpload
+                userId={user?.id}
+                currentPhotoUrl={user?.profile_photo_url}
+                size="large"
+                editable={true}
+              />
+            </div>
+          </PremiumCard>
+
           <PremiumCard>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <UserIcon className="w-5 h-5 mr-2 text-purple-600" />
-              Personal Information
+              {t('settings.personalInformation') || 'Personal Information'}
             </h3>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

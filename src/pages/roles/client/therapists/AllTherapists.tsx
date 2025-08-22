@@ -24,6 +24,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumCard, PremiumButton, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import PageTransition from '@/components/ui/PageTransition';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 interface Therapist {
   id: string;
@@ -43,6 +44,9 @@ interface Therapist {
   total_reviews?: number;
   city?: string;
   profile_image?: string;
+  profile_photo_url?: string;
+  photo_url?: string;
+  user_id?: string;
 }
 
 const AllTherapists: React.FC = () => {
@@ -413,9 +417,12 @@ const AllTherapists: React.FC = () => {
                   {/* Header with Avatar and Status */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                        {therapist.first_name[0]}{therapist.last_name[0]}
-                      </div>
+                      <ProfilePhotoUpload
+                        userId={therapist.user_id || therapist.id}
+                        currentPhotoUrl={therapist.profile_photo_url || therapist.photo_url || therapist.profile_image}
+                        size="small"
+                        editable={false}
+                      />
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
                           {therapist.first_name} {therapist.last_name}

@@ -25,6 +25,7 @@ import { useTherapistDashboard } from '@/hooks/useApi';
 import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAlert } from '@/components/ui/CustomAlert';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 const TherapistProfile: React.FC = () => {
   const { user, getDisplayName } = useAuth();
@@ -335,20 +336,16 @@ const TherapistProfile: React.FC = () => {
             <div className="space-y-6">
               {/* Profile Photo */}
               <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
-                    {profile.profile_photo ? (
-                      <img src={profile.profile_photo} alt="Profile" className="w-24 h-24 rounded-full object-cover" />
-                    ) : (
-                      <UserCircleIcon className="w-16 h-16 text-gray-400" />
-                    )}
-                  </div>
-                  {isEditing && (
-                    <button className="absolute bottom-0 right-0 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
-                      <CameraIcon className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                <ProfilePhotoUpload
+                  userId={user?.id}
+                  currentPhotoUrl={profile.profile_photo_url || profile.profile_photo}
+                  size="medium"
+                  editable={isEditing}
+                  onPhotoUpdate={(photoUrl) => {
+                    handleInputChange('profile_photo_url', photoUrl);
+                    setProfile((prev: any) => ({ ...prev, profile_photo_url: photoUrl }));
+                  }}
+                />
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">{profile.name}</h3>
                   <p className="text-sm text-gray-500">

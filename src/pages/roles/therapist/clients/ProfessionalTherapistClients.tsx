@@ -24,6 +24,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { Client } from '@/types/entities';
 import { formatDate } from '@/utils/dateFormatters';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 // Client status badge component
 const ClientStatusBadge: React.FC<{ status: string }> = ({ status }) => {
@@ -103,9 +104,12 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onSelect }) => {
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
-            <UserIcon className="w-6 h-6 text-green-600" />
-          </div>
+          <ProfilePhotoUpload
+            userId={client.user_id || client.id}
+            currentPhotoUrl={client.profile_photo_url || client.photo_url}
+            size="small"
+            editable={false}
+          />
           <div>
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
               {client.first_name} {client.last_name}

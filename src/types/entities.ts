@@ -36,6 +36,8 @@ export interface Client extends BaseEntity {
   therapist_id?: string;
   intake_date?: string;
   discharge_date?: string;
+  profile_photo_url?: string;
+  photo_url?: string;
   address?: {
     street: string;
     house_number: string;

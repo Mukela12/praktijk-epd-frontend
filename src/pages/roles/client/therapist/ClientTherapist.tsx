@@ -35,6 +35,7 @@ import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAlert } from '@/components/ui/CustomAlert';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 const ClientTherapist: React.FC = () => {
   const { user, getDisplayName } = useAuth();
@@ -155,9 +156,12 @@ const ClientTherapist: React.FC = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
               <div className="flex items-center space-x-6">
                 <div className="relative">
-                  <div className="w-24 h-24 bg-gradient-to-r from-violet-500 to-rose-500 rounded-3xl flex items-center justify-center shadow-xl">
-                    <UserSolid className="w-12 h-12 text-white" />
-                  </div>
+                  <ProfilePhotoUpload
+                    userId={therapist.id || therapist.user_id}
+                    currentPhotoUrl={therapist.profile_photo_url || therapist.photo_url}
+                    size="medium"
+                    editable={false}
+                  />
                   <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   </div>

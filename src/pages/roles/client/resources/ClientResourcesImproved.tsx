@@ -31,6 +31,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate } from '@/utils/dateFormatters';
 import PageTransition from '@/components/ui/PageTransition';
+import DOMPurify from 'dompurify';
 
 interface Resource {
   id: string;
@@ -770,7 +771,7 @@ const ClientResourcesImproved: React.FC = () => {
                     color: #2563eb;
                   }
                 `}} />
-                <div dangerouslySetInnerHTML={{ __html: selectedResource.content }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedResource.content) }} />
               </div>
             ) : selectedResource.url ? (
               <div className="text-center py-16">
