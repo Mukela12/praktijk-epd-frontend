@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CalendarIcon,
   ClockIcon,
@@ -67,7 +67,9 @@ const ClientAppointments: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') as 'list' | 'calendar' || 'list';
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(initialView);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -103,17 +105,9 @@ const ClientAppointments: React.FC = () => {
             location: apt.location || 'Main Office'
           }));
           setAppointments(formattedAppointments);
-          console.log('[ClientAppointments] Loaded appointments:', formattedAppointments);
         }
       } catch (error: any) {
-        console.error('[ClientAppointments] Failed to load appointments:', error);
-        console.error('[ClientAppointments] Error details:', {
-          message: error?.message,
-          response: error?.response,
-          status: error?.response?.status,
-          data: error?.response?.data,
-          config: error?.config
-        });
+        // Silent error handling
         
         // Don't keep retrying if it's a rate limit or auth error
         if (error?.response?.status === 429 || error?.response?.status === 403) {

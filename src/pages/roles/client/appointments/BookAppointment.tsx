@@ -94,7 +94,7 @@ const BookAppointment: React.FC = () => {
   const checkUnpaidInvoices = async () => {
     try {
       setIsCheckingInvoices(true);
-      const response = await realApiService.client.getInvoices({ status: 'unpaid' });
+      const response = await realApiService.client.getInvoices({ status: 'UNPAID' });
       
       if (response.success && response.data) {
         const data = response.data as any;

@@ -89,7 +89,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {
         name: 'Calendar',
         nameKey: 'nav.calendar',
-        href: user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE ? '/therapist/calendar' : `${getRoleBasePath()}/agenda`,
+        href: user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE ? '/therapist/calendar' : user?.role === UserRole.CLIENT ? '/client/appointments?view=calendar' : `${getRoleBasePath()}/agenda`,
         icon: CalendarIcon,
         roles: [UserRole.ADMIN, UserRole.THERAPIST, UserRole.CLIENT, UserRole.ASSISTANT, UserRole.SUBSTITUTE],
       },

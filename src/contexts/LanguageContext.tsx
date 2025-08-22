@@ -415,6 +415,9 @@ const translations = {
   
   // Therapists List
   'therapists.profileViewComingSoon': { en: 'Profile view coming soon', nl: 'Profielweergave komt binnenkort' },
+  'therapists.viewNotAvailable': { en: 'Therapist Directory Not Available', nl: 'Therapeutenoverzicht Niet Beschikbaar' },
+  'therapists.contactForInfo': { en: 'This feature requires backend implementation. Please contact your therapist for information about other practitioners.', nl: 'Deze functie vereist backend-implementatie. Neem contact op met uw therapeut voor informatie over andere behandelaars.' },
+  'nav.viewYourTherapist': { en: 'View Your Therapist', nl: 'Bekijk Uw Therapeut' },
   
   // Therapist Messages
   'therapist.messages': { en: 'Messages', nl: 'Berichten' },

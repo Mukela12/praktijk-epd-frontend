@@ -130,7 +130,7 @@ api.interceptors.request.use(
 const refreshAccessToken = async (): Promise<string> => {
   try {
     // Send empty body with POST request, cookies will be sent automatically
-    const response = await api.post('/auth/refresh-token', {});
+    const response = await api.post('/auth/refresh', {});
     
     if (response.data.success && response.data.accessToken) {
       const newToken = response.data.accessToken;
@@ -201,7 +201,7 @@ api.interceptors.response.use(
     const skipRefreshEndpoints = [
       '/auth/login',
       '/auth/register',
-      '/auth/refresh-token',
+      '/auth/refresh',
       '/auth/verify-2fa',
       '/auth/setup-2fa'
     ];
