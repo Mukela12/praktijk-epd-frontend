@@ -124,7 +124,7 @@ const ClientChallenges: React.FC = () => {
 
   const handleStartChallenge = (challenge: Challenge) => {
     if (challenge.progress?.today_completed) {
-      error('You have already completed this challenge today');
+      error(t('challenges.alreadyCompletedToday'));
       return;
     }
     setSelectedChallenge(challenge);

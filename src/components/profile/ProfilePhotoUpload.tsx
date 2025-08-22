@@ -16,7 +16,7 @@ interface ProfilePhotoUploadProps {
   userId?: string;
   currentPhotoUrl?: string | null;
   onPhotoUpdate?: (photoUrl: string | null) => void;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xsmall' | 'small' | 'medium' | 'large';
   editable?: boolean;
 }
 
@@ -40,12 +40,14 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
   // Size classes
   const sizeClasses = {
+    xsmall: 'w-8 h-8',
     small: 'w-16 h-16',
     medium: 'w-32 h-32',
     large: 'w-48 h-48'
   };
 
   const iconSizes = {
+    xsmall: 'w-4 h-4',
     small: 'w-8 h-8',
     medium: 'w-16 h-16',
     large: 'w-24 h-24'
@@ -172,7 +174,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     <div className="flex flex-col items-center space-y-4">
       {/* Photo Display */}
       <div className="relative group">
-        <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-xl`}>
+        <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-100 ${size !== 'xsmall' ? 'ring-4 ring-white shadow-lg' : 'ring-2 ring-gray-200'} transition-all duration-200 ${canEdit && !isLoading ? 'group-hover:ring-blue-400' : ''}`}>
           {isLoadingPhoto ? (
             <div className="w-full h-full flex items-center justify-center">
               <LoadingSpinner size="small" />
@@ -187,17 +189,17 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
             <img
               src={photoUrl}
               alt={t('profile.photo.alt') || 'Profile photo'}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-90"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
               <UserCircleIcon className={`${iconSizes[size]} text-gray-400`} />
             </div>
           )}
         </div>
 
         {/* Upload Overlay */}
-        {canEdit && !isLoading && (
+        {canEdit && !isLoading && size !== 'xsmall' && (
           <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity duration-200 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
@@ -228,7 +230,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       )}
 
       {/* Action Buttons */}
-      {canEdit && (
+      {canEdit && size !== 'xsmall' && (
         <div className="flex items-center space-x-3">
           <button
             onClick={() => fileInputRef.current?.click()}

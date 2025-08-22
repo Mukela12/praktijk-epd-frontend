@@ -490,7 +490,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     <ProfilePhotoUpload
                       userId={user?.id}
                       currentPhotoUrl={user?.profile_photo_url}
-                      size="small"
+                      size="xsmall"
                       editable={false}
                     />
                   </div>
@@ -621,7 +621,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                     <ProfilePhotoUpload
                       userId={user?.id}
                       currentPhotoUrl={user?.profile_photo_url}
-                      size="small"
+                      size="xsmall"
                       editable={false}
                     />
                   </button>

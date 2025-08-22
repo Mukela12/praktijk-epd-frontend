@@ -117,6 +117,13 @@ const translations = {
   'nav.psychologicalProblems': { en: 'Psychological Problems', nl: 'Hulpvragen' },
   'nav.sessions': { en: 'Sessions', nl: 'Sessies' },
   
+  // Settings page translations
+  'settings.profilePhoto': { en: 'Profile Photo', nl: 'Profielfoto' },
+  'settings.personalInformation': { en: 'Personal Information', nl: 'Persoonlijke Informatie' },
+  'settings.changeProfilePhoto': { en: 'Change Profile Photo', nl: 'Profielfoto Wijzigen' },
+  'settings.uploadNewPhoto': { en: 'Upload New Photo', nl: 'Nieuwe Foto Uploaden' },
+  'settings.removePhoto': { en: 'Remove Photo', nl: 'Foto Verwijderen' },
+  
   // Common actions
   'action.save': { en: 'Save', nl: 'Opslaan' },
   'action.cancel': { en: 'Cancel', nl: 'Annuleren' },
@@ -528,6 +535,7 @@ const translations = {
   'challenges.lastQuarter': { en: 'Last Quarter', nl: 'Afgelopen Kwartaal' },
   'challenges.activeFilters': { en: 'Active filters:', nl: 'Actieve filters:' },
   'challenges.clearAll': { en: 'Clear all', nl: 'Alles wissen' },
+  'challenges.alreadyCompletedToday': { en: 'You have already completed this challenge today', nl: 'Je hebt deze uitdaging vandaag al voltooid' },
   
   // Therapists
   'therapists.allTherapists': { en: 'All Therapists', nl: 'Alle Therapeuten' },
