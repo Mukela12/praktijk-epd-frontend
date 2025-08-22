@@ -118,7 +118,7 @@ const TherapistResourcesManagement: React.FC = () => {
     }
 
     try {
-      await therapistApi.assignResource(resourceId, selectedClientId);
+      await resourcesApi.assignResource(resourceId, { clientId: selectedClientId });
       success('Resource assigned successfully');
       setShowAssignModal(false);
       setSelectedClientId('');

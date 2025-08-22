@@ -1,0 +1,32 @@
+Hello, I hope everything is going well with you.
+I have already gone through the client side of the platform, and overall it looks very good. Here are some points of feedback:
+Translation (EN/NL): Some of the English–Dutch translations are not entirely accurate and some fucntions are not working.
+Delete Account: This option should not be available under Dutch law and must be removed.
+Messages Section: This looks good. Could we add a survey that is triggered when the therapist marks the client as “completed”? This way, we can automatically collect overall feedback and ratings.
+Resources: These look fantastic.
+Challenges: Also very good. The only suggestion is to add a filter option.
+Payments & Invoices: At first glance, this looks good. I have net yet seen the incoice self, i would love to see this.
+My Therapist: Could we add a full list/grid of all therapists in our team here, so that clients can book another therapist for themselves if needed?
+My Appointments: When multiple therapists are linked to a client, it would be useful if the client could choose which therapist to book with. The therapy type should also be linked to the therapist’s offered modalities.
+Agenda: Currently not working.
+Dashboard: Looks good.
+Additional Workflow Request:
+When a client registers for the first time, they should immediately be able to schedule a session with the therapist and location of their choice.
+In the same window, after entering their email and chosen password, they should automatically be directed to their personal file.
+The first step in this file is an intake form that must be completed (linked to the therapist).
+Once therapy starts and the therapist books the first session, the client should receive a notification to complete their personal details. Upon opening their file, this form should be presented automatically.
+After completing the basic details, the client must agree to the contracts (linked to the therapist) and set up their SEPA direct debit as the default payment method. (As a small alternative, the client can choose manual invoice creation.)
+Workflow for sessions: when a session is booked, the system should allow immediate payment, up until the official invoice is sent by us.
+If an invoice remains unpaid, it should automatically pop up when the client logs in. After 30 days, this popup should remain visible until payment is made.
+Default rule: clients may have a maximum of €300 in unpaid invoices. If they exceed this, they cannot schedule new sessions until payment is completed. Only an admin should be able to adjust this default limit.
+
+
+
+[13:28, 19/08/2025] Katungu Mukela: Hey Natalie, thanks for your feedback we push updates this week and let you know so you can review again
+[13:43, 19/08/2025] Katungu Mukela: Btw @+31 6 14062970, the back end works so that the therapist is assigned a client by the admin is thay correct?
+[13:44, 19/08/2025] Katungu Mukela: So if a client books an appointment and they are a new client
+[13:45, 19/08/2025] Katungu Mukela: They will be assigned a therapist by the admin
+[13:45, 19/08/2025] Katungu Mukela: Is that okay?
+[20:52, 19/08/2025] +31 6 14062970: If possible can the client be automaticalky assigned to therapist as soon as a client books appointments filtered by city and therapist name?  It takes me a lot of work do hand assign each client to therapist
+[20:53, 19/08/2025] +31 6 14062970: Only when not in the system yet. So PraktijkEPD is for now clients as well as old clients
+

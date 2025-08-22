@@ -20,6 +20,7 @@ import {
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { clientApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
@@ -92,6 +93,7 @@ const SessionHistory: React.FC = () => {
       if (dateRange.startDate) params.startDate = dateRange.startDate;
       if (dateRange.endDate) params.endDate = dateRange.endDate;
 
+      // Use clientApi which has the getSessionHistory method
       const response = await clientApi.getSessionHistory(params);
       
       if (response.success && response.data) {

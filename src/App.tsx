@@ -6,6 +6,7 @@ import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 // Removed useAuthMonitor import - it was causing infinite loops
 
 // Layout Components
@@ -87,6 +88,7 @@ import IntakeForm from '@/pages/roles/client/IntakeForm';
 import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
 import ClientSurveys from '@/pages/roles/client/surveys/ClientSurveys';
 import ClientTherapist from '@/pages/roles/client/therapist/ClientTherapist';
+import AllTherapistsClient from '@/pages/roles/client/therapists/AllTherapists';
 // Removed import for non-existent ClientProgress
 import AddressChangeRequest from '@/pages/roles/client/AddressChangeRequest';
 // Removed import for non-existent ClientQuestionnaires
@@ -108,7 +110,7 @@ import BookkeeperSettings from '@/pages/roles/bookkeeper/settings/BookkeeperSett
 import SimpleProtectedRoute from '@/components/auth/SimpleProtectedRoute';
 import RoleRedirect from '@/components/auth/RoleRedirect';
 import NetworkErrorHandler from '@/components/NetworkErrorHandler';
-import ErrorBoundary from '@/components/ErrorBoundary';
+// Removed duplicate import - ErrorBoundary already imported above
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Create a query client
@@ -304,6 +306,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="challenges" element={<ClientChallenges />} />
                   <Route path="surveys" element={<ClientSurveys />} />
                   <Route path="therapist" element={<ClientTherapist />} />
+                  <Route path="therapists" element={<AllTherapistsClient />} />
                   {/* <Route path="progress" element={<ClientProgress />} /> */}
                   <Route path="address-change" element={<AddressChangeRequest />} />
                   {/* <Route path="questionnaires" element={<ClientQuestionnaires />} /> */}

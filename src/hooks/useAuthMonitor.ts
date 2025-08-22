@@ -38,7 +38,7 @@ export const useAuthMonitor = () => {
           return;
         }
         
-        console.log('[useAuthMonitor] No token found, clearing auth');
+        // No token found, clearing auth
         isLogoutInProgress.current = true;
         
         try {

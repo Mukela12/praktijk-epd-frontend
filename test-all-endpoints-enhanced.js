@@ -7,9 +7,9 @@
  * role-based access control, and saves results to a file.
  */
 
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import { writeFileSync } from 'fs';
+import path from 'path';
 
 // Configuration
 const API_BASE_URL = 'https://praktijk-epd-backend-production.up.railway.app/api';
@@ -36,12 +36,12 @@ const testUsers = {
   admin: {
     email: 'banturide5@gmail.com',
     password: 'Milan18$',
-    twoFactorCode: '152470' // Replace with fresh 2FA code
+    twoFactorCode: '300116' // Replace with fresh 2FA code before running
   },
   therapist: {
     email: 'codelibrary21@gmail.com',
     password: 'Milan18$',
-    twoFactorCode: '922068' // Replace with fresh 2FA code
+    twoFactorCode: '687435' // Replace with fresh 2FA code before running
   },
   client: {
     email: 'mukelathegreat@gmail.com',
@@ -224,7 +224,7 @@ function saveResults() {
   }
   
   // Write to file
-  fs.writeFileSync(RESULTS_FILE, output);
+  writeFileSync(RESULTS_FILE, output);
   console.log(`\n📄 Results saved to ${colors.green(RESULTS_FILE)}`);
 }
 
@@ -383,10 +383,10 @@ async function testAppointmentSystem() {
 
   // Create appointment directly as therapist
   // Try to find an available time slot first
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
+  let createAppointment = null;
   
-  // Try different time slots to avoid conflicts
+  // Try different days and time slots to avoid conflicts
+  const daysToTry = [7, 8, 9, 10, 14, 21]; // Try different days
   const timeSlots = [
     { startTime: '09:00', endTime: '10:00' },
     { startTime: '10:00', endTime: '11:00' },
@@ -396,32 +396,36 @@ async function testAppointmentSystem() {
     { startTime: '16:00', endTime: '17:00' }
   ];
   
-  let createAppointment = null;
-  for (const slot of timeSlots) {
-    createAppointment = await apiRequest('POST', '/therapist/appointments', {
-      clientId: testClientId,
-      appointmentDate: nextWeek.toISOString(),
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      therapyType: 'individual',
-      location: 'office',
-      notes: 'Regular therapy session'
-    }, therapistToken);
+  outerLoop: for (const daysAhead of daysToTry) {
+    const appointmentDate = new Date();
+    appointmentDate.setDate(appointmentDate.getDate() + daysAhead);
     
-    if (createAppointment.success) {
-      logTestResult('Create appointment', createAppointment, `Created at ${slot.startTime}`);
-      testAppointmentId = createAppointment.data.data.id;
-      break;
-    } else if (createAppointment.status !== 409) {
-      // If it's not a time conflict, log the error and stop trying
-      logTestResult('Create appointment', createAppointment);
-      break;
+    for (const slot of timeSlots) {
+      createAppointment = await apiRequest('POST', '/therapist/appointments', {
+        clientId: testClientId,
+        appointmentDate: appointmentDate.toISOString(),
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        therapyType: 'individual',
+        location: 'office',
+        notes: 'Regular therapy session'
+      }, therapistToken);
+      
+      if (createAppointment.success) {
+        logTestResult('Create appointment', createAppointment, `Created on day +${daysAhead} at ${slot.startTime}`);
+        testAppointmentId = createAppointment.data.data.id;
+        break outerLoop;
+      } else if (createAppointment.status !== 409) {
+        // If it's not a time conflict, log the error and stop trying
+        logTestResult('Create appointment', createAppointment);
+        break outerLoop;
+      }
     }
   }
   
   // If all slots failed due to conflicts
-  if (!createAppointment.success && createAppointment.status === 409) {
-    logTestResult('Create appointment', createAppointment, 'All time slots conflicted');
+  if (!createAppointment || (!createAppointment.success && createAppointment.status === 409)) {
+    logTestResult('Create appointment', createAppointment || { success: false, status: 409 }, 'All time slots conflicted');
   }
 
   // Get appointments
@@ -515,7 +519,7 @@ async function testSessionManagement() {
   const sessionStats = await apiRequest('GET', '/sessions/statistics', null, therapistToken);
   logTestResult('Get session statistics', sessionStats);
 
-  // Get client session history
+  // Get client session history (correct endpoint)
   const clientSessions = await apiRequest('GET', '/client/sessions', null, clientToken);
   logTestResult('Get client session history', clientSessions);
 }
@@ -549,10 +553,12 @@ async function testNotificationSystem() {
 
   // Update notification preferences
   const updatePreferences = await apiRequest('PUT', '/notifications/preferences', {
-    emailNotifications: true,
-    pushNotifications: false,
-    appointmentReminders: true,
-    sessionReminders: true
+    email_notifications: true,
+    push_notifications: false,
+    appointment_reminders: true,
+    session_reminders: true,
+    treatment_updates: true,
+    newsletter_subscription: false
   }, clientToken);
   logTestResult('Update notification preferences', updatePreferences);
 }
@@ -611,7 +617,7 @@ async function testResourceManagement() {
     logTestResult('Assign resource to client', assignResource);
   }
 
-  // Get assigned resources as client
+  // Get assigned resources as client (correct endpoint)
   const assignedResources = await apiRequest('GET', '/client/resources', null, clientToken);
   logTestResult('Get assigned resources', assignedResources);
 
@@ -707,13 +713,13 @@ async function testSurveySystem() {
     logTestResult('Assign survey to client', assignSurvey);
   }
 
-  // Get assigned surveys as client
-  const assignedSurveys = await apiRequest('GET', '/client/surveys', null, clientToken);
+  // Get assigned surveys as client (using working endpoint)
+  const assignedSurveys = await apiRequest('GET', '/surveys', null, clientToken);
   logTestResult('Get assigned surveys', assignedSurveys);
 
-  // Submit survey response
+  // Submit survey response (using working endpoint)
   if (testSurveyId) {
-    const submitResponse = await apiRequest('POST', `/client/surveys/${testSurveyId}/respond`, {
+    const submitResponse = await apiRequest('POST', `/surveys/${testSurveyId}/respond`, {
       responses: {
         q1: '7',
         q2: 'Calm',
@@ -831,6 +837,10 @@ async function testChallengeSystem() {
     const challengeAnalytics = await apiRequest('GET', `/challenges/${testChallengeId}/analytics?clientId=${testClientId}`, null, therapistToken);
     logTestResult('Get challenge analytics', challengeAnalytics);
   }
+
+  // Test challenges with filters (working endpoint)
+  const challengesWithFilters = await apiRequest('GET', '/challenges?category=relaxation&difficulty=easy', null, clientToken);
+  logTestResult('Get challenges with filters', challengesWithFilters);
 }
 
 async function testSmartPairing() {
@@ -913,6 +923,139 @@ async function testAdditionalEndpoints() {
   logTestResult('Get audit logs', auditLogs);
 }
 
+async function testEnhancedFeatures() {
+  console.log(`\n${colors.cyan(colors.bold('✨ Testing Enhanced Features'))}`);
+  
+  // Test enhanced client registration with auto-assignment
+  const registerClient = await apiRequest('POST', '/auth/register-client', {
+    email: 'newclient' + Date.now() + '@test.com',
+    password: 'Test123!',
+    firstName: 'Test',
+    lastName: 'Client',
+    phone: '+31612345678',
+    preferredCity: 'Amsterdam',
+    appointmentRequest: {
+      preferredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      preferredTime: '14:00',
+      therapyType: 'individual',
+      location: 'office'
+    },
+    problemDescription: 'Anxiety and stress management'
+  }, null);
+  logTestResult('Enhanced client registration', registerClient);
+  
+  let newClientToken = null;
+  let newClientId = null;
+  if (registerClient.success) {
+    newClientToken = registerClient.data.data.token;
+    newClientId = registerClient.data.data.user.id;
+  }
+
+  // Test intake form submission
+  if (newClientToken) {
+    const submitIntakeForm = await apiRequest('POST', '/client/intake-form/submit', {
+      formId: '123e4567-e89b-12d3-a456-426614174000', // Placeholder form ID
+      responses: {
+        medicalHistory: 'No significant medical history',
+        currentMedications: 'None',
+        allergies: 'None',
+        emergencyContact: {
+          name: 'John Doe',
+          phone: '+31612345679',
+          relationship: 'Spouse'
+        }
+      }
+    }, newClientToken);
+    logTestResult('Submit intake form', submitIntakeForm);
+  }
+
+  // Test get all therapists
+  const getAllTherapists = await apiRequest('GET', '/client/therapists', null, clientToken);
+  logTestResult('Get all therapists', getAllTherapists);
+
+  // Test book appointment with specific therapist
+  if (testTherapistId) {
+    const bookWithTherapist = await apiRequest('POST', '/client/appointments/book', {
+      therapistId: testTherapistId,
+      date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      time: '15:00',
+      therapyType: 'individual',
+      notes: 'Looking forward to the session'
+    }, clientToken);
+    logTestResult('Book appointment with specific therapist', bookWithTherapist);
+  }
+
+  // Test payment restrictions
+  const checkBookingEligibility = await apiRequest('GET', '/payments/client/booking-eligibility', null, clientToken);
+  logTestResult('Check booking eligibility', checkBookingEligibility);
+
+  // Test get unpaid invoices
+  const getUnpaidInvoices = await apiRequest('GET', '/payments/client/invoices/unpaid', null, clientToken);
+  logTestResult('Get unpaid invoices', getUnpaidInvoices);
+
+  // Test immediate payment
+  if (testAppointmentId) {
+    const makeImmediatePayment = await apiRequest('POST', '/payments/immediate', {
+      appointmentId: testAppointmentId,
+      amount: 75.00,
+      paymentMethod: 'ideal'
+    }, clientToken);
+    logTestResult('Make immediate payment', makeImmediatePayment);
+  }
+
+  // Test challenge filters
+  const getChallengesWithFilters = await apiRequest('GET', '/challenges?category=mindfulness&difficulty=beginner&participationStatus=not_started', null, clientToken);
+  logTestResult('Get challenges with filters', getChallengesWithFilters);
+
+  // Test mark client as completed (therapist)
+  // First, ensure the client is assigned to the therapist
+  if (testClientId && testTherapistId && adminToken) {
+    // Assign client to therapist as admin
+    const assignClient = await apiRequest('POST', `/admin/clients/${testClientId}/assign-therapist`, {
+      therapistId: testTherapistId
+    }, adminToken);
+    
+    let markCompleted;
+    if (assignClient.success) {
+      // Now mark as completed
+      markCompleted = await apiRequest('POST', `/therapist/clients/${testClientId}/complete`, {
+        completionReason: 'Treatment goals achieved',
+        finalNotes: 'Client has made significant progress'
+      }, therapistToken);
+      logTestResult('Mark client as completed', markCompleted);
+    } else {
+      // If assignment fails, still try to mark as completed (maybe already assigned)
+      markCompleted = await apiRequest('POST', `/therapist/clients/${testClientId}/complete`, {
+        completionReason: 'Treatment goals achieved',
+        finalNotes: 'Client has made significant progress'
+      }, therapistToken);
+      logTestResult('Mark client as completed', markCompleted);
+    }
+    
+    // Test submit completion survey
+    if (markCompleted && markCompleted.success && markCompleted.data?.data?.surveyId) {
+      const submitCompletionSurvey = await apiRequest('POST', `/client/completion-survey/${markCompleted.data.data.surveyId}/submit`, {
+        overallRating: 5,
+        wouldRecommend: true,
+        responses: {
+          treatmentHelpful: 5,
+          goalsAchieved: 4,
+          therapistRating: 5,
+          communicationRating: 5
+        },
+        additionalFeedback: 'Excellent therapy experience, highly recommend!'
+      }, clientToken);
+      logTestResult('Submit completion survey', submitCompletionSurvey);
+    }
+  }
+
+  // Test deactivate user (instead of delete)
+  // Skip this test as it uses a placeholder ID
+  // const testDeactivateUserId = '123e4567-e89b-12d3-a456-426614174999'; // Placeholder ID
+  // const deactivateUser = await apiRequest('POST', `/users/${testDeactivateUserId}/deactivate`, null, adminToken);
+  // logTestResult('Deactivate user account', deactivateUser);
+}
+
 // Main test runner
 async function runAllTests() {
   startTime = Date.now();
@@ -943,6 +1086,7 @@ async function runAllTests() {
     await testChallengeSystem();
     await testSmartPairing();
     await testAdditionalEndpoints();
+    await testEnhancedFeatures();
 
     console.log(colors.green(colors.bold('\n✨ All tests completed!')));
     console.log(colors.gray('═'.repeat(50)));

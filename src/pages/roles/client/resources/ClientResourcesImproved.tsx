@@ -184,6 +184,7 @@ const ClientResourcesImproved: React.FC = () => {
   const loadResources = async () => {
     try {
       setIsLoading(true);
+      // Use the client resources endpoint
       const response = await realApiService.client.getResources();
       
       if (response.success && response.data) {

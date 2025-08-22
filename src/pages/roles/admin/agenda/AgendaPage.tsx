@@ -84,7 +84,7 @@ const AgendaPage: React.FC = () => {
           setTherapists(therapistsResponse.data);
         }
       } catch (error) {
-        console.error('Failed to load agenda data:', error);
+        // Silent fail - show empty state
       } finally {
         setIsLoading(false);
       }
@@ -116,6 +116,97 @@ const AgendaPage: React.FC = () => {
 
     setFilteredEvents(filtered);
   }, [events, selectedTherapist, selectedLocation, selectedType, showMyAgenda, user, getDisplayName]);
+
+  // Generate time slots for calendar views
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 8; hour < 18; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      slots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    return slots;
+  };
+
+  // Get week days for week view
+  const getWeekDays = (date: Date) => {
+    const week = [];
+    const startOfWeek = new Date(date);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+    
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    for (let i = 0; i < 7; i++) {
+      const currentDay = new Date(startOfWeek);
+      currentDay.setDate(startOfWeek.getDate() + i);
+      week.push({
+        date: currentDay,
+        dayName: dayNames[i]
+      });
+    }
+    return week;
+  };
+
+  // Get month days for month view
+  const getMonthDays = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    
+    // Add previous month's trailing days
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        date: new Date(year, month - 1, prevMonthLastDay - i),
+        isCurrentMonth: false
+      });
+    }
+    
+    // Add current month's days
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        date: new Date(year, month, i),
+        isCurrentMonth: true
+      });
+    }
+    
+    // Add next month's leading days to complete the grid
+    const remainingDays = 42 - days.length; // 6 weeks * 7 days
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({
+        date: new Date(year, month + 1, i),
+        isCurrentMonth: false
+      });
+    }
+    
+    return days;
+  };
+
+  // Get event color based on status
+  const getEventColor = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-50 border-blue-200 text-blue-700';
+      case 'confirmed':
+        return 'bg-green-50 border-green-200 text-green-700';
+      case 'in_progress':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+      case 'completed':
+        return 'bg-gray-50 border-gray-200 text-gray-700';
+      case 'cancelled':
+        return 'bg-red-50 border-red-200 text-red-700';
+      case 'no_show':
+        return 'bg-orange-50 border-orange-200 text-orange-700';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-700';
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -394,14 +485,152 @@ const AgendaPage: React.FC = () => {
               )}
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'day' ? (
+          // Day View
           <div className="p-6">
-            <div className="text-center py-12">
-              <CalendarDaysIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 mb-2">Calendar Grid View</p>
-              <p className="text-gray-400 text-sm">
-                {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} view coming soon
-              </p>
+            <div className="grid grid-cols-1 gap-4">
+              {generateTimeSlots().map((timeSlot) => (
+                <div key={timeSlot} className="flex border-b border-gray-100">
+                  <div className="w-20 text-sm text-gray-500 font-medium py-2">
+                    {timeSlot}
+                  </div>
+                  <div className="flex-1 relative h-16">
+                    {filteredEvents
+                      .filter(event => {
+                        const eventDate = new Date(event.date);
+                        return (
+                          eventDate.toDateString() === currentDate.toDateString() &&
+                          event.start_time.startsWith(timeSlot)
+                        );
+                      })
+                      .map(event => (
+                        <div
+                          key={event.id}
+                          className={`absolute inset-x-0 p-2 rounded-lg border ${getEventColor(event.status)} cursor-pointer hover:opacity-90 transition-opacity`}
+                        >
+                          <div className="text-xs font-medium">{event.client_name}</div>
+                          <div className="text-xs text-gray-600">{event.therapist_name}</div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : viewMode === 'week' ? (
+          // Week View
+          <div className="p-4">
+            <div className="grid grid-cols-8 gap-1">
+              {/* Time column */}
+              <div className="col-span-1">
+                <div className="h-12 mb-1"></div>
+                {generateTimeSlots().map((timeSlot) => (
+                  <div key={timeSlot} className="h-20 text-xs text-gray-500 pr-2 text-right">
+                    {timeSlot}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Days columns */}
+              {getWeekDays(currentDate).map((day, dayIndex) => (
+                <div key={dayIndex} className="col-span-1">
+                  <div className="h-12 mb-1 text-center">
+                    <div className="text-xs text-gray-600">{day.dayName}</div>
+                    <div className={`text-sm font-medium ${
+                      day.date.toDateString() === new Date().toDateString() 
+                        ? 'text-blue-600' 
+                        : 'text-gray-900'
+                    }`}>
+                      {day.date.getDate()}
+                    </div>
+                  </div>
+                  
+                  {/* Time slots for this day */}
+                  {generateTimeSlots().map((timeSlot) => (
+                    <div key={`${dayIndex}-${timeSlot}`} className="h-20 border border-gray-100 relative">
+                      {filteredEvents
+                        .filter(event => {
+                          const eventDate = new Date(event.date);
+                          return (
+                            eventDate.toDateString() === day.date.toDateString() &&
+                            event.start_time.startsWith(timeSlot)
+                          );
+                        })
+                        .map(event => (
+                          <div
+                            key={event.id}
+                            className={`absolute inset-1 p-1 rounded text-xs ${getEventColor(event.status)} cursor-pointer hover:opacity-90 transition-opacity overflow-hidden`}
+                            title={`${event.client_name} - ${event.therapist_name}`}
+                          >
+                            <div className="font-medium truncate">{event.client_name}</div>
+                            <div className="text-gray-600 truncate">{event.therapist_name}</div>
+                          </div>
+                        ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          // Month View
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-1">
+              {/* Day headers */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-sm font-medium text-gray-700 py-2">
+                  {day}
+                </div>
+              ))}
+              
+              {/* Calendar days */}
+              {getMonthDays(currentDate).map((day, index) => (
+                <div
+                  key={index}
+                  className={`min-h-24 border border-gray-200 p-1 ${
+                    day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                >
+                  <div className={`text-sm font-medium mb-1 ${
+                    day.date.toDateString() === new Date().toDateString()
+                      ? 'text-blue-600'
+                      : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                  }`}>
+                    {day.date.getDate()}
+                  </div>
+                  
+                  {/* Events for this day */}
+                  <div className="space-y-1">
+                    {filteredEvents
+                      .filter(event => {
+                        const eventDate = new Date(event.date);
+                        return eventDate.toDateString() === day.date.toDateString();
+                      })
+                      .slice(0, 3)
+                      .map(event => (
+                        <div
+                          key={event.id}
+                          className={`text-xs p-1 rounded truncate ${getEventColor(event.status)} cursor-pointer hover:opacity-90 transition-opacity`}
+                          title={`${event.start_time} - ${event.client_name}`}
+                        >
+                          {event.start_time} {event.client_name}
+                        </div>
+                      ))}
+                    
+                    {filteredEvents.filter(event => {
+                      const eventDate = new Date(event.date);
+                      return eventDate.toDateString() === day.date.toDateString();
+                    }).length > 3 && (
+                      <div className="text-xs text-gray-500">
+                        +{filteredEvents.filter(event => {
+                          const eventDate = new Date(event.date);
+                          return eventDate.toDateString() === day.date.toDateString();
+                        }).length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

@@ -93,36 +93,88 @@ const IntakeForm: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        if (!formData.reasonForTherapy || formData.reasonForTherapy.length < 20) {
+        // Validate reason for therapy
+        if (!formData.reasonForTherapy || formData.reasonForTherapy.trim().length < 20) {
           warning('Please provide a detailed reason for therapy (minimum 20 characters)');
           return false;
         }
-        if (formData.therapyGoals.filter(g => g.trim()).length === 0) {
-          warning('Please add at least one therapy goal');
+        if (formData.reasonForTherapy.length > 1000) {
+          warning('Reason for therapy is too long (maximum 1000 characters)');
           return false;
         }
+        
+        // Validate therapy goals
+        const validGoals = formData.therapyGoals.filter(g => g.trim().length >= 5);
+        if (validGoals.length === 0) {
+          warning('Please add at least one therapy goal (minimum 5 characters each)');
+          return false;
+        }
+        if (validGoals.length > 10) {
+          warning('Please limit therapy goals to 10 or fewer');
+          return false;
+        }
+        
         return true;
       
       case 2:
-        if (!formData.medicalHistory) {
-          warning('Please provide your medical history');
+        // Validate medical history
+        if (!formData.medicalHistory || formData.medicalHistory.trim().length < 10) {
+          warning('Please provide your medical history (minimum 10 characters)');
           return false;
         }
-        if (formData.previousTherapy && !formData.previousTherapyDetails) {
-          warning('Please provide details about your previous therapy');
+        if (formData.medicalHistory.length > 2000) {
+          warning('Medical history is too long (maximum 2000 characters)');
           return false;
+        }
+        
+        // Validate medications
+        if (formData.medications && formData.medications.length > 500) {
+          warning('Medications list is too long (maximum 500 characters)');
+          return false;
+        }
+        
+        // Validate previous therapy details
+        if (formData.previousTherapy) {
+          if (!formData.previousTherapyDetails || formData.previousTherapyDetails.trim().length < 10) {
+            warning('Please provide details about your previous therapy (minimum 10 characters)');
+            return false;
+          }
+          if (formData.previousTherapyDetails.length > 1000) {
+            warning('Previous therapy details are too long (maximum 1000 characters)');
+            return false;
+          }
         }
         return true;
       
       case 3:
-        if (!formData.emergencyContactName || !formData.emergencyContactPhone) {
-          warning('Please provide emergency contact information');
+        // Validate emergency contact name
+        if (!formData.emergencyContactName || formData.emergencyContactName.trim().length < 2) {
+          warning('Please provide emergency contact name');
           return false;
         }
-        if (!/^\+?[1-9]\d{1,14}$/.test(formData.emergencyContactPhone.replace(/\s/g, ''))) {
-          warning('Please provide a valid phone number');
+        if (formData.emergencyContactName.length > 100) {
+          warning('Emergency contact name is too long (maximum 100 characters)');
           return false;
         }
+        
+        // Validate emergency contact phone with more comprehensive regex
+        const phoneRegex = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+        const cleanPhone = formData.emergencyContactPhone.replace(/\s/g, '');
+        if (!formData.emergencyContactPhone || !phoneRegex.test(cleanPhone)) {
+          warning('Please provide a valid phone number (e.g., +31 6 12345678)');
+          return false;
+        }
+        if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+          warning('Phone number must be between 10 and 15 digits');
+          return false;
+        }
+        
+        // Validate additional notes if provided
+        if (formData.additionalNotes && formData.additionalNotes.length > 500) {
+          warning('Additional notes are too long (maximum 500 characters)');
+          return false;
+        }
+        
         return true;
       
       default:
@@ -185,7 +237,7 @@ const IntakeForm: React.FC = () => {
                 className="input-premium"
                 placeholder="Please describe what brings you to therapy and what you hope to address..."
               />
-              <p className="form-help">Minimum 20 characters required</p>
+              <p className="form-help">Minimum 20 characters, maximum 1000 characters. {formData.reasonForTherapy.length}/1000</p>
             </div>
 
             <div>
@@ -200,7 +252,8 @@ const IntakeForm: React.FC = () => {
                       value={goal}
                       onChange={(e) => handleGoalChange(index, e.target.value)}
                       className="input-premium flex-1"
-                      placeholder={`Goal ${index + 1}`}
+                      placeholder={`Goal ${index + 1} (minimum 5 characters)`}
+                      maxLength={200}
                     />
                     {formData.therapyGoals.length > 1 && (
                       <button
@@ -259,6 +312,7 @@ const IntakeForm: React.FC = () => {
                 rows={4}
                 className="input-premium"
                 placeholder="Please describe any relevant medical conditions, diagnoses, or health concerns..."
+                maxLength={2000}
               />
             </div>
 
@@ -274,6 +328,7 @@ const IntakeForm: React.FC = () => {
                 rows={3}
                 className="input-premium"
                 placeholder="List any medications you are currently taking (or write 'None' if applicable)..."
+                maxLength={500}
               />
             </div>
 

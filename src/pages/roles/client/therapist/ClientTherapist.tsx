@@ -72,9 +72,8 @@ const ClientTherapist: React.FC = () => {
           });
         }
       } catch (error: any) {
-        console.error('Failed to load therapist data:', error);
         if (error?.response?.status !== 404 && error?.response?.status !== 403) {
-          errorAlert('Failed to load therapist information');
+          errorAlert(t('therapist.loadError'));
         }
       } finally {
         setIsLoading(false);
@@ -122,15 +121,24 @@ const ClientTherapist: React.FC = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">No Therapist Assigned</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              You don't have a therapist assigned yet. Please contact the admin to get matched with a therapist who fits your needs.
+              You don't have a therapist assigned yet. Browse our therapists to find one that fits your needs, or contact the admin for assistance.
             </p>
-            <Link
-              to="/client/messages/new"
-              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-3 rounded-2xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
-            >
-              <ChatBubbleLeftRightIcon className="w-5 h-5" />
-              <span>Contact Admin</span>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                to="/client/therapists"
+                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white px-8 py-3 rounded-2xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
+              >
+                <UserIcon className="w-5 h-5" />
+                <span>Browse All Therapists</span>
+              </Link>
+              <Link
+                to="/client/messages/new"
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-3 rounded-2xl font-medium transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
+              >
+                <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                <span>Contact Admin</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -192,6 +200,17 @@ const ClientTherapist: React.FC = () => {
                   </button>
                 )}
               </div>
+            </div>
+            
+            {/* Link to browse all therapists */}
+            <div className="mt-6 text-center">
+              <Link
+                to="/client/therapists"
+                className="text-violet-600 hover:text-violet-700 font-medium text-sm inline-flex items-center space-x-1 smooth-transition"
+              >
+                <UserIcon className="w-4 h-4" />
+                <span>{t('therapist.browseOtherTherapists')}</span>
+              </Link>
             </div>
           </div>
         </div>

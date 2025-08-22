@@ -66,11 +66,12 @@ const ResourcesManagement: React.FC = () => {
   const loadResources = async () => {
     try {
       setIsLoading(true);
-      const response = await realApiService.admin.getResources();
+      // Use the working resources endpoint
+      const response = await realApiService.resources.getResources();
       
       if (response.success && response.data) {
-        const resourcesData = response.data || [];
-        setResources(Array.isArray(resourcesData) ? resourcesData : []);
+        const resourcesData = Array.isArray(response.data) ? response.data : response.data.resources || [];
+        setResources(resourcesData);
       }
     } catch (err) {
       console.error('Failed to load resources:', err);
@@ -84,14 +85,25 @@ const ResourcesManagement: React.FC = () => {
   const handleSubmit = async () => {
     try {
       if (viewMode === 'create') {
-        const response = await realApiService.admin.createResource(formData);
+        const response = await realApiService.resources.createResource({
+          title: formData.title || '',
+          description: formData.description || '',
+          type: formData.type || 'article',
+          category: formData.category || 'anxiety',
+          contentBody: formData.content_body,
+          contentUrl: formData.content_url,
+          difficulty: formData.difficulty || 'beginner',
+          tags: formData.tags || [],
+          isPublic: formData.is_public ?? true,
+          durationMinutes: formData.duration_minutes
+        });
         if (response.success) {
           success('Resource created successfully');
           await loadResources();
           handleCancel();
         }
       } else if (viewMode === 'edit' && selectedResource) {
-        const response = await realApiService.admin.updateResource(selectedResource.id, formData);
+        const response = await realApiService.resources.updateResource(selectedResource.id, formData);
         if (response.success) {
           success('Resource updated successfully');
           await loadResources();
@@ -108,7 +120,7 @@ const ResourcesManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this resource?')) return;
     
     try {
-      await realApiService.admin.deleteResource(resourceId);
+      await realApiService.resources.deleteResource(resourceId);
       success('Resource deleted successfully');
       await loadResources();
     } catch (err) {

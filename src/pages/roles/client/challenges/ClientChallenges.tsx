@@ -8,7 +8,8 @@ import {
   ChartBarIcon,
   PlayIcon,
   LockClosedIcon,
-  StarIcon
+  StarIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -61,6 +62,12 @@ const ClientChallenges: React.FC = () => {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [showTimer, setShowTimer] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    category: 'all',
+    difficulty: 'all',
+    dateRange: 'all'
+  });
 
   useEffect(() => {
     loadChallenges();
@@ -144,9 +151,42 @@ const ClientChallenges: React.FC = () => {
     return Math.round((progress.completed_days / progress.total_days) * 100);
   };
 
-  const filteredChallenges = challenges.filter(c => 
-    activeTab === 'active' ? c.status === 'active' : c.status === 'completed'
-  );
+  // Get unique categories and difficulties for filter options
+  const categories = [...new Set(challenges.map(c => c.category))].filter(Boolean);
+  const difficulties = [...new Set(challenges.map(c => c.difficulty_level))].filter(Boolean);
+
+  const filteredChallenges = challenges.filter(c => {
+    // Status filter (active/completed tab)
+    if (activeTab === 'active' && c.status !== 'active') return false;
+    if (activeTab === 'completed' && c.status !== 'completed') return false;
+    
+    // Category filter
+    if (filters.category !== 'all' && c.category !== filters.category) return false;
+    
+    // Difficulty filter
+    if (filters.difficulty !== 'all' && c.difficulty_level !== filters.difficulty) return false;
+    
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const now = new Date();
+      const assignedDate = new Date(c.assigned_at);
+      const daysDiff = Math.floor((now.getTime() - assignedDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (filters.dateRange) {
+        case 'week':
+          if (daysDiff > 7) return false;
+          break;
+        case 'month':
+          if (daysDiff > 30) return false;
+          break;
+        case 'quarter':
+          if (daysDiff > 90) return false;
+          break;
+      }
+    }
+    
+    return true;
+  });
 
   if (isLoading) {
     return (
@@ -249,6 +289,108 @@ const ClientChallenges: React.FC = () => {
           </div>
         </PremiumCard>
       </div>
+
+      {/* Filter Section */}
+      <PremiumCard>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">{t('challenges.filters')}</h3>
+          <PremiumButton
+            variant="outline"
+            size="sm"
+            icon={FunnelIcon}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? t('challenges.hideFilters') : t('challenges.showFilters')}
+          </PremiumButton>
+        </div>
+        
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fadeIn">
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('challenges.category')}
+              </label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="all">{t('challenges.allCategories')}</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Difficulty Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Difficulty
+              </label>
+              <select
+                value={filters.difficulty}
+                onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="all">All Difficulties</option>
+                {difficulties.map(difficulty => (
+                  <option key={difficulty} value={difficulty}>
+                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date Range
+              </label>
+              <select
+                value={filters.dateRange}
+                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              >
+                <option value="all">All Time</option>
+                <option value="week">Last Week</option>
+                <option value="month">Last Month</option>
+                <option value="quarter">Last Quarter</option>
+              </select>
+            </div>
+          </div>
+        )}
+        
+        {/* Active filters display */}
+        {(filters.category !== 'all' || filters.difficulty !== 'all' || filters.dateRange !== 'all') && (
+          <div className="mt-4 flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Active filters:</span>
+            {filters.category !== 'all' && (
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                {filters.category}
+              </span>
+            )}
+            {filters.difficulty !== 'all' && (
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                {filters.difficulty}
+              </span>
+            )}
+            {filters.dateRange !== 'all' && (
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                Last {filters.dateRange}
+              </span>
+            )}
+            <button
+              onClick={() => setFilters({ category: 'all', difficulty: 'all', dateRange: 'all' })}
+              className="text-sm text-red-600 hover:text-red-700 font-medium"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+      </PremiumCard>
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">

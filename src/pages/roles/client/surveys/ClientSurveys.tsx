@@ -452,18 +452,30 @@ const ClientSurveys: React.FC = () => {
   const loadSurveys = async () => {
     try {
       setIsLoading(true);
-      const response = await realApiService.client.getSurveys();
+      // Use the working surveys endpoint
+      const response = await realApiService.surveys.getSurveys();
       
       if (response.success && response.data) {
+        // Get assigned surveys from the API
+        const apiSurveys = response.data || [];
+        
+        // Mark template surveys as available but not assigned
+        const templatesAsAvailable = templateSurveys.map(survey => ({
+          ...survey,
+          isTemplate: true,
+          assignedBy: undefined,
+          assignedAt: undefined
+        }));
+        
         // Combine API surveys with template surveys
-        const apiSurveys = response.data.surveys || [];
-        const combinedSurveys = [...templateSurveys, ...apiSurveys];
+        const combinedSurveys = [...apiSurveys, ...templatesAsAvailable];
         setSurveys(combinedSurveys);
       } else {
         // Use template surveys if API fails
         setSurveys(templateSurveys);
       }
     } catch (err) {
+      console.error('Failed to load surveys:', err);
       // Use template surveys as fallback
       setSurveys(templateSurveys);
     } finally {
@@ -526,8 +538,10 @@ const ClientSurveys: React.FC = () => {
         setSelectedSurvey(null);
         setResponses({});
       } else {
-        // Submit to API for real surveys
-        await realApiService.client.submitSurveyResponse(selectedSurvey.id, responses);
+        // Submit to API for real surveys using the working endpoint
+        await realApiService.surveys.submitResponse(selectedSurvey.id, {
+          responses
+        });
         success('Survey submitted successfully!');
         await loadSurveys();
         setSelectedSurvey(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   CalendarIcon,
   ClockIcon,
@@ -8,7 +8,8 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowLeftIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -23,10 +24,17 @@ interface Therapist {
   last_name: string;
   specializations?: string[];
   availability?: any[];
+  email?: string;
+  phone?: string;
+  bio?: string;
+  therapy_types?: string;
+  languages_spoken?: string[];
+  online_therapy_available?: boolean;
 }
 
 const BookAppointment: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { success, error: errorAlert } = useAlert();
 
@@ -43,6 +51,13 @@ const BookAppointment: React.FC = () => {
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [therapyType, setTherapyType] = useState('Individual Therapy');
+  const [hasUnpaidInvoices, setHasUnpaidInvoices] = useState(false);
+  const [unpaidAmount, setUnpaidAmount] = useState(0);
+  const [isCheckingInvoices, setIsCheckingInvoices] = useState(true);
+  const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null);
+  const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
+  const [therapistSearchTerm, setTherapistSearchTerm] = useState('');
+  const [showTherapistSelection, setShowTherapistSelection] = useState(false);
 
   // Get tomorrow's date as minimum
   const tomorrow = new Date();
@@ -56,7 +71,19 @@ const BookAppointment: React.FC = () => {
 
   useEffect(() => {
     loadTherapists();
-  }, []);
+    checkUnpaidInvoices();
+    
+    // Check if a therapist was preselected from navigation
+    const preselectedTherapistId = location.state?.preselectedTherapistId;
+    if (preselectedTherapistId && allTherapists.length > 0) {
+      const preselectedTherapist = allTherapists.find(t => t.id === preselectedTherapistId);
+      if (preselectedTherapist) {
+        setSelectedTherapist(preselectedTherapist);
+        setPreferredTherapist(preselectedTherapistId);
+        setShowTherapistSelection(true);
+      }
+    }
+  }, [location.state, allTherapists]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -64,20 +91,62 @@ const BookAppointment: React.FC = () => {
     }
   }, [selectedDate]);
 
+  const checkUnpaidInvoices = async () => {
+    try {
+      setIsCheckingInvoices(true);
+      const response = await realApiService.client.getInvoices({ status: 'unpaid' });
+      
+      if (response.success && response.data) {
+        const data = response.data as any;
+        const invoices = data.invoices || data || [];
+        const unpaid = invoices.filter((inv: any) => 
+          inv.status === 'sent' || inv.status === 'overdue'
+        );
+        
+        let total = 0;
+        unpaid.forEach((invoice: any) => {
+          total += Number(invoice.total_amount);
+        });
+        
+        setUnpaidAmount(total);
+        setHasUnpaidInvoices(total > 300);
+      }
+    } catch (error) {
+      // Silent fail - continue with appointment booking
+    } finally {
+      setIsCheckingInvoices(false);
+    }
+  };
+
   const loadTherapists = async () => {
     try {
       setIsLoading(true);
-      const response = await realApiService.client.getTherapist();
-      if (response.success && response.data) {
-        setTherapists([response.data]);
-        setPreferredTherapist(response.data.id);
+      
+      // First try to get assigned therapist
+      try {
+        const assignedResponse = await realApiService.client.getTherapist();
+        if (assignedResponse.success && assignedResponse.data) {
+          setTherapists([assignedResponse.data]);
+          setPreferredTherapist(assignedResponse.data.id);
+          setSelectedTherapist(assignedResponse.data);
+        }
+      } catch (error) {
+        // No assigned therapist - this is okay
+      }
+
+      // Load all available therapists
+      const allTherapistsResponse = await realApiService.therapists.getAll({ status: 'active' });
+      if (allTherapistsResponse.success && allTherapistsResponse.data) {
+        const therapistsList = allTherapistsResponse.data.therapists || allTherapistsResponse.data || [];
+        setAllTherapists(therapistsList);
       }
     } catch (error) {
-      console.log('No assigned therapist yet');
+      // Silent fail - user can still proceed without therapist selection
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -94,7 +163,7 @@ const BookAppointment: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedTime || !problemDescription) {
-      errorAlert('Please fill in all required fields');
+      errorAlert(t('validation.fillRequiredFields'));
       return;
     }
 
@@ -105,18 +174,18 @@ const BookAppointment: React.FC = () => {
         preferredTime: selectedTime,
         therapyType,
         urgencyLevel: urgency,
-        reason: problemDescription
+        reason: problemDescription,
+        ...(selectedTherapist && { therapistId: selectedTherapist.id })
       };
 
       const response = await realApiService.client.requestAppointment(requestData);
       
       if (response.success) {
-        success('Appointment request submitted successfully! You will be notified once it is confirmed.');
+        success(t('appointments.requestSubmittedSuccess'));
         navigate('/client/appointments');
       }
     } catch (error: any) {
-      console.error('Failed to submit appointment request:', error);
-      errorAlert(error.response?.data?.message || 'Failed to submit appointment request. Please try again.');
+      errorAlert(error.response?.data?.message || t('appointments.requestSubmitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -128,12 +197,12 @@ const BookAppointment: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Date & Time</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.selectDateTime')}</h3>
               
               {/* Date Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferred Date *
+                  {t('appointments.preferredDate')} *
                 </label>
                 <div className="relative">
                   <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -153,7 +222,7 @@ const BookAppointment: React.FC = () => {
               {selectedDate && (
                 <div className="animate-fadeIn">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferred Time *
+                    {t('appointments.preferredTime')} *
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {availableSlots.map((slot) => (
@@ -177,7 +246,7 @@ const BookAppointment: React.FC = () => {
             {/* Therapy Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Therapy Type *
+                {t('appointments.therapyType')} *
               </label>
               <select
                 value={therapyType}
@@ -197,7 +266,7 @@ const BookAppointment: React.FC = () => {
             {/* Urgency Level */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Urgency Level
+                {t('appointments.urgencyLevel')}
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <button
@@ -212,9 +281,9 @@ const BookAppointment: React.FC = () => {
                     urgency === 'normal' ? 'text-green-600' : 'text-gray-400'
                   }`} />
                   <p className={`font-medium ${urgency === 'normal' ? 'text-green-700' : 'text-gray-700'}`}>
-                    Normal
+                    {t('appointments.normal')}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">Regular appointment</p>
+                  <p className="text-xs text-gray-600 mt-1">{t('appointments.regularAppointment')}</p>
                 </button>
                 
                 <button
@@ -229,34 +298,138 @@ const BookAppointment: React.FC = () => {
                     urgency === 'urgent' ? 'text-red-600' : 'text-gray-400'
                   }`} />
                   <p className={`font-medium ${urgency === 'urgent' ? 'text-red-700' : 'text-gray-700'}`}>
-                    Urgent
+                    {t('appointments.urgent')}
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">Need help soon</p>
+                  <p className="text-xs text-gray-600 mt-1">{t('appointments.needHelpSoon')}</p>
                 </button>
               </div>
             </div>
 
-            {/* Therapist Selection (if available) */}
-            {therapists.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferred Therapist
-                </label>
-                <select
-                  value={preferredTherapist}
-                  onChange={(e) => setPreferredTherapist(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Any available therapist</option>
-                  {therapists.map((therapist) => (
-                    <option key={therapist.id} value={therapist.id}>
-                      {therapist.first_name} {therapist.last_name}
-                      {therapist.specializations && ` - ${therapist.specializations.join(', ')}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Therapist Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('appointments.selectTherapist')}
+              </label>
+              
+              {/* Show assigned therapist first if exists */}
+              {therapists.length > 0 && !showTherapistSelection && (
+                <div>
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                          {therapists[0].first_name?.charAt(0)}{therapists[0].last_name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {therapists[0].first_name} {therapists[0].last_name}
+                          </p>
+                          {therapists[0].specializations && therapists[0].specializations.length > 0 && (
+                            <p className="text-sm text-gray-600">
+                              {therapists[0].specializations.join(', ')}
+                            </p>
+                          )}
+                          <p className="text-xs text-blue-600 font-medium">{t('appointments.yourTherapist')}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowTherapistSelection(true)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        {t('appointments.chooseAnother')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show therapist selection */}
+              {(showTherapistSelection || therapists.length === 0) && (
+                <div className="space-y-3">
+                  {/* Search bar */}
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={t('appointments.searchTherapists')}
+                      value={therapistSearchTerm}
+                      onChange={(e) => setTherapistSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* Therapist list */}
+                  <div className="max-h-64 overflow-y-auto space-y-2 border border-gray-200 rounded-lg p-2">
+                    {allTherapists
+                      .filter(therapist => 
+                        therapist.first_name?.toLowerCase().includes(therapistSearchTerm.toLowerCase()) ||
+                        therapist.last_name?.toLowerCase().includes(therapistSearchTerm.toLowerCase()) ||
+                        therapist.specializations?.some(s => s.toLowerCase().includes(therapistSearchTerm.toLowerCase()))
+                      )
+                      .map(therapist => (
+                        <div
+                          key={therapist.id}
+                          onClick={() => {
+                            setSelectedTherapist(therapist);
+                            setPreferredTherapist(therapist.id);
+                            setShowTherapistSelection(false);
+                          }}
+                          className={`p-3 rounded-lg cursor-pointer transition-all ${
+                            selectedTherapist?.id === therapist.id
+                              ? 'bg-blue-50 border-2 border-blue-500'
+                              : 'bg-white border border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                              {therapist.first_name?.charAt(0)}{therapist.last_name?.charAt(0)}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-900">
+                                {therapist.first_name} {therapist.last_name}
+                              </p>
+                              {therapist.specializations && therapist.specializations.length > 0 && (
+                                <p className="text-sm text-gray-600">
+                                  {therapist.specializations.join(', ')}
+                                </p>
+                              )}
+                              {therapist.languages_spoken && therapist.languages_spoken.length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {t('appointments.languages')}: {therapist.languages_spoken.join(', ')}
+                                </p>
+                              )}
+                              {therapist.online_therapy_available && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
+                                  {t('appointments.onlineAvailable')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {allTherapists.length === 0 && (
+                      <p className="text-center text-gray-500 py-4">{t('appointments.noTherapistsAvailable')}</p>
+                    )}
+                  </div>
+
+                  {therapists.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTherapist(therapists[0]);
+                        setPreferredTherapist(therapists[0].id);
+                        setShowTherapistSelection(false);
+                      }}
+                      className="text-sm text-gray-600 hover:text-gray-700"
+                    >
+                      {t('appointments.backToAssigned')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -264,22 +437,22 @@ const BookAppointment: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Describe Your Needs</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.describeYourNeeds')}</h3>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  What would you like to discuss? *
+                  {t('appointments.whatToDiscuss')} *
                 </label>
                 <textarea
                   value={problemDescription}
                   onChange={(e) => setProblemDescription(e.target.value)}
                   rows={6}
-                  placeholder="Please describe what you'd like to work on in this session..."
+                  placeholder={t('appointments.descriptionPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  This helps your therapist prepare for your session
+                  {t('appointments.helpsTherapistPrepare')}
                 </p>
               </div>
 
@@ -288,8 +461,8 @@ const BookAppointment: React.FC = () => {
                 <div className="flex items-start">
                   <InformationCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">Your privacy is important</p>
-                    <p>All information shared is confidential and will only be seen by your therapist.</p>
+                    <p className="font-medium mb-1">{t('appointments.privacyImportant')}</p>
+                    <p>{t('appointments.confidentialInfo')}</p>
                   </div>
                 </div>
               </div>
@@ -301,43 +474,42 @@ const BookAppointment: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Your Request</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.reviewRequest')}</h3>
               
               <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-sm text-gray-600">Date</span>
+                  <span className="text-sm text-gray-600">{t('appointments.date')}</span>
                   <span className="font-medium text-gray-900">{formatDate(selectedDate)}</span>
                 </div>
                 
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-sm text-gray-600">Time</span>
+                  <span className="text-sm text-gray-600">{t('appointments.time')}</span>
                   <span className="font-medium text-gray-900">{selectedTime}</span>
                 </div>
                 
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-sm text-gray-600">Therapy Type</span>
+                  <span className="text-sm text-gray-600">{t('appointments.therapyType')}</span>
                   <span className="font-medium text-gray-900">{therapyType}</span>
                 </div>
                 
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-sm text-gray-600">Urgency</span>
+                  <span className="text-sm text-gray-600">{t('appointments.urgency')}</span>
                   <span className={`font-medium ${urgency === 'urgent' ? 'text-red-600' : 'text-green-600'}`}>
                     {urgency.charAt(0).toUpperCase() + urgency.slice(1)}
                   </span>
                 </div>
                 
-                {preferredTherapist && (
+                {selectedTherapist && (
                   <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <span className="text-sm text-gray-600">Therapist</span>
+                    <span className="text-sm text-gray-600">{t('appointments.therapist')}</span>
                     <span className="font-medium text-gray-900">
-                      {therapists.find(t => t.id === preferredTherapist)?.first_name}{' '}
-                      {therapists.find(t => t.id === preferredTherapist)?.last_name}
+                      {selectedTherapist.first_name} {selectedTherapist.last_name}
                     </span>
                   </div>
                 )}
                 
                 <div className="py-3">
-                  <span className="text-sm text-gray-600 block mb-2">Description</span>
+                  <span className="text-sm text-gray-600 block mb-2">{t('appointments.description')}</span>
                   <p className="text-gray-900">{problemDescription}</p>
                 </div>
               </div>
@@ -346,8 +518,8 @@ const BookAppointment: React.FC = () => {
                 <div className="flex items-start">
                   <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
                   <div className="text-sm text-yellow-800">
-                    <p className="font-medium mb-1">Important</p>
-                    <p>Your appointment request will be reviewed and you'll receive a confirmation within 24 hours.</p>
+                    <p className="font-medium mb-1">{t('common.important')}</p>
+                    <p>{t('appointments.requestReviewNotice')}</p>
                   </div>
                 </div>
               </div>
@@ -365,6 +537,58 @@ const BookAppointment: React.FC = () => {
     );
   }
 
+  if (isCheckingInvoices) {
+    return (
+      <PageTransition>
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner size="large" />
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (hasUnpaidInvoices) {
+    return (
+      <PageTransition>
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('appointments.bookingRestricted')}</h2>
+              <p className="text-gray-600 mb-6">
+                {t('appointments.cannotBookExceedsLimit')}
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-red-800 font-medium">
+                  {t('appointments.outstandingBalance')}: {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(unpaidAmount)}
+                </p>
+              </div>
+              <p className="text-gray-600 mb-8">
+                {t('appointments.payToContineBooking')}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => navigate('/client/invoices?filter=unpaid')}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  {t('appointments.viewUnpaidInvoices')}
+                </button>
+                <button
+                  onClick={() => navigate('/client/payment-center')}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  {t('appointments.makePayment')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
       <div className="max-w-3xl mx-auto">
@@ -375,11 +599,11 @@ const BookAppointment: React.FC = () => {
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <ArrowLeftIcon className="w-5 h-5 mr-2" />
-            Back to Appointments
+            {t('common.backToAppointments')}
           </button>
           
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Book an Appointment</h1>
-          <p className="text-gray-600">Request a new therapy session</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('appointments.bookAppointment')}</h1>
+          <p className="text-gray-600">{t('appointments.requestNewSession')}</p>
         </div>
 
         {/* Progress Steps */}
@@ -404,13 +628,13 @@ const BookAppointment: React.FC = () => {
           </div>
           <div className="flex justify-between mt-4">
             <span className={`text-sm ${step >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              Date & Time
+              {t('appointments.dateTime')}
             </span>
             <span className={`text-sm ${step >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              Description
+              {t('appointments.description')}
             </span>
             <span className={`text-sm ${step >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              Review
+              {t('appointments.review')}
             </span>
           </div>
         </div>
@@ -427,7 +651,7 @@ const BookAppointment: React.FC = () => {
               onClick={() => setStep(step - 1)}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              Previous
+              {t('common.previous')}
             </button>
           )}
           
@@ -436,18 +660,18 @@ const BookAppointment: React.FC = () => {
               <button
                 onClick={() => {
                   if (step === 1 && (!selectedDate || !selectedTime)) {
-                    errorAlert('Please select both date and time');
+                    errorAlert(t('appointments.selectDateTimeError'));
                     return;
                   }
                   if (step === 2 && !problemDescription) {
-                    errorAlert('Please describe what you would like to discuss');
+                    errorAlert(t('appointments.describeNeeds'));
                     return;
                   }
                   setStep(step + 1);
                 }}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Next
+                {t('common.next')}
               </button>
             ) : (
               <button
@@ -458,12 +682,12 @@ const BookAppointment: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <LoadingSpinner size="small" className="mr-2" />
-                    Submitting...
+                    {t('common.submitting')}...
                   </>
                 ) : (
                   <>
                     <CheckCircleIcon className="w-5 h-5 mr-2" />
-                    Submit Request
+                    {t('appointments.submitRequest')}
                   </>
                 )}
               </button>

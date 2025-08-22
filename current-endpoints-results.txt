@@ -1,35 +1,129 @@
 PraktijkEPD Backend API Test Results
 =====================================
-Test Date: 8/18/2025, 9:50:09 AM
+Test Date: 8/22/2025, 8:54:13 AM
 API Base URL: https://praktijk-epd-backend-production.up.railway.app/api
-Total Duration: 3.39 seconds
+Total Duration: 29.58 seconds
 
 Test Summary
 ------------
-Total Tests: 4
-Passed: 2
-Failed: 2
-Success Rate: 50.00%
+Total Tests: 72
+Passed: 68
+Failed: 4
+Success Rate: 94.44%
 
+
+Profile Management
+------------------
+[PASS] Get current user profile (271ms)
+[PASS] Edit user profile (276ms)
+[PASS] Get therapist profile (271ms)
+
+Appointment System
+------------------
+[PASS] Create appointment request (408ms)
+[PASS] Get unassigned appointment requests (466ms)
+      Details: Found 15 unassigned requests
+[PASS] Assign appointment request to therapist (352ms)
+[PASS] Create appointment (294ms)
+      Details: Created on day +9 at 11:00
+[PASS] Get appointments (326ms)
+      Details: Found 64 appointments
+[FAIL] Book appointment with specific therapist (274ms)
+      Error: {"success":false,"message":"You already have an appointment at this time"}
+      Status Code: 409
+
+Session Management
+------------------
+[PASS] Get session history (271ms)
+      Details: Found 0 sessions
+[PASS] Get session statistics (285ms)
+[PASS] Get client session history (349ms)
+
+Notification System
+-------------------
+[PASS] Get notifications (284ms)
+      Details: Found 20 notifications
+[PASS] Get unread notification count (274ms)
+[PASS] Mark notification as read (260ms)
+[PASS] Mark all notifications as read (310ms)
+[PASS] Get notification preferences (300ms)
+[PASS] Update notification preferences (254ms)
+
+Resource Management
+-------------------
+[PASS] Create resource (306ms)
+[PASS] Get resources (263ms)
+      Details: Found 20 resources
+[PASS] Get resource by ID (296ms)
+[PASS] Assign resource to client (268ms)
+[PASS] Get assigned resources (267ms)
+[PASS] Track resource engagement (view) (400ms)
+[PASS] Track resource engagement (complete) (282ms)
+[PASS] Get resource analytics (329ms)
+
+Survey System
+-------------
+[PASS] Create survey (306ms)
+[PASS] Get survey templates (277ms)
+[PASS] Assign survey to client (309ms)
+[PASS] Get assigned surveys (340ms)
+[PASS] Submit survey response (311ms)
+[PASS] Get survey responses (277ms)
+[PASS] Get survey analytics (290ms)
+[FAIL] Submit completion survey (308ms)
+      Error: {"success":false,"message":"Failed to submit completion survey"}
+      Status Code: 500
+
+Challenge System
+----------------
+[PASS] Create challenge (289ms)
+[PASS] Get available challenges (278ms)
+[PASS] Assign challenge to client (274ms)
+[PASS] Get client challenges (283ms)
+[PASS] Start challenge check-in (324ms)
+[PASS] Complete challenge check-in (331ms)
+[PASS] Get challenge progress (307ms)
+[PASS] Get challenge analytics (305ms)
+[PASS] Get challenges with filters (307ms)
+[PASS] Get challenges with filters (307ms)
 
 
 Failed Tests Detail
 ===================
 
-Test: Admin login with 2FA
-Timestamp: 2025-08-18T07:50:07.569Z
-Status Code: 401
+Test: Database schema check
+Timestamp: 2025-08-22T06:54:08.992Z
+Status Code: 404
 Error: {
-  "success": false,
-  "message": "Invalid two-factor authentication code"
+  "error": "Not Found",
+  "message": "The requested resource /api/test/check-schema?token=final-fix-2025-temp was not found on this server.",
+  "timestamp": "2025-08-22T06:54:08.868Z"
 }
 --------------------------------------------------
 
-Test: Therapist login with 2FA
-Timestamp: 2025-08-18T07:50:08.403Z
-Status Code: 401
+Test: Submit intake form
+Timestamp: 2025-08-22T06:54:11.309Z
+Status Code: 403
 Error: {
   "success": false,
-  "message": "Invalid two-factor authentication code"
+  "message": "Email verification required"
+}
+--------------------------------------------------
+
+Test: Book appointment with specific therapist
+Timestamp: 2025-08-22T06:54:11.931Z
+Status Code: 409
+Error: {
+  "success": false,
+  "message": "You already have an appointment at this time"
+}
+--------------------------------------------------
+
+Test: Submit completion survey
+Timestamp: 2025-08-22T06:54:13.703Z
+Status Code: 500
+Error: {
+  "success": false,
+  "message": "Failed to submit completion survey"
 }
 --------------------------------------------------

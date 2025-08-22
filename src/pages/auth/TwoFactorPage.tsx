@@ -182,7 +182,7 @@ const TwoFactorPage: React.FC = () => {
               window.location.replace(dashboardPath);
             } else {
               // Fallback - refresh the page to reinitialize auth state
-              console.log('[TwoFactorPage] No user data, refreshing page');
+              // No user data, refreshing page
               window.location.reload();
             }
           }, 100);

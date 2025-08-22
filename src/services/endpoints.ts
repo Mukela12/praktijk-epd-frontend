@@ -439,7 +439,7 @@ export const clientApi = {
 
   // Session History
   getSessionHistory: async (params?: any): Promise<ApiResponse<{ sessions: any[] }>> => {
-    const response = await api.get('/client/session-history', { params });
+    const response = await api.get('/client/sessions', { params });
     return response.data;
   },
 

@@ -18,13 +18,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   useEffect(() => {
     // Try to refresh auth on mount if we have a token but no user
     const token = localStorage.getItem('accessToken');
-    console.log('[ProtectedRoute] useEffect - token:', !!token, 'user:', !!user, 'isLoading:', isLoading);
+    // Check auth state on mount
     
     if (token && !user && !isLoading) {
-      console.log('[ProtectedRoute] Have token but no user, refreshing auth...');
+      // Have token but no user, refreshing auth
       refreshAuth().catch(() => {
         // If refresh fails, the API interceptor will handle redirect
-        console.log('[ProtectedRoute] Auth refresh failed');
+        // Auth refresh failed
       });
     }
   }, [user, isLoading, refreshAuth]);
@@ -54,7 +54,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
 
   // If no token at all, redirect immediately
   if (!hasToken) {
-    console.log('[ProtectedRoute] No token found, redirecting to login');
+    // No token found, redirecting to login
     // Don't navigate if we're already on the login page
     if (location.pathname === '/auth/login') {
       return null;
@@ -73,14 +73,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
 
   // If not authenticated after loading, redirect to login
   if (!isAuthenticated || !user) {
-    console.log('[ProtectedRoute] Not authenticated, checking token...');
-    console.log('[ProtectedRoute] isAuthenticated:', isAuthenticated);
-    console.log('[ProtectedRoute] user:', user);
-    console.log('[ProtectedRoute] hasToken:', hasToken);
+    // Not authenticated, checking token
     
     // If we have a token but no user yet, wait for auth to load
     if (hasToken && !user) {
-      console.log('[ProtectedRoute] Has token but no user, showing loading...');
+      // Has token but no user, showing loading
       return (
         <div className="flex items-center justify-center min-h-screen">
           <LoadingSpinner size="large" />
@@ -90,7 +87,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     
     // Only redirect to login if we truly have no auth
     if (!hasToken) {
-      console.log('[ProtectedRoute] No token, redirecting to login');
+      // No token, redirecting to login
       return <Navigate to="/auth/login" state={{ from: location }} replace />;
     }
   }

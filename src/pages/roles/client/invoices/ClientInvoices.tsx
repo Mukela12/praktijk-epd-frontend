@@ -21,6 +21,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
 import { Invoice as InvoiceEntity, InvoiceItem as InvoiceItemEntity } from '@/types/entities';
 import { formatDate, formatCurrency } from '@/utils/dateFormatters';
+import InvoiceView from '@/components/invoices/InvoiceView';
+import InvoiceViewInline from '@/components/invoices/InvoiceViewInline';
 
 // Extend the Invoice type to include computed fields
 interface Invoice extends InvoiceEntity {
@@ -44,6 +46,7 @@ const ClientInvoices: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showInlineView, setShowInlineView] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid' | 'overdue'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -204,6 +207,21 @@ const ClientInvoices: React.FC = () => {
     );
   }
 
+  // If showing inline invoice view
+  if (showInlineView && selectedInvoice) {
+    return (
+      <InvoiceViewInline
+        invoice={selectedInvoice}
+        onBack={() => {
+          setShowInlineView(false);
+          setSelectedInvoice(null);
+        }}
+        onDownload={() => handleDownloadInvoice(selectedInvoice.id)}
+        onPrint={() => window.print()}
+      />
+    );
+  }
+
   return (
     <div className="container-standard animate-fadeInUp">
       {/* Header */}
@@ -361,7 +379,7 @@ const ClientInvoices: React.FC = () => {
                     <button
                       onClick={() => {
                         setSelectedInvoice(invoice);
-                        setShowInvoiceModal(true);
+                        setShowInlineView(true);
                       }}
                       className="btn-premium-ghost text-sm"
                     >
@@ -394,152 +412,14 @@ const ClientInvoices: React.FC = () => {
 
       {/* Invoice Details Modal */}
       {showInvoiceModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="card-premium max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scaleIn">
-            <div className="p-6">
-              {/* Invoice Header */}
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="heading-section mb-2">Invoice #{selectedInvoice.invoice_number}</h2>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedInvoice.status)}`}>
-                    {getStatusIcon(selectedInvoice.status)}
-                    <span className="ml-1 capitalize">{selectedInvoice.status}</span>
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowInvoiceModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Invoice Details */}
-              <div className="space-y-6">
-                {/* Billing Info */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">From</h3>
-                    <p className="text-body-sm text-gray-700">
-                      PraktijkEPD<br />
-                      {selectedInvoice.therapistName || 'Therapist'}<br />
-                      Keizersgracht 123<br />
-                      1015 CJ Amsterdam
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Bill To</h3>
-                    <p className="text-body-sm text-gray-700">
-                      {user?.first_name} {user?.last_name}<br />
-                      {user?.email}<br />
-                      Client Address Line 1<br />
-                      Client Address Line 2
-                    </p>
-                  </div>
-                </div>
-
-                {/* Invoice Dates */}
-                <div className="grid grid-cols-3 gap-4 py-4 border-t border-b border-gray-200">
-                  <div>
-                    <p className="text-caption">Invoice Date</p>
-                    <p className="text-body-sm font-medium">{new Date(selectedInvoice.issue_date).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-caption">Due Date</p>
-                    <p className="text-body-sm font-medium">{new Date(selectedInvoice.due_date).toLocaleDateString()}</p>
-                  </div>
-                  {selectedInvoice.paid_date && (
-                    <div>
-                      <p className="text-caption">Paid Date</p>
-                      <p className="text-body-sm font-medium text-green-600">{new Date(selectedInvoice.paid_date).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Invoice Items */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Services</h3>
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 text-caption">Description</th>
-                        <th className="text-right py-2 text-caption">Qty</th>
-                        <th className="text-right py-2 text-caption">Rate</th>
-                        <th className="text-right py-2 text-caption">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedInvoice.items.map((item, index) => (
-                        <tr key={index} className="border-b border-gray-100">
-                          <td className="py-3 text-body-sm">{item.description}</td>
-                          <td className="py-3 text-body-sm text-right">{item.quantity}</td>
-                          <td className="py-3 text-body-sm text-right">{formatCurrency(item.unit_price)}</td>
-                          <td className="py-3 text-body-sm text-right font-medium">{formatCurrency(item.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={3} className="pt-4 text-right font-semibold">Total</td>
-                        <td className="pt-4 text-right text-lg font-bold text-gray-900">{formatCurrency(Number(selectedInvoice.total_amount))}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                {/* Payment Information */}
-                {selectedInvoice.status === 'paid' && selectedInvoice.payment_method && (
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <h3 className="font-semibold text-green-900 mb-2">Payment Information</h3>
-                    <div className="grid grid-cols-2 gap-4 text-body-sm">
-                      <div>
-                        <p className="text-green-700">Payment Method:</p>
-                        <p className="font-medium text-green-900">{selectedInvoice.payment_method}</p>
-                      </div>
-                      <div>
-                        <p className="text-green-700">Payment Date:</p>
-                        <p className="font-medium text-green-900">{new Date(selectedInvoice.paid_date!).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center justify-end space-x-4 pt-4">
-                  <button
-                    onClick={() => setShowInvoiceModal(false)}
-                    className="btn-premium-secondary"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => handleDownloadInvoice(selectedInvoice.id)}
-                    disabled={isDownloading}
-                    className="btn-premium-secondary flex items-center space-x-2"
-                  >
-                    <DocumentArrowDownIcon className="w-5 h-5" />
-                    <span>Download PDF</span>
-                  </button>
-                  {(selectedInvoice.status === 'sent' || selectedInvoice.status === 'overdue') && (
-                    <button
-                      onClick={() => {
-                        setShowInvoiceModal(false);
-                        handlePayInvoice(selectedInvoice);
-                      }}
-                      className="btn-premium-primary flex items-center space-x-2"
-                    >
-                      <CreditCardIcon className="w-5 h-5" />
-                      <span>Pay Invoice</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InvoiceView
+          invoice={selectedInvoice}
+          onClose={() => setShowInvoiceModal(false)}
+          onDownload={() => handleDownloadInvoice(selectedInvoice.id)}
+          onPrint={() => {
+            window.print();
+          }}
+        />
       )}
 
       {/* Payment Methods Notice */}

@@ -218,7 +218,7 @@ api.interceptors.response.use(
       
       // If no token, just reject without redirect (let the app handle it)
       if (!accessToken) {
-        console.log('[API] No access token found for 401 response');
+        // No access token found for 401 response
         // Clear auth store if available
         if ((window as any).useAuthStore) {
           (window as any).useAuthStore.getState().clearAuth();

@@ -30,7 +30,7 @@ export const SimpleProtectedRoute: React.FC<SimpleProtectedRouteProps> = ({
   useEffect(() => {
     const initAuth = async () => {
       if (hasToken && !user && authenticationState === AuthenticationState.IDLE) {
-        console.log('[SimpleProtectedRoute] Initializing auth with token');
+        // Initializing auth with token
         try {
           await refreshAuth();
         } catch (error) {
@@ -69,7 +69,7 @@ export const SimpleProtectedRoute: React.FC<SimpleProtectedRouteProps> = ({
   
   // If no token, redirect to login
   if (!hasToken) {
-    console.log('[SimpleProtectedRoute] No token found, redirecting to login');
+    // No token found, redirecting to login
     // Don't navigate if we're already on the login page
     if (location.pathname === '/auth/login') {
       return null;
@@ -79,7 +79,7 @@ export const SimpleProtectedRoute: React.FC<SimpleProtectedRouteProps> = ({
   
   // If we have token but no user after initialization, redirect to login
   if (!user) {
-    console.log('[SimpleProtectedRoute] Have token but no user after init, redirecting to login');
+    // Have token but no user after init, redirecting to login
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
   

@@ -101,7 +101,7 @@ const ResetPasswordPage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      console.error('Reset password error:', error);
+      // Silent fail on reset password error
       setError('root', {
         type: 'manual',
         message: error.response?.data?.message || 'Failed to reset password. Please try again.',

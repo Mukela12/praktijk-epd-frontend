@@ -215,7 +215,7 @@ const MessagesManagement: React.FC<MessagesManagementProps> = ({ userRole }) => 
       
       setUsers(recipients);
     } catch (error) {
-      console.error('Failed to load users:', error);
+      // Silent fail on user load error
     }
   };
 

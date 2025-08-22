@@ -127,6 +127,11 @@ const BankInformation: React.FC = () => {
       setIsSaving(true);
       const cleanIBAN = formData.iban.replace(/\s/g, '');
       
+      // Double-check IBAN format before sending
+      if (!cleanIBAN.startsWith('NL') || cleanIBAN.length !== 18) {
+        throw new Error('Invalid IBAN format');
+      }
+      
       const response = await clientApi.addPaymentMethod({
         type: 'sepa',
         iban: cleanIBAN,

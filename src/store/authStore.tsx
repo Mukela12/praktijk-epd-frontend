@@ -307,7 +307,7 @@ export const useAuthStore = create<AuthStore>()(
       logout: async (): Promise<void> => {
         // Prevent multiple simultaneous logout attempts
         if (isLogoutInProgress) {
-          console.log('[AuthStore] Logout already in progress, skipping');
+          // Logout already in progress, skipping
           return;
         }
         
@@ -319,7 +319,7 @@ export const useAuthStore = create<AuthStore>()(
           
           await authApi.logout();
         } catch (error) {
-          console.error('Logout error:', error);
+          // Silent fail on logout error
         } finally {
           isLogoutInProgress = false;
           // Clear all auth state
@@ -402,7 +402,7 @@ export const useAuthStore = create<AuthStore>()(
             get().startTokenRefreshTimer();
           }
         } catch (error) {
-          console.error('Auth refresh failed:', error);
+          // Silent fail on auth refresh
           get().clearAuth();
         }
       },
@@ -413,7 +413,7 @@ export const useAuthStore = create<AuthStore>()(
           PremiumNotifications.info('2FA setup initiated', { description: 'Scan the QR code with your authenticator app' });
           return setup;
         } catch (error: any) {
-          console.error('2FA setup error:', error);
+          // Silent fail on 2FA setup error
           let message = '2FA setup failed';
           
           if (error.response?.status === 409) {
@@ -451,12 +451,10 @@ export const useAuthStore = create<AuthStore>()(
             const navigation = get().navigation;
             const dashboardPath = navigation.getDashboardPath(response.user.role);
             
-            console.log('[complete2FALogin] Setting auth state with token:', response.accessToken);
-            console.log('[complete2FALogin] User role:', response.user.role);
-            console.log('[complete2FALogin] Dashboard path:', dashboardPath);
+            // Setting auth state with token
             
             // Store token in localStorage FIRST
-            console.log('[complete2FALogin] Storing token in localStorage');
+            // Storing token in localStorage
             localStorage.setItem('accessToken', response.accessToken);
             localStorage.setItem('user', JSON.stringify(response.user));
             localStorage.removeItem('pendingLogin'); // Clean up
@@ -490,8 +488,7 @@ export const useAuthStore = create<AuthStore>()(
             
             set(newState);
             
-            console.log('[complete2FALogin] Verifying token storage:', localStorage.getItem('accessToken'));
-            console.log('[complete2FALogin] Auth state stored successfully');
+            // Auth state stored successfully
             
             // Start token refresh timer
             get().startTokenRefreshTimer();
@@ -499,13 +496,13 @@ export const useAuthStore = create<AuthStore>()(
             PremiumNotifications.auth.loginSuccess(response.user.first_name);
             return true;
           } else {
-            console.log('[complete2FALogin] Response not successful:', response);
+            // Response not successful
           }
           
           PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });
           return false;
         } catch (error: any) {
-          console.error('2FA login completion error:', error);
+          // Silent fail on 2FA login completion
           let message = '2FA verification failed';
           
           if (error.response?.status === 400) {
@@ -588,7 +585,7 @@ export const useAuthStore = create<AuthStore>()(
           PremiumNotifications.error(response.message || '2FA verification failed', { title: '2FA Verification Failed' });
           return false;
         } catch (error: any) {
-          console.error('2FA verification error:', error);
+          // Silent fail on 2FA verification
           let message = '2FA verification failed';
           
           if (error.response?.status === 400) {
@@ -676,7 +673,7 @@ export const useAuthStore = create<AuthStore>()(
             try {
               await get().refreshAuth();
             } catch (error) {
-              console.error('[AuthStore] Periodic token refresh failed:', error);
+              // Silent fail on periodic token refresh
               // If refresh fails, clear auth to force re-login
               get().clearAuth();
             }

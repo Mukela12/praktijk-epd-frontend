@@ -916,7 +916,7 @@ export const realApiService = {
 
     // Session history (✅ WORKING)
     getSessionHistory: async (params?: any): Promise<ApiResponse<any[]>> => {
-      const response = await api.get('/client/session-history', { params });
+      const response = await api.get('/client/sessions', { params });
       return response.data;
     }
   },
@@ -1479,6 +1479,16 @@ export const realApiService = {
 
     deleteNotification: async (notificationId: string): Promise<ApiResponse> => {
       const response = await api.delete(`/notifications/${notificationId}`);
+      return response.data;
+    },
+
+    getPreferences: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/notifications/preferences');
+      return response.data;
+    },
+
+    updatePreferences: async (preferences: any): Promise<ApiResponse> => {
+      const response = await api.put('/notifications/preferences', preferences);
       return response.data;
     }
   },

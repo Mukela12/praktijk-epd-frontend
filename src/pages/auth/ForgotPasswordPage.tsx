@@ -47,7 +47,7 @@ const ForgotPasswordPage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      console.error('Forgot password error:', error);
+      // Silent fail on forgot password error
       setError('root', {
         type: 'manual',
         message: error.response?.data?.message || 'Failed to send reset email. Please try again.',

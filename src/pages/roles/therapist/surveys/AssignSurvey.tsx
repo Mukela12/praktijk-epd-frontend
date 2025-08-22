@@ -108,20 +108,21 @@ const AssignSurvey: React.FC = () => {
       
       // Load survey details and clients in parallel
       const [surveyResponse, clientsResponse] = await Promise.all([
-        realApiService.therapist.getSurveys(),
+        realApiService.surveys.getSurveyById(surveyId!),
         realApiService.therapist.getClients()
       ]);
       
       if (surveyResponse.success && clientsResponse.success) {
-        const surveyData = surveyResponse.data?.surveys?.find((s: any) => s.id === surveyId);
-        if (surveyData) {
-          setSurvey(surveyData);
+        if (surveyResponse.data) {
+          setSurvey(surveyResponse.data);
         } else {
           throw new Error('Survey not found');
         }
         
         // Filter active clients only
-        const activeClients = (clientsResponse.data || []).filter(
+        const responseData = clientsResponse.data as any;
+        const clientsData = responseData?.clients || responseData || [];
+        const activeClients = (Array.isArray(clientsData) ? clientsData : []).filter(
           (client: any) => client.status === 'active'
         );
         setClients(activeClients as unknown as Client[]);

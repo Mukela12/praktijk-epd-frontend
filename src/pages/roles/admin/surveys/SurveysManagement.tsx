@@ -79,7 +79,7 @@ const SurveysManagement: React.FC = () => {
       const response = await resourcesApi.getSurveys();
       
       if (response.success && response.data) {
-        const surveysData = response.data.surveys || [];
+        const surveysData = Array.isArray(response.data) ? response.data : response.data.surveys || [];
         setSurveys(surveysData);
         calculateStats(surveysData);
       }

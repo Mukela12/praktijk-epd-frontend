@@ -23,6 +23,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { PremiumCard, PremiumButton, StatusBadge } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { realApiService } from '@/services/realApi';
 
 // Types
 interface ClientSettings {
@@ -119,14 +120,30 @@ const ClientSettings: React.FC = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // In a real app, this would fetch from API
-        setTimeout(() => {
+        setIsLoading(true);
+        
+        // Load notification preferences from API
+        const response = await realApiService.notifications.getPreferences();
+        
+        if (response.success && response.data) {
+          // Merge API preferences with mock settings
+          setSettings({
+            ...mockSettings,
+            email_notifications: response.data.email_notifications ?? true,
+            sms_notifications: response.data.sms_notifications ?? false,
+            appointment_reminders: response.data.appointment_reminders ?? true,
+            treatment_updates: response.data.treatment_updates ?? true,
+            newsletter_subscription: response.data.newsletter_subscription ?? false,
+            login_notifications: response.data.login_notifications ?? true
+          });
+        } else {
+          // Use mock settings as fallback
           setSettings(mockSettings);
-          setIsLoading(false);
-        }, 1000);
+        }
       } catch (error) {
-        console.error('Failed to load settings:', error);
+        // Silent fail - use mock settings
         setSettings(mockSettings);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -162,15 +179,97 @@ const ClientSettings: React.FC = () => {
     }
   };
 
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate phone number
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
   // Save settings
   const handleSave = async () => {
+    if (!settings) return;
+    
+    // Validate personal information
+    if (!settings.first_name || settings.first_name.trim().length < 2) {
+      warning('First name must be at least 2 characters');
+      setActiveTab('profile');
+      return;
+    }
+    if (!settings.last_name || settings.last_name.trim().length < 2) {
+      warning('Last name must be at least 2 characters');
+      setActiveTab('profile');
+      return;
+    }
+    if (!validateEmail(settings.email)) {
+      warning('Please enter a valid email address');
+      setActiveTab('profile');
+      return;
+    }
+    if (!validatePhone(settings.phone)) {
+      warning('Please enter a valid phone number');
+      setActiveTab('profile');
+      return;
+    }
+    
+    // Validate emergency contact if provided
+    if (settings.emergency_contact.name || settings.emergency_contact.phone) {
+      if (!settings.emergency_contact.name || settings.emergency_contact.name.trim().length < 2) {
+        warning('Emergency contact name must be at least 2 characters');
+        setActiveTab('profile');
+        return;
+      }
+      if (!validatePhone(settings.emergency_contact.phone)) {
+        warning('Please enter a valid emergency contact phone number');
+        setActiveTab('profile');
+        return;
+      }
+      if (!settings.emergency_contact.relationship || settings.emergency_contact.relationship.trim().length < 2) {
+        warning('Please specify the relationship with emergency contact');
+        setActiveTab('profile');
+        return;
+      }
+    }
+    
+    // Validate preferences
+    if (settings.reminder_time < 0 || settings.reminder_time > 72) {
+      warning('Reminder time must be between 0 and 72 hours');
+      setActiveTab('preferences');
+      return;
+    }
+    if (settings.preferred_session_duration < 15 || settings.preferred_session_duration > 120) {
+      warning('Session duration must be between 15 and 120 minutes');
+      setActiveTab('preferences');
+      return;
+    }
+    
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      success('Settings saved successfully');
-      setHasChanges(false);
+      // Update notification preferences via API
+      const notificationPrefs = {
+        email_notifications: settings.email_notifications,
+        sms_notifications: settings.sms_notifications,
+        appointment_reminders: settings.appointment_reminders,
+        treatment_updates: settings.treatment_updates,
+        newsletter_subscription: settings.newsletter_subscription,
+        login_notifications: settings.login_notifications
+      };
+      
+      const response = await realApiService.notifications.updatePreferences(notificationPrefs);
+      
+      if (response.success) {
+        success('Settings saved successfully');
+        setHasChanges(false);
+      } else {
+        warning('Failed to save some settings');
+      }
     } catch (error) {
+      console.error('Failed to save settings:', error);
       warning('Failed to save settings');
     } finally {
       setIsSaving(false);
@@ -280,7 +379,9 @@ const ClientSettings: React.FC = () => {
                     value={settings.first_name}
                     onChange={(e) => handleSettingChange('first_name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    maxLength={50}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Letters only, max 50 characters</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
@@ -289,7 +390,9 @@ const ClientSettings: React.FC = () => {
                     value={settings.last_name}
                     onChange={(e) => handleSettingChange('last_name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    maxLength={50}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Letters only, max 50 characters</p>
                 </div>
               </div>
               <div>
@@ -651,20 +754,6 @@ const ClientSettings: React.FC = () => {
                 </PremiumButton>
               </div>
               
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <h4 className="font-semibold text-red-800 mb-2">Delete Account</h4>
-                <p className="text-sm text-red-700 mb-3">
-                  Permanently delete your account and all associated data. This action cannot be undone.
-                </p>
-                <PremiumButton 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-red-300 text-red-600 hover:bg-red-50"
-                  onClick={() => warning('Account deletion requires contacting support')}
-                >
-                  Delete Account
-                </PremiumButton>
-              </div>
             </div>
           </PremiumCard>
         </div>

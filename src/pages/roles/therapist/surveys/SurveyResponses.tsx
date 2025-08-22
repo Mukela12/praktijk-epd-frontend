@@ -50,19 +50,22 @@ const SurveyResponses: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Load survey details
-      const surveyResponse = await realApiService.therapist.getSurvey(surveyId!);
+      // Load survey details and responses using working endpoints
+      const [surveyResponse, responsesResponse] = await Promise.all([
+        realApiService.surveys.getSurveyById(surveyId!),
+        realApiService.surveys.getResponses(surveyId!)
+      ]);
+      
       if (surveyResponse.success) {
         setSurvey(surveyResponse.data);
       }
       
-      // Load survey responses
-      const responsesResponse = await realApiService.therapist.getSurveyResponses(surveyId!);
       if (responsesResponse.success) {
-        setResponses(responsesResponse.data || []);
+        const responsesData = responsesResponse.data?.responses || responsesResponse.data || [];
+        setResponses(Array.isArray(responsesData) ? responsesData : []);
       }
     } catch (error: any) {
-      console.error('Error loading survey responses:', error);
+      // Silent fail on error
       setError('Failed to load survey responses');
     } finally {
       setIsLoading(false);

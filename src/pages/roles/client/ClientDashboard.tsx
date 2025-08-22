@@ -22,6 +22,8 @@ import PageTransition from '@/components/ui/PageTransition';
 import AnimatedMetricCard from '@/components/ui/AnimatedMetricCard';
 import { Appointment, Message, Therapist } from '@/types/entities';
 import { formatDate, formatTime, formatFullDate } from '@/utils/dateFormatters';
+import UnpaidInvoiceAlert from '@/components/invoices/UnpaidInvoiceAlert';
+// CompletionSurvey removed - endpoint not working in production
 
 // Progress card component - replaced with AnimatedMetricCard
 
@@ -109,6 +111,9 @@ const ClientDashboard: React.FC = () => {
           });
           // Check if intake form is completed
           setHasCompletedIntake(dashboardResult.hasCompletedIntake !== false);
+          
+          
+          // Completion survey endpoint not working - removed
         }
         
         // Add delay between API calls to avoid rate limiting
@@ -215,6 +220,9 @@ const ClientDashboard: React.FC = () => {
   return (
     <PageTransition>
       <div className="space-y-6">
+        {/* Unpaid Invoice Alert */}
+        <UnpaidInvoiceAlert className="mb-6 animate-fadeIn" />
+        
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white animated-gradient">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -488,6 +496,8 @@ const ClientDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      
+      
     </PageTransition>
   );
 };
