@@ -25,7 +25,7 @@ import {
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import realApiService from '@/services/realApi';
+import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { Appointment } from '@/types/entities';

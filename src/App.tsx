@@ -59,6 +59,8 @@ import ProfessionalTherapistProfile from '@/pages/roles/therapist/profile/Profes
 import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
 import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSettings';
 import ProfessionalSessionNotes from '@/pages/roles/therapist/notes/ProfessionalSessionNotes';
+import SessionNoteForm from '@/pages/roles/therapist/notes/SessionNoteForm';
+import SessionNoteView from '@/pages/roles/therapist/notes/SessionNoteView';
 import SessionManagement from '@/pages/roles/therapist/sessions/SessionManagement';
 import ProfessionalTherapistSurveys from '@/pages/roles/therapist/surveys/ProfessionalTherapistSurveys';
 import CreateSurvey from '@/pages/roles/therapist/surveys/CreateSurvey';
@@ -261,6 +263,9 @@ const AppRoutes: React.FC = () => {
                   <Route path="settings" element={<TherapistSettings />} />
                   {/* <Route path="reports" element={<TherapistReports />} /> */}
                   <Route path="notes" element={<ProfessionalSessionNotes />} />
+                  <Route path="notes/new" element={<SessionNoteForm />} />
+                  <Route path="notes/:noteId" element={<SessionNoteView />} />
+                  <Route path="notes/:noteId/edit" element={<SessionNoteForm />} />
                   <Route path="sessions" element={<SessionManagement />} />
                   {/* Survey Routes */}
                   <Route path="surveys" element={<ProfessionalTherapistSurveys />} />

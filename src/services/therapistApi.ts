@@ -167,6 +167,32 @@ export const therapistApi = {
     return response.data;
   },
 
+  // Session Notes
+  getSessionNotes: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/session-notes', { params });
+    return response.data;
+  },
+
+  getSessionNote: async (noteId: string): Promise<ApiResponse<any>> => {
+    const response = await api.get(`/session-notes/${noteId}`);
+    return response.data;
+  },
+
+  createSessionNote: async (data: any): Promise<ApiResponse<any>> => {
+    const response = await api.post('/session-notes', data);
+    return response.data;
+  },
+
+  updateSessionNote: async (noteId: string, data: any): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/session-notes/${noteId}`, data);
+    return response.data;
+  },
+
+  deleteSessionNote: async (noteId: string): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/session-notes/${noteId}`);
+    return response.data;
+  },
+
   // Surveys
   getSurveys: async (): Promise<ApiResponse<{ surveys: any[] }>> => {
     const response = await api.get('/surveys');

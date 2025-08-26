@@ -587,6 +587,30 @@ export const realApiService = {
     getHistory: async (params?: any): Promise<ApiResponse<any>> => {
       const response = await api.get('/sessions', { params });
       return response.data;
+    },
+
+    // Additional session endpoints
+    getStatistics: async (therapistId: string, params?: { startDate?: string; endDate?: string }): Promise<ApiResponse<{
+      totalSessions: number;
+      completedSessions: number;
+      cancelledSessions: number;
+      noShows: number;
+      averageSessionDuration: number;
+      clientRetentionRate: number;
+    }>> => {
+      const response = await api.get(`/therapists/${therapistId}/session-stats`, { params });
+      return response.data;
+    },
+
+    getClientSummary: async (clientId: string): Promise<ApiResponse<{
+      totalSessions: number;
+      lastSessionDate: string;
+      averageMoodImprovement: number;
+      commonThemes: string[];
+      progressSummary: string;
+    }>> => {
+      const response = await api.get(`/clients/${clientId}/session-summary`);
+      return response.data;
     }
   },
 
@@ -952,6 +976,56 @@ export const realApiService = {
     // Get assigned therapist with photo
     getAssignedTherapist: async (): Promise<ApiResponse<Therapist & { profile_photo_url?: string }>> => {
       const response = await api.get('/client/assigned-therapist');
+      return response.data;
+    },
+
+    // Medical history
+    getMedicalHistory: async (): Promise<ApiResponse<{
+      currentMedications: string[];
+      allergies: string[];
+      previousTherapy: boolean;
+      previousTherapyDetails: string;
+      medicalConditions: string[];
+      hospitalizations: string[];
+    }>> => {
+      const response = await api.get('/client/medical-history');
+      return response.data;
+    },
+
+    updateMedicalHistory: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put('/client/medical-history', data);
+      return response.data;
+    },
+
+    // Therapy goals
+    getTherapyGoals: async (): Promise<ApiResponse<{
+      goals: Array<{
+        id: string;
+        goal: string;
+        status: 'active' | 'completed' | 'paused';
+        progress: number;
+        createdAt: string;
+        targetDate: string;
+      }>;
+    }>> => {
+      const response = await api.get('/client/therapy-goals');
+      return response.data;
+    },
+
+    updateTherapyGoals: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put('/client/therapy-goals', data);
+      return response.data;
+    },
+
+    // Emergency contact
+    updateEmergencyContact: async (data: {
+      name: string;
+      relationship: string;
+      phone: string;
+      alternatePhone?: string;
+      email?: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.put('/client/emergency-contact', data);
       return response.data;
     }
   },
@@ -1468,6 +1542,37 @@ export const realApiService = {
     },
     getAvailableSlots: async (params: { therapistId: string; date: string }): Promise<ApiResponse<{ slots: { time: string; available: boolean }[] }>> => {
       const response = await api.get('/appointments/available-slots', { params });
+      return response.data;
+    },
+
+    // Recurring appointments
+    createRecurringPattern: async (appointmentId: string, data: {
+      pattern: 'weekly' | 'biweekly' | 'monthly';
+      endDate: string;
+      exceptions?: string[];
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/appointments/${appointmentId}/recurring`, data);
+      return response.data;
+    },
+
+    // No-show policy
+    applyNoShowPolicy: async (appointmentId: string, data: {
+      reason: string;
+      applyFee: boolean;
+      feeAmount?: number;
+      notifyClient: boolean;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/appointments/${appointmentId}/no-show-policy`, data);
+      return response.data;
+    },
+
+    // Appointment preparation
+    updatePreparation: async (appointmentId: string, data: {
+      preparationNotes: string;
+      reviewPreviousSession: boolean;
+      focusAreas: string[];
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/appointments/${appointmentId}/preparation`, data);
       return response.data;
     }
   },

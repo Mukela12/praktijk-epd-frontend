@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   CalendarIcon,
   ClockIcon,
@@ -13,7 +14,9 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   PlusIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ChevronDownIcon,
+  PlayIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
@@ -21,15 +24,38 @@ import { useTherapistAppointments } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState, PremiumListItem, PremiumMetric } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { therapistApi } from '@/services/endpoints';
+import { therapistApi } from '@/services/therapistApi';
 import { realApiService } from '@/services/realApi';
-import AppointmentDebugger from '@/components/debug/AppointmentDebugger';
+import { formatDate, formatTime } from '@/utils/dateFormatters';
 
 // Types
+interface ClientInfo {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth?: string;
+  profile_photo_url?: string;
+  emergency_contact?: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  insurance_info?: {
+    provider: string;
+    policy_number: string;
+  };
+  last_session_date?: string;
+  total_sessions?: number;
+  therapy_goals?: string[];
+}
+
 interface Appointment {
   id: string;
   client_name: string;
   client_id: string;
+  client?: ClientInfo;
   date: string;
   time: string;
   duration: number;
@@ -40,11 +66,15 @@ interface Appointment {
   preparation_notes?: string;
   session_notes?: string;
   priority: 'urgent' | 'high' | 'normal' | 'low';
+  recurring?: boolean;
+  recurring_pattern?: string;
+  video_link?: string;
 }
 
 const TherapistAppointments: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { appointments: apiAppointments, getAppointments, isLoading, error: apiError } = useTherapistAppointments();
   const { success, info, warning, error: showError } = useAlert();
 
@@ -64,6 +94,9 @@ const TherapistAppointments: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [hasClients, setHasClients] = useState<boolean | null>(null);
+  const [expandedAppointment, setExpandedAppointment] = useState<string | null>(null);
+  const [showNoShowDialog, setShowNoShowDialog] = useState<string | null>(null);
+  const [noShowReason, setNoShowReason] = useState('');
 
 
   // Use refs to prevent re-renders and infinite loops
@@ -142,6 +175,17 @@ const TherapistAppointments: React.FC = () => {
         id: apt.id || apt.appointment_id || String(Math.random()),
         client_name: apt.client_name || apt.client?.name || `${apt.client_first_name || ''} ${apt.client_last_name || ''}`.trim() || 'Unknown Client',
         client_id: apt.client_id,
+        client: apt.client || (apt.client_id ? {
+          id: apt.client_id,
+          first_name: apt.client_first_name || apt.client?.first_name || '',
+          last_name: apt.client_last_name || apt.client?.last_name || '',
+          email: apt.client_email || apt.client?.email || '',
+          phone: apt.client_phone || apt.client?.phone || '',
+          profile_photo_url: apt.client?.profile_photo_url,
+          last_session_date: apt.client?.last_session_date,
+          total_sessions: apt.client?.total_sessions,
+          therapy_goals: apt.client?.therapy_goals
+        } : undefined),
         date: apt.date || apt.appointment_date,
         time: apt.time || apt.appointment_time || apt.start_time,
         duration: apt.duration || 50,
@@ -151,7 +195,10 @@ const TherapistAppointments: React.FC = () => {
         notes: apt.notes,
         preparation_notes: apt.preparation_notes,
         session_notes: apt.session_notes,
-        priority: apt.priority || 'normal'
+        priority: apt.priority || 'normal',
+        recurring: apt.recurring,
+        recurring_pattern: apt.recurring_pattern,
+        video_link: apt.video_link
       }});
       setAppointments(mappedAppointments);
     } else {
@@ -310,16 +357,7 @@ const TherapistAppointments: React.FC = () => {
           }
           break;
         case 'no_show':
-          const noShowResponse = await therapistApi.updateAppointment(appointmentId, { 
-            status: 'no_show',
-            notes: 'Client did not show up for appointment'
-          });
-          if (noShowResponse.success) {
-            setAppointments(prev => 
-              prev.map(apt => apt.id === appointmentId ? { ...apt, status: 'no_show' } : apt)
-            );
-            warning(`${appointment.client_name} marked as no-show`);
-          }
+          setShowNoShowDialog(appointmentId);
           break;
       }
     } catch (err: any) {
@@ -387,8 +425,6 @@ const TherapistAppointments: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Temporary debugger */}
-      <AppointmentDebugger />
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-sm p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -604,6 +640,7 @@ const TherapistAppointments: React.FC = () => {
               const isUpcoming = new Date(`${appointment.date}T${appointment.time}:00`) > new Date();
               
               return (
+                <>
                 <PremiumListItem
                   key={appointment.id}
                   avatar={{ 
@@ -619,79 +656,43 @@ const TherapistAppointments: React.FC = () => {
                           appointment.status === 'no_show' ? 'overdue' : 'active'
                   }}
                   actions={
-                    <div className="flex flex-wrap gap-2">
-                      {appointment.status === 'scheduled' && (
-                        <>
-                          {appointment.location === 'online' && (
-                            <PremiumButton
-                              size="sm"
-                              variant="primary"
-                              icon={VideoCameraIcon}
-                              onClick={() => handleAppointmentAction(appointment.id, 'join')}
-                            >
-                              Join
-                            </PremiumButton>
-                          )}
-                          {appointment.location === 'phone' && (
-                            <PremiumButton
-                              size="sm"
-                              variant="primary"
-                              icon={PhoneIcon}
-                              onClick={() => handleAppointmentAction(appointment.id, 'call')}
-                            >
-                              Call
-                            </PremiumButton>
-                          )}
-                          <PremiumButton
-                            size="sm"
-                            variant="success"
-                            icon={CheckCircleIcon}
-                            onClick={() => handleAppointmentAction(appointment.id, 'complete')}
-                          >
-                            Complete
-                          </PremiumButton>
-                          <PremiumButton
-                            size="sm"
-                            variant="outline"
-                            icon={PencilIcon}
-                            onClick={() => handleAppointmentAction(appointment.id, 'reschedule')}
-                          >
-                            Reschedule
-                          </PremiumButton>
-                          <PremiumButton
-                            size="sm"
-                            variant="outline"
-                            icon={XMarkIcon}
-                            onClick={() => handleAppointmentAction(appointment.id, 'cancel')}
-                          >
-                            Cancel
-                          </PremiumButton>
-                          <PremiumButton
-                            size="sm"
-                            variant="outline"
-                            icon={ExclamationTriangleIcon}
-                            onClick={() => handleAppointmentAction(appointment.id, 'no_show')}
-                          >
-                            No Show
-                          </PremiumButton>
-                        </>
-                      )}
-                      <PremiumButton
-                        size="sm"
-                        variant="outline"
-                        icon={DocumentTextIcon}
-                        onClick={() => handleAppointmentAction(appointment.id, 'notes')}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedAppointment(expandedAppointment === appointment.id ? null : appointment.id);
+                        }}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
                       >
-                        Notes
-                      </PremiumButton>
+                        <ChevronDownIcon className={`w-5 h-5 text-gray-600 transition-transform ${
+                          expandedAppointment === appointment.id ? 'rotate-180' : ''
+                        }`} />
+                      </button>
                     </div>
                   }
+                  onClick={() => setExpandedAppointment(expandedAppointment === appointment.id ? null : appointment.id)}
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 cursor-pointer">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{appointment.client_name}</h4>
-                        <p className="text-sm text-gray-600">{appointment.notes}</p>
+                      <div className="flex items-center space-x-3">
+                        {appointment.client?.profile_photo_url ? (
+                          <img
+                            src={appointment.client.profile_photo_url}
+                            alt={appointment.client_name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-green-600" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{appointment.client_name}</h4>
+                          <p className="text-sm text-gray-600">{appointment.notes}</p>
+                          {appointment.client?.email && (
+                            <p className="text-xs text-gray-500">{appointment.client.email}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-semibold text-gray-900">
@@ -718,6 +719,11 @@ const TherapistAppointments: React.FC = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(appointment.priority)}`}>
                         {appointment.priority.toUpperCase()}
                       </span>
+                      {appointment.recurring && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                          Recurring: {appointment.recurring_pattern}
+                        </span>
+                      )}
                     </div>
                     
                     {appointment.preparation_notes && (
@@ -735,11 +741,240 @@ const TherapistAppointments: React.FC = () => {
                     )}
                   </div>
                 </PremiumListItem>
+                
+                {/* Expanded Appointment Details */}
+                {expandedAppointment === appointment.id && (
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Client Information */}
+                      <div>
+                        <h5 className="font-semibold text-gray-900 mb-3">Client Information</h5>
+                        <dl className="space-y-2">
+                          <div className="flex justify-between">
+                            <dt className="text-sm text-gray-600">Phone:</dt>
+                            <dd className="text-sm font-medium text-gray-900">
+                              {appointment.client?.phone || 'Not provided'}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-sm text-gray-600">Date of Birth:</dt>
+                            <dd className="text-sm font-medium text-gray-900">
+                              {appointment.client?.date_of_birth ? formatDate(appointment.client.date_of_birth) : 'Not provided'}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-sm text-gray-600">Total Sessions:</dt>
+                            <dd className="text-sm font-medium text-gray-900">
+                              {appointment.client?.total_sessions || 0}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-sm text-gray-600">Last Session:</dt>
+                            <dd className="text-sm font-medium text-gray-900">
+                              {appointment.client?.last_session_date ? formatDate(appointment.client.last_session_date) : 'First session'}
+                            </dd>
+                          </div>
+                        </dl>
+                        
+                        {appointment.client?.emergency_contact && (
+                          <div className="mt-4">
+                            <h6 className="text-sm font-semibold text-gray-900 mb-2">Emergency Contact</h6>
+                            <p className="text-sm text-gray-600">
+                              {appointment.client.emergency_contact.name} ({appointment.client.emergency_contact.relationship})<br />
+                              {appointment.client.emergency_contact.phone}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Session Details & Actions */}
+                      <div>
+                        <h5 className="font-semibold text-gray-900 mb-3">Session Details</h5>
+                        
+                        {appointment.client?.therapy_goals && appointment.client.therapy_goals.length > 0 && (
+                          <div className="mb-4">
+                            <h6 className="text-sm font-semibold text-gray-700 mb-1">Therapy Goals</h6>
+                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                              {appointment.client.therapy_goals.map((goal, index) => (
+                                <li key={index}>{goal}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {appointment.location === 'online' && appointment.video_link && (
+                          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                            <p className="text-sm font-medium text-blue-900 mb-1">Video Call Link</p>
+                            <a href={appointment.video_link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700">
+                              {appointment.video_link}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {/* Action Buttons */}
+                        <div className="space-y-2">
+                          {appointment.status === 'scheduled' && isUpcoming && (
+                            <>
+                              <div className="flex space-x-2">
+                                {appointment.location === 'online' && (
+                                  <PremiumButton
+                                    size="sm"
+                                    variant="primary"
+                                    icon={VideoCameraIcon}
+                                    onClick={() => handleAppointmentAction(appointment.id, 'join')}
+                                    className="flex-1"
+                                  >
+                                    Join Video Call
+                                  </PremiumButton>
+                                )}
+                                {appointment.location === 'phone' && (
+                                  <PremiumButton
+                                    size="sm"
+                                    variant="primary"
+                                    icon={PhoneIcon}
+                                    onClick={() => handleAppointmentAction(appointment.id, 'call')}
+                                    className="flex-1"
+                                  >
+                                    Call Client
+                                  </PremiumButton>
+                                )}
+                                <PremiumButton
+                                  size="sm"
+                                  variant="success"
+                                  icon={PlayIcon}
+                                  onClick={() => navigate(`/therapist/sessions?start=${appointment.id}`)}
+                                  className="flex-1"
+                                >
+                                  Start Session
+                                </PremiumButton>
+                              </div>
+                              
+                              <div className="flex space-x-2">
+                                <PremiumButton
+                                  size="sm"
+                                  variant="outline"
+                                  icon={PencilIcon}
+                                  onClick={() => handleAppointmentAction(appointment.id, 'reschedule')}
+                                  className="flex-1"
+                                >
+                                  Reschedule
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  variant="outline"
+                                  icon={XMarkIcon}
+                                  onClick={() => handleAppointmentAction(appointment.id, 'cancel')}
+                                  className="flex-1"
+                                >
+                                  Cancel
+                                </PremiumButton>
+                                <PremiumButton
+                                  size="sm"
+                                  variant="outline"
+                                  icon={ExclamationTriangleIcon}
+                                  onClick={() => handleAppointmentAction(appointment.id, 'no_show')}
+                                  className="flex-1"
+                                >
+                                  No Show
+                                </PremiumButton>
+                              </div>
+                            </>
+                          )}
+                          
+                          <div className="flex space-x-2">
+                            <PremiumButton
+                              size="sm"
+                              variant="outline"
+                              icon={DocumentTextIcon}
+                              onClick={() => navigate(`/therapist/notes?client=${appointment.client_id}`)}
+                              className="flex-1"
+                            >
+                              View Notes
+                            </PremiumButton>
+                            <PremiumButton
+                              size="sm"
+                              variant="outline"
+                              icon={UserIcon}
+                              onClick={() => navigate(`/therapist/clients/${appointment.client_id}`)}
+                              className="flex-1"
+                            >
+                              Client Profile
+                            </PremiumButton>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                </>
               );
             })}
           </div>
         )}
       </PremiumCard>
+      
+      {/* No-Show Confirmation Dialog */}
+      {showNoShowDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <PremiumCard className="max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Mark as No-Show</h3>
+            <p className="text-gray-600 mb-4">
+              Marking the client as no-show will update the appointment status and may apply the practice's no-show policy.
+            </p>
+            <textarea
+              value={noShowReason}
+              onChange={(e) => setNoShowReason(e.target.value)}
+              placeholder="Reason for no-show (optional)..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent mb-4"
+              rows={3}
+            />
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-orange-800">
+                <strong>Note:</strong> The client will be notified of the no-show status.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <PremiumButton
+                variant="warning"
+                onClick={async () => {
+                  const appointment = appointments.find(apt => apt.id === showNoShowDialog);
+                  if (!appointment) return;
+                  
+                  try {
+                    const noShowResponse = await therapistApi.updateAppointment(showNoShowDialog, { 
+                      status: 'no_show',
+                      notes: `Client did not show up for appointment. ${noShowReason}`.trim()
+                    });
+                    if (noShowResponse.success) {
+                      setAppointments(prev => 
+                        prev.map(apt => apt.id === showNoShowDialog ? { ...apt, status: 'no_show' } : apt)
+                      );
+                      warning(`${appointment.client_name} marked as no-show`);
+                      setShowNoShowDialog(null);
+                      setNoShowReason('');
+                    }
+                  } catch (err: any) {
+                    showError(`Failed to update status: ${err.message}`);
+                  }
+                }}
+                className="flex-1"
+              >
+                Confirm No-Show
+              </PremiumButton>
+              <PremiumButton
+                variant="outline"
+                onClick={() => {
+                  setShowNoShowDialog(null);
+                  setNoShowReason('');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </PremiumButton>
+            </div>
+          </PremiumCard>
+        </div>
+      )}
     </div>
   );
 };

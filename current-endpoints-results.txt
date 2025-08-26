@@ -1,108 +1,160 @@
 PraktijkEPD Backend API Test Results
 =====================================
-Test Date: 8/22/2025, 2:51:07 PM
+Test Date: 8/23/2025, 3:02:20 PM
 API Base URL: https://praktijk-epd-backend-production.up.railway.app/api
-Total Duration: 31.78 seconds
+Total Duration: 43.54 seconds
 
 Test Summary
 ------------
-Total Tests: 72
-Passed: 68
-Failed: 4
-Success Rate: 94.44%
+Total Tests: 97
+Passed: 90
+Failed: 7
+Success Rate: 92.78%
 
 
 Profile Management
 ------------------
-[PASS] Get current user profile (323ms)
-[PASS] Edit user profile (448ms)
-[PASS] Get therapist profile (306ms)
+[PASS] Get current user profile (304ms)
+[PASS] Edit user profile (296ms)
+[PASS] Get therapist profile (269ms)
+[PASS] Get profile photo (initial) (274ms)
+[FAIL] Upload profile photo (0ms)
+      Error: "nurse.jpg file not found"
+      Status Code: 0
+[PASS] Get profile photo (after upload) (253ms)
+[FAIL] Delete profile photo (270ms)
+      Error: {"success":false,"message":"No profile photo to remove"}
+      Status Code: 404
+[PASS] Get profile photo (after delete) (339ms)
+
+Dashboard
+---------
+[PASS] Get client dashboard (490ms)
+      Details: Wellness Score: 65, Treatment Progress: 8%
+[PASS] Get therapist dashboard (302ms)
+      Details: Monthly Revenue: €0, Average Rating: 0
+[PASS] Get admin dashboard (283ms)
+      Details: Active Clients: 0, Total Revenue: €0
+[PASS] Get assistant dashboard (332ms)
+      Details: Pending Tasks: 0, Completed Today: 0
+[PASS] Get bookkeeper dashboard (391ms)
 
 Appointment System
 ------------------
-[PASS] Create appointment request (333ms)
-[PASS] Get unassigned appointment requests (495ms)
-      Details: Found 15 unassigned requests
-[PASS] Assign appointment request to therapist (284ms)
-[PASS] Create appointment (339ms)
-      Details: Created on day +9 at 15:00
-[PASS] Get appointments (315ms)
-      Details: Found 68 appointments
-[FAIL] Book appointment with specific therapist (303ms)
+[PASS] Create appointment request (311ms)
+[PASS] Get unassigned appointment requests (478ms)
+      Details: Found 20 unassigned requests
+[PASS] Assign appointment request to therapist (317ms)
+[PASS] Create appointment (276ms)
+      Details: Created on day +21 at 14:00
+[PASS] Get appointments (341ms)
+      Details: Found 126 appointments
+[FAIL] Book appointment with specific therapist (367ms)
       Error: {"success":false,"message":"You already have an appointment at this time"}
       Status Code: 409
 
 Session Management
 ------------------
-[PASS] Get session history (278ms)
-      Details: Found 0 sessions
-[PASS] Get session statistics (354ms)
-[PASS] Get client session history (294ms)
+[PASS] Start session (392ms)
+[FAIL] Add session progress (310ms)
+      Error: {"success":false,"message":"Failed to update session progress"}
+      Status Code: 500
+[PASS] End session (404ms)
+[PASS] Get session history (289ms)
+      Details: Found 13 sessions
+[PASS] Get session statistics (289ms)
+[PASS] Get client session history (347ms)
+[FAIL] Update session progress (306ms)
+      Error: {"success":false,"message":"Session not found or not in progress"}
+      Status Code: 404
+[PASS] Get client session summary (308ms)
+[PASS] Get therapist session statistics (307ms)
 
 Notification System
 -------------------
-[PASS] Get notifications (315ms)
+[PASS] Get notifications (309ms)
       Details: Found 20 notifications
-[PASS] Get unread notification count (254ms)
-[PASS] Mark notification as read (312ms)
-[PASS] Mark all notifications as read (315ms)
-[PASS] Get notification preferences (331ms)
-[PASS] Update notification preferences (382ms)
+[PASS] Get unread notification count (305ms)
+[PASS] Mark notification as read (295ms)
+[PASS] Mark all notifications as read (288ms)
+[PASS] Get notification preferences (330ms)
+[PASS] Update notification preferences (321ms)
 
 Resource Management
 -------------------
-[PASS] Create resource (464ms)
-[PASS] Get resources (291ms)
+[PASS] Create resource (572ms)
+[PASS] Get resources (296ms)
       Details: Found 20 resources
-[PASS] Get resource by ID (320ms)
-[PASS] Assign resource to client (306ms)
-[PASS] Get assigned resources (386ms)
-[PASS] Track resource engagement (view) (407ms)
-[PASS] Track resource engagement (complete) (439ms)
+[PASS] Get resource by ID (293ms)
+[PASS] Assign resource to client (278ms)
+[PASS] Get assigned resources (264ms)
+[PASS] Track resource engagement (view) (304ms)
+[PASS] Track resource engagement (complete) (310ms)
 [PASS] Get resource analytics (265ms)
 
 Survey System
 -------------
-[PASS] Create survey (288ms)
-[PASS] Get survey templates (274ms)
-[PASS] Assign survey to client (261ms)
-[PASS] Get assigned surveys (311ms)
-[PASS] Submit survey response (319ms)
-[PASS] Get survey responses (316ms)
-[PASS] Get survey analytics (318ms)
-[FAIL] Submit completion survey (254ms)
-      Error: {"success":false,"message":"Failed to submit completion survey"}
-      Status Code: 500
+[PASS] Create survey (380ms)
+[PASS] Get survey templates (305ms)
+[PASS] Assign survey to client (286ms)
+[PASS] Get assigned surveys (294ms)
+[PASS] Submit survey response (278ms)
+[PASS] Get survey responses (251ms)
+[PASS] Get survey analytics (287ms)
+[PASS] Submit completion survey (324ms)
 
 Challenge System
 ----------------
-[PASS] Create challenge (293ms)
-[PASS] Get available challenges (265ms)
-[PASS] Assign challenge to client (335ms)
-[PASS] Get client challenges (423ms)
-[PASS] Start challenge check-in (291ms)
-[PASS] Complete challenge check-in (324ms)
-[PASS] Get challenge progress (307ms)
-[PASS] Get challenge analytics (316ms)
-[PASS] Get challenges with filters (388ms)
-[PASS] Get challenges with filters (326ms)
+[PASS] Create challenge (313ms)
+[PASS] Get available challenges (339ms)
+[PASS] Assign challenge to client (280ms)
+[PASS] Get client challenges (263ms)
+[PASS] Start challenge check-in (377ms)
+[PASS] Complete challenge check-in (280ms)
+[PASS] Get challenge progress (336ms)
+[PASS] Get challenge analytics (300ms)
+[PASS] Get challenges with filters (290ms)
+[PASS] Get challenges with filters (282ms)
 
 
 Failed Tests Detail
 ===================
 
-Test: Database schema check
-Timestamp: 2025-08-22T12:51:03.134Z
+Test: Add session progress
+Timestamp: 2025-08-23T13:01:58.172Z
+Status Code: 500
+Error: {
+  "success": false,
+  "message": "Failed to update session progress"
+}
+--------------------------------------------------
+
+Test: Update session progress
+Timestamp: 2025-08-23T13:01:59.810Z
 Status Code: 404
 Error: {
-  "error": "Not Found",
-  "message": "The requested resource /api/test/check-schema?token=final-fix-2025-temp was not found on this server.",
-  "timestamp": "2025-08-22T12:51:02.667Z"
+  "success": false,
+  "message": "Session not found or not in progress"
+}
+--------------------------------------------------
+
+Test: Upload profile photo
+Timestamp: 2025-08-23T13:02:14.729Z
+Status Code: 0
+Error: "nurse.jpg file not found"
+--------------------------------------------------
+
+Test: Delete profile photo
+Timestamp: 2025-08-23T13:02:15.252Z
+Status Code: 404
+Error: {
+  "success": false,
+  "message": "No profile photo to remove"
 }
 --------------------------------------------------
 
 Test: Submit intake form
-Timestamp: 2025-08-22T12:51:05.471Z
+Timestamp: 2025-08-23T13:02:17.186Z
 Status Code: 403
 Error: {
   "success": false,
@@ -111,7 +163,7 @@ Error: {
 --------------------------------------------------
 
 Test: Book appointment with specific therapist
-Timestamp: 2025-08-22T12:51:06.085Z
+Timestamp: 2025-08-23T13:02:17.831Z
 Status Code: 409
 Error: {
   "success": false,
@@ -119,11 +171,11 @@ Error: {
 }
 --------------------------------------------------
 
-Test: Submit completion survey
-Timestamp: 2025-08-22T12:51:07.979Z
-Status Code: 500
+Test: Make immediate payment
+Timestamp: 2025-08-23T13:02:18.776Z
+Status Code: 404
 Error: {
   "success": false,
-  "message": "Failed to submit completion survey"
+  "message": "Invoice not found for this appointment"
 }
 --------------------------------------------------

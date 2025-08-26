@@ -79,7 +79,8 @@ const ClientChallenges: React.FC = () => {
       const response = await realApiService.client.getChallenges();
       
       if (response.success && response.data) {
-        const challengesData = response.data.challenges || [];
+        const challengesData = Array.isArray(response.data.challenges) ? response.data.challenges : 
+                              Array.isArray(response.data) ? response.data : [];
         
         // Map and compute progress for each challenge
         const mappedChallenges = challengesData.map((challenge: any) => {
@@ -97,9 +98,9 @@ const ClientChallenges: React.FC = () => {
           
           return {
             ...challenge,
-            id: challenge.assignment_id, // Use assignment_id as id
-            duration_minutes: 15, // Default duration
-            frequency: 'daily', // Default frequency
+            id: challenge.assignment_id || challenge.id, // Use assignment_id as id
+            duration_minutes: challenge.duration_minutes || 15, // Default duration
+            frequency: challenge.frequency || 'daily', // Default frequency
             start_date: challenge.assigned_at,
             end_date: challenge.due_date,
             progress: {
@@ -113,10 +114,20 @@ const ClientChallenges: React.FC = () => {
         });
         
         setChallenges(mappedChallenges);
+      } else {
+        setChallenges([]);
       }
-    } catch (err) {
-      error('Failed to load challenges');
+    } catch (err: any) {
       console.error('Error loading challenges:', err);
+      setChallenges([]);
+      
+      if (err.response?.status === 404) {
+        error('Challenges not found. Please contact your therapist.');
+      } else if (err.response?.status === 401) {
+        error('You are not authorized to view challenges.');
+      } else {
+        error('Failed to load challenges. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }

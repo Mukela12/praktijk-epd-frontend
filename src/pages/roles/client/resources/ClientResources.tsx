@@ -56,252 +56,6 @@ interface Resource {
   thumbnailUrl?: string;
 }
 
-// Template resources for the frontend
-const templateResources: Resource[] = [
-  {
-    id: 'template-1',
-    title: 'Understanding Anxiety: A Comprehensive Guide',
-    description: 'Learn about anxiety, its causes, symptoms, and effective coping strategies to manage anxious thoughts and feelings.',
-    content: `
-# Understanding Anxiety
-
-Anxiety is a natural human response to stress or perceived threats. While occasional anxiety is normal, persistent or excessive anxiety can interfere with daily life.
-
-## What is Anxiety?
-
-Anxiety is characterized by feelings of worry, nervousness, or unease about something with an uncertain outcome. It's your body's natural response to stress.
-
-## Common Symptoms
-
-### Physical Symptoms:
-- Rapid heartbeat
-- Sweating
-- Trembling or shaking
-- Shortness of breath
-- Stomach upset
-
-### Emotional Symptoms:
-- Excessive worry
-- Feeling of impending doom
-- Irritability
-- Difficulty concentrating
-- Sleep disturbances
-
-## Coping Strategies
-
-### 1. Deep Breathing Exercises
-Practice the 4-7-8 breathing technique:
-- Inhale for 4 counts
-- Hold for 7 counts
-- Exhale for 8 counts
-
-### 2. Progressive Muscle Relaxation
-Tense and release each muscle group in your body, starting from your toes and working up to your head.
-
-### 3. Mindfulness Meditation
-Focus on the present moment without judgment. Start with just 5 minutes daily.
-
-### 4. Regular Exercise
-Physical activity releases endorphins and helps reduce stress hormones.
-
-### 5. Healthy Sleep Habits
-- Maintain a consistent sleep schedule
-- Create a relaxing bedtime routine
-- Avoid screens before bed
-
-## When to Seek Help
-
-Consider reaching out to a mental health professional if:
-- Anxiety interferes with daily activities
-- You experience panic attacks
-- Physical symptoms persist
-- You avoid situations due to anxiety
-
-Remember, seeking help is a sign of strength, not weakness.
-    `,
-    category: 'Mental Health',
-    type: 'article',
-    tags: ['anxiety', 'mental health', 'coping strategies', 'self-help'],
-    isPublic: true,
-    viewCount: 1247,
-    rating: 4.8,
-    createdAt: '2024-01-15T00:00:00Z',
-    estimatedReadTime: 8
-  },
-  {
-    id: 'template-2',
-    title: 'Mindfulness Meditation for Beginners',
-    description: 'A step-by-step video guide to starting your mindfulness meditation practice.',
-    content: 'https://example.com/mindfulness-meditation-video',
-    category: 'Mindfulness',
-    type: 'video',
-    tags: ['mindfulness', 'meditation', 'stress relief', 'beginner'],
-    isPublic: true,
-    viewCount: 892,
-    rating: 4.9,
-    createdAt: '2024-01-20T00:00:00Z',
-    estimatedReadTime: 15,
-    thumbnailUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&h=250&fit=crop'
-  },
-  {
-    id: 'template-3',
-    title: 'Depression Self-Assessment Worksheet',
-    description: 'A comprehensive worksheet to help you track your mood and identify patterns.',
-    content: 'depression-assessment.pdf',
-    category: 'Mental Health',
-    type: 'pdf',
-    tags: ['depression', 'self-assessment', 'worksheet', 'tracking'],
-    isPublic: true,
-    viewCount: 634,
-    rating: 4.6,
-    createdAt: '2024-01-25T00:00:00Z',
-    estimatedReadTime: 20
-  },
-  {
-    id: 'template-4',
-    title: 'Building Healthy Relationships',
-    description: 'Essential tips and strategies for developing and maintaining healthy relationships.',
-    content: `
-# Building Healthy Relationships
-
-Healthy relationships are built on mutual respect, trust, and open communication. Whether with family, friends, or romantic partners, these principles remain constant.
-
-## Key Components of Healthy Relationships
-
-### 1. Communication
-- Express your needs clearly
-- Listen actively without judgment
-- Use "I" statements instead of "you" accusations
-- Be honest but kind
-
-### 2. Boundaries
-- Understand your own limits
-- Communicate boundaries clearly
-- Respect others' boundaries
-- It's okay to say no
-
-### 3. Trust
-- Be reliable and consistent
-- Keep confidences
-- Follow through on commitments
-- Give the benefit of the doubt
-
-### 4. Respect
-- Value differences
-- Support individual growth
-- Avoid criticism and contempt
-- Show appreciation regularly
-
-## Red Flags to Watch For
-- Controlling behavior
-- Lack of respect for boundaries
-- Constant criticism
-- Isolation from friends/family
-- Dishonesty
-
-## Building Connection
-- Schedule quality time together
-- Share experiences and create memories
-- Show interest in their life
-- Practice empathy and understanding
-
-Remember: Healthy relationships enhance your life, not complicate it.
-    `,
-    category: 'Relationships',
-    type: 'article',
-    tags: ['relationships', 'communication', 'boundaries', 'trust'],
-    isPublic: true,
-    viewCount: 1102,
-    rating: 4.7,
-    createdAt: '2024-02-01T00:00:00Z',
-    estimatedReadTime: 10
-  },
-  {
-    id: 'template-5',
-    title: 'Sleep Hygiene: Your Guide to Better Rest',
-    description: 'Evidence-based strategies to improve your sleep quality and establish healthy sleep patterns.',
-    content: `
-# Sleep Hygiene: Your Guide to Better Rest
-
-Quality sleep is essential for physical health, mental well-being, and overall quality of life. Here's how to optimize your sleep.
-
-## Why Sleep Matters
-- Mental clarity and focus
-- Emotional regulation
-- Physical recovery
-- Immune system support
-- Memory consolidation
-
-## Creating the Perfect Sleep Environment
-
-### 1. Temperature
-Keep your bedroom cool (60-67°F or 15-19°C)
-
-### 2. Darkness
-Use blackout curtains or eye masks
-
-### 3. Quiet
-Consider white noise or earplugs
-
-### 4. Comfort
-Invest in a good mattress and pillows
-
-## Sleep Hygiene Tips
-
-### Consistent Schedule
-- Go to bed and wake up at the same time daily
-- Even on weekends!
-
-### Wind-Down Routine
-1. Dim lights 1-2 hours before bed
-2. Avoid screens or use blue light filters
-3. Try relaxing activities (reading, gentle stretching)
-4. Practice gratitude or journaling
-
-### Daytime Habits
-- Get morning sunlight exposure
-- Exercise regularly (but not too late)
-- Limit caffeine after 2 PM
-- Avoid heavy meals before bed
-
-### What to Avoid
-- Alcohol (disrupts sleep quality)
-- Long daytime naps
-- Stressful activities before bed
-- Clock watching
-
-## Natural Sleep Aids
-- Chamomile tea
-- Magnesium supplements
-- Lavender aromatherapy
-- Meditation apps
-
-Track your sleep patterns for 2 weeks to identify what works best for you!
-    `,
-    category: 'Wellness',
-    type: 'article',
-    tags: ['sleep', 'wellness', 'health', 'self-care'],
-    isPublic: true,
-    viewCount: 956,
-    rating: 4.8,
-    createdAt: '2024-02-05T00:00:00Z',
-    estimatedReadTime: 7
-  },
-  {
-    id: 'template-6',
-    title: 'Stress Management Techniques',
-    description: 'Practical tools and exercises to manage stress effectively in your daily life.',
-    content: 'https://example.com/stress-management-guide',
-    category: 'Stress Management',
-    type: 'link',
-    tags: ['stress', 'coping', 'relaxation', 'wellness'],
-    isPublic: true,
-    viewCount: 1389,
-    rating: 4.9,
-    createdAt: '2024-02-10T00:00:00Z',
-    externalUrl: 'https://example.com/stress-management-guide'
-  }
-];
 
 const ClientResources: React.FC = () => {
   const { t } = useTranslation();
@@ -325,17 +79,23 @@ const ClientResources: React.FC = () => {
       const response = await realApiService.client.getResources();
       
       if (response.success && response.data) {
-        // Combine API resources with template resources
-        const apiResources = response.data.resources || [];
-        const combinedResources = [...templateResources, ...apiResources];
-        setResources(combinedResources);
+        const resourcesData = Array.isArray(response.data.resources) ? response.data.resources : 
+                           Array.isArray(response.data) ? response.data : [];
+        setResources(resourcesData);
       } else {
-        // Use template resources if API fails
-        setResources(templateResources);
+        setResources([]);
       }
-    } catch (err) {
-      // Use template resources as fallback
-      setResources(templateResources);
+    } catch (err: any) {
+      console.error('Error loading resources:', err);
+      setResources([]);
+      
+      if (err.response?.status === 404) {
+        error('Resources not found. Please contact your therapist.');
+      } else if (err.response?.status === 401) {
+        error('You are not authorized to view resources.');
+      } else {
+        error('Failed to load resources. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -345,7 +105,7 @@ const ClientResources: React.FC = () => {
     setSelectedResource(resource);
     
     // Track view if not already viewed
-    if (!resource.progress?.viewed && resource.id && !resource.id.startsWith('template-')) {
+    if (!resource.progress?.viewed && resource.id) {
       try {
         await realApiService.resources.trackEngagement(resource.id, 'view');
       } catch (err) {
@@ -355,12 +115,6 @@ const ClientResources: React.FC = () => {
   };
 
   const handleMarkComplete = async (resource: Resource) => {
-    if (resource.id.startsWith('template-')) {
-      // For template resources, just show success
-      success('Resource marked as completed!');
-      return;
-    }
-
     try {
       await realApiService.resources.trackEngagement(resource.id, 'complete');
       success('Resource marked as completed!');
@@ -371,24 +125,10 @@ const ClientResources: React.FC = () => {
   };
 
   const handleToggleFavorite = async (resource: Resource) => {
-    if (resource.id.startsWith('template-')) {
-      // For template resources, just show success
-      const isFavorite = resource.progress?.isFavorite;
-      success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
-      
-      // Update local state for template resources
-      setResources(prev => prev.map(r => 
-        r.id === resource.id 
-          ? { ...r, progress: { ...r.progress, isFavorite: !isFavorite } as any }
-          : r
-      ));
-      return;
-    }
-
     try {
-      // API call for real resources
       const isFavorite = resource.progress?.isFavorite;
-      // Assuming there's an API endpoint for favorites
+      // Assuming there's an API endpoint for favorites - this might need to be implemented
+      // await realApiService.resources.toggleFavorite(resource.id);
       success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
       await loadResources();
     } catch (err) {
@@ -860,19 +600,5 @@ const ClientResources: React.FC = () => {
   );
 };
 
-// Simple markdown parser (you might want to use a proper library like marked)
-const marked = {
-  parse: (markdown: string) => {
-    return markdown
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/g, '<em>$1</em>')
-      .replace(/^- (.*$)/gim, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/\n/g, '<br />');
-  }
-};
 
 export default ClientResources;

@@ -28,7 +28,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/contexts/LanguageContext';
-import realApiService from '@/services/realApi';
+import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
@@ -312,19 +312,21 @@ const ProfessionalTherapistChallenges: React.FC = () => {
       
       const response = await realApiService.therapist.getChallenges();
       
-      if (response.success) {
-        setChallenges(response.data?.challenges || []);
+      if (response.success && response.data) {
+        const challengesData = Array.isArray(response.data.challenges) ? response.data.challenges : [];
+        setChallenges(challengesData);
       } else {
-        throw new Error('Failed to load challenges');
+        setChallenges([]);
+        setError('No challenges found.');
       }
     } catch (error: any) {
       console.error('Error loading challenges:', error);
+      setChallenges([]);
       
       if (error?.response?.status === 500) {
         setError('Server error. Please try again later.');
       } else if (error?.response?.status === 404) {
-        setChallenges([]);
-        setError(null);
+        setError('Challenges endpoint not found. Please contact support.');
       } else if (error?.response?.status === 403) {
         setError('You do not have permission to view challenges.');
       } else {

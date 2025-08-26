@@ -28,7 +28,7 @@ import { useTranslation, LanguageSwitcher } from '@/contexts/LanguageContext';
 import { UserRole } from '@/types/auth';
 import { ROLE_COLORS } from '@/types/auth';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import realApiService from '@/services/realApi';
+import { therapistApi } from '@/services/therapistApi';
 import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 interface DashboardLayoutProps {
@@ -66,8 +66,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   const loadClientCount = async () => {
     try {
-      const response = await realApiService.therapist.getClients();
-      if (response.success) {
+      const response = await therapistApi.getClients();
+      if (response.success && response.data) {
         const clients = response.data || [];
         setClientCount((clients as any[]).length);
       }

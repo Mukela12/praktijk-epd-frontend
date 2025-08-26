@@ -79,6 +79,8 @@ const translations = {
   'nav.paymentMethods': { en: 'Payment Methods', nl: 'Betaalmethoden' },
   'nav.clientSupport': { en: 'Client Support', nl: 'Cliëntondersteuning' },
   'nav.scheduling': { en: 'Scheduling', nl: 'Planning' },
+  'nav.sessionNotes': { en: 'Session Notes', nl: 'Sessie Notities' },
+  'nav.sessions': { en: 'Sessions', nl: 'Sessies' },
   'nav.notifications': { en: 'Notifications', nl: 'Meldingen' },
   'nav.addressChanges': { en: 'Address Changes', nl: 'Adreswijzigingen' },
   'nav.myAgenda': { en: 'My Agenda', nl: 'Mijn Agenda' },
@@ -115,7 +117,6 @@ const translations = {
   'nav.users': { en: 'Users', nl: 'Gebruikers' },
   'nav.therapies': { en: 'Therapies', nl: 'Therapieën' },
   'nav.psychologicalProblems': { en: 'Psychological Problems', nl: 'Hulpvragen' },
-  'nav.sessions': { en: 'Sessions', nl: 'Sessies' },
   
   // Settings page translations
   'settings.profilePhoto': { en: 'Profile Photo', nl: 'Profielfoto' },

@@ -20,7 +20,8 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/contexts/LanguageContext';
-import realApiService from '@/services/realApi';
+import { therapistApi } from '@/services/therapistApi';
+import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
@@ -247,6 +248,7 @@ const ProfessionalSessionNotes: React.FC = () => {
   const [filterClient, setFilterClient] = useState<string>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
   const [filterImportant, setFilterImportant] = useState(false);
+  const { success: showSuccess, error: showError } = useAlert();
 
   // Mock data for demonstration
   useEffect(() => {
@@ -262,64 +264,25 @@ const ProfessionalSessionNotes: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Mock data - replace with actual API call
-      const mockNotes: SessionNote[] = [
-        {
-          id: '1',
-          client_id: 'c1',
-          client_name: 'Emma Thompson',
-          appointment_id: 'a1',
-          session_date: '2025-01-15',
-          session_type: 'CBT Session',
-          duration: 50,
-          mood_before: 3,
-          mood_after: 4,
-          key_points: [
-            'Discussed anxiety triggers at work',
-            'Practiced breathing exercises',
-            'Identified negative thought patterns'
-          ],
-          interventions: ['Cognitive restructuring', 'Mindfulness techniques'],
-          homework: ['Daily mood journal', 'Practice breathing exercises 2x daily'],
-          progress_notes: 'Client shows improvement in recognizing triggers. Good engagement with exercises.',
-          private_notes: 'Consider introducing exposure therapy in next session',
-          is_locked: false,
-          created_at: '2025-01-15T14:00:00Z',
-          updated_at: '2025-01-15T15:00:00Z',
-          tags: ['anxiety', 'work-stress'],
-          is_important: true
-        },
-        {
-          id: '2',
-          client_id: 'c2',
-          client_name: 'John Davis',
-          appointment_id: 'a2',
-          session_date: '2025-01-14',
-          session_type: 'Initial Assessment',
-          duration: 60,
-          mood_before: 2,
-          mood_after: 3,
-          key_points: [
-            'First session - building rapport',
-            'Explored presenting concerns',
-            'Set initial therapy goals'
-          ],
-          interventions: ['Active listening', 'Goal setting'],
-          homework: ['Complete PHQ-9 questionnaire'],
-          progress_notes: 'Client presenting with moderate depression symptoms. Motivated for treatment.',
-          private_notes: 'May benefit from combined therapy approach',
-          is_locked: true,
-          created_at: '2025-01-14T10:00:00Z',
-          updated_at: '2025-01-14T11:00:00Z',
-          tags: ['depression', 'initial-assessment'],
-          is_important: false
-        }
-      ];
+      const response = await therapistApi.getSessionNotes();
       
-      setNotes(mockNotes);
-    } catch (error) {
+      if (response.success && response.data) {
+        setNotes(response.data);
+      } else {
+        setNotes([]);
+        setError('No session notes found.');
+      }
+    } catch (error: any) {
       console.error('Error loading notes:', error);
-      setError('Failed to load session notes. Please try again.');
+      setNotes([]);
+      
+      if (error.response?.status === 404) {
+        setError('Session notes endpoint not found. Please contact support.');
+      } else if (error.response?.status === 401) {
+        setError('You are not authorized to view session notes.');
+      } else {
+        setError('Failed to load session notes. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -359,8 +322,35 @@ const ProfessionalSessionNotes: React.FC = () => {
   };
 
   const exportNotes = () => {
-    // Implementation for exporting notes
-    console.log('Exporting notes...');
+    try {
+      // Create CSV content
+      const headers = ['Client Name', 'Session Date', 'Session Type', 'Mood Before', 'Mood After', 'Key Points', 'Progress Notes'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredNotes.map(note => [
+          note.client_name,
+          note.session_date,
+          note.session_type,
+          note.mood_before,
+          note.mood_after,
+          note.key_points.join('; '),
+          `"${note.progress_notes}"`
+        ].join(','))
+      ].join('\n');
+
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-notes-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      
+      showSuccess('Session notes exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      showError('Failed to export session notes');
+    }
   };
 
   if (isLoading) {
