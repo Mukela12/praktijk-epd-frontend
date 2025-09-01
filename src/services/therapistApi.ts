@@ -21,7 +21,7 @@ export const therapistApi = {
       const [appointmentsRes, clientsRes, sessionsRes] = await Promise.all([
         api.get('/appointments'),
         api.get('/clients').catch(() => ({ data: { data: [] } })), // Fallback for 404
-        api.get('/sessions?limit=10')
+        api.get('/therapist/sessions?limit=10')
       ]);
 
       // Handle different response structures
@@ -143,9 +143,9 @@ export const therapistApi = {
     return response.data;
   },
 
-  // Sessions
+  // Sessions - use therapist-specific endpoint
   getSessions: async (params?: any): Promise<ApiResponse<any>> => {
-    const response = await api.get('/sessions', { params });
+    const response = await api.get('/therapist/sessions', { params });
     // Handle nested data structure
     if (response.data && response.data.data) {
       return {

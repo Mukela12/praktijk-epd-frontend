@@ -109,12 +109,39 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
     setIsPaused(!isPaused);
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     if (elapsedSeconds < 60) {
       error('Please complete at least 1 minute before stopping');
       return;
     }
-    handleComplete();
+
+    if (!checkinId) {
+      error('No active check-in found');
+      return;
+    }
+
+    try {
+      // Call the new stop endpoint
+      const response = await realApiService.challenges.stopCheckIn(challengeId, checkinId);
+      
+      if (response.success) {
+        setIsRunning(false);
+        setIsPaused(false);
+        setShowCompletion(true);
+        
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        
+        // Clean up local storage
+        localStorage.removeItem(`challenge-${challengeId}-mood`);
+        success('Challenge stopped. Great effort!');
+        onComplete(elapsedSeconds);
+      }
+    } catch (err) {
+      error('Failed to stop challenge. Please try again.');
+    }
   };
 
   const handleComplete = async () => {
@@ -129,7 +156,7 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
   };
 
   const submitCompletion = async () => {
-    if (moodAfter === null) {
+    if (!showMoodBefore && moodAfter === null) {
       error('Please rate your mood after completing');
       return;
     }
@@ -146,7 +173,7 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
       
       const response = await realApiService.challenges.completeCheckIn(challengeId, checkinId, {
         notes,
-        moodAfter: moodAfter,
+        moodAfter: moodAfter || undefined,
         duration: Math.floor(elapsedSeconds / 60),
         completed: elapsedSeconds >= targetSeconds
       });
@@ -253,38 +280,20 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
             )}
           </div>
 
-          <MoodRating 
-            value={moodAfter} 
-            onChange={setMoodAfter} 
-            label="How are you feeling now?"
-          />
-
-          {moodBefore !== null && moodAfter !== null && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Mood Change:</p>
-              <p className="text-2xl font-semibold">
-                {moodBefore} → {moodAfter}
-                {moodAfter > moodBefore && (
-                  <span className="text-green-600 text-lg ml-2">↑ +{moodAfter - moodBefore}</span>
-                )}
-                {moodAfter < moodBefore && (
-                  <span className="text-red-600 text-lg ml-2">↓ {moodAfter - moodBefore}</span>
-                )}
-                {moodAfter === moodBefore && (
-                  <span className="text-gray-600 text-lg ml-2">→ No change</span>
-                )}
-              </p>
-            </div>
-          )}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <p className="text-sm text-blue-900">
+              Thank you for practicing! Your progress has been saved.
+              {elapsedSeconds < targetSeconds && ' Keep up the great work and try to reach the full duration next time!'}
+            </p>
+          </div>
 
           <PremiumButton
             variant="primary"
             size="lg"
-            onClick={submitCompletion}
-            disabled={moodAfter === null}
+            onClick={() => onComplete(elapsedSeconds)}
             className="w-full max-w-xs mx-auto"
           >
-            Save Progress
+            Continue
           </PremiumButton>
         </div>
       </PremiumCard>

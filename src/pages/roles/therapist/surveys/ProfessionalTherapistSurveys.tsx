@@ -318,8 +318,16 @@ const ProfessionalTherapistSurveys: React.FC = () => {
       
       const response = await realApiService.therapist.getSurveys();
       
-      if (response.success) {
-        setSurveys(response.data?.surveys || []);
+      if (response.success && response.data) {
+        // The response structure from backend includes surveys, recentAssignments, and statistics
+        const data = response.data as any;
+        const surveysData = data.surveys || data.data?.surveys || [];
+        setSurveys(Array.isArray(surveysData) ? surveysData : []);
+        
+        // Optional: Use the statistics data if needed
+        if (data.statistics) {
+          console.log('Survey statistics:', data.statistics);
+        }
       } else {
         throw new Error('Failed to load surveys');
       }

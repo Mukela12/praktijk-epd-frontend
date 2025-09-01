@@ -38,6 +38,11 @@ export enum UserRole {
     created_at: string;
     updated_at: string;
     profile_photo_url?: string;
+    // Onboarding fields
+    mustChangePassword?: boolean;
+    onboardingCompleted?: boolean;
+    passwordChangedAt?: string;
+    onboardingCompletedAt?: string;
   }
   
   // Authentication state machine
@@ -93,6 +98,8 @@ export enum UserRole {
     twoFactorSetupRequired?: boolean;
     tempToken?: string;
     sessionToken?: string;
+    requiresOnboarding?: boolean;
+    onboardingStep?: string;
   }
 
   // Centralized navigation and auth helpers

@@ -168,6 +168,34 @@ export const useAuthStore = create<AuthStore>()(
             const user = response.user!;
             const navigation = get().navigation;
             
+            // Check if user requires onboarding (must change password)
+            if (response.requiresOnboarding || user.mustChangePassword) {
+              set({
+                user,
+                accessToken: response.accessToken || null,
+                authenticationState: AuthenticationState.AUTHENTICATED_COMPLETE,
+                error: null,
+                pendingNavigation: '/onboarding',
+                // Legacy support
+                isAuthenticated: true,
+                isLoading: false,
+                requiresTwoFactor: false,
+                twoFactorSetupRequired: false
+              });
+              
+              // Store in localStorage
+              if (response.accessToken) {
+                localStorage.setItem('accessToken', response.accessToken);
+              }
+              localStorage.setItem('user', JSON.stringify(user));
+              
+              PremiumNotifications.info('Please complete your account setup', {
+                title: 'Account Setup Required',
+                duration: 5000
+              });
+              return true;
+            }
+            
             // Check if user's role requires 2FA
             const roleRequires2FA = ['admin', 'therapist', 'bookkeeper', 'assistant', 'substitute'].includes(user.role);
             

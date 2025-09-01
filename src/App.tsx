@@ -115,6 +115,9 @@ import NetworkErrorHandler from '@/components/NetworkErrorHandler';
 // Removed duplicate import - ErrorBoundary already imported above
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
+// Onboarding
+import OnboardingPage from '@/pages/Onboarding';
+
 // Create a query client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -358,6 +361,16 @@ const AppRoutes: React.FC = () => {
                   <Route path="*" element={<Navigate to="/bookkeeper/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
+            </SimpleProtectedRoute>
+          }
+        />
+
+        {/* Onboarding route */}
+        <Route
+          path="/onboarding"
+          element={
+            <SimpleProtectedRoute>
+              <OnboardingPage />
             </SimpleProtectedRoute>
           }
         />

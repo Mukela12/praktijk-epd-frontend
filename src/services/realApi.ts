@@ -1209,6 +1209,14 @@ export const realApiService = {
         ...data 
       });
       return response.data;
+    },
+
+    // Stop challenge check-in without completion
+    stopCheckIn: async (challengeId: string, checkInId: string): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/client/challenges/${challengeId}/check-in/stop`, { 
+        checkInId
+      });
+      return response.data;
     }
   },
 
