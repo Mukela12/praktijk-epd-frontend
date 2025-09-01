@@ -149,7 +149,7 @@ const OnboardingPage: React.FC = () => {
       steps={steps}
       currentStep={currentStep}
       completedSteps={completedSteps}
-      userName={user?.firstName || user?.email || 'User'}
+      userName={user?.first_name || user?.email || 'User'}
       progress={(currentStepIndex + 1) / steps.length * 100}
     >
       {renderStep()}
