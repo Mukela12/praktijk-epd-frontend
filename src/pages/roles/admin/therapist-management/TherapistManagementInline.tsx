@@ -134,9 +134,24 @@ const TherapistManagementInline: React.FC = () => {
   // Create new therapist
   const handleCreate = async () => {
     try {
+      console.log('Creating therapist with data:', formData);
+      
       // Validate required fields
       if (!formData.email || !formData.password || !formData.first_name || !formData.last_name) {
         warning('Please fill in all required fields');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        warning('Please enter a valid email address');
+        return;
+      }
+
+      // Validate password length
+      if (formData.password.length < 6) {
+        warning('Password must be at least 6 characters long');
         return;
       }
 
@@ -173,7 +188,8 @@ const TherapistManagementInline: React.FC = () => {
         loadTherapists();
       }
     } catch (error: any) {
-      errorAlert(error.response?.data?.message || 'Failed to create therapist');
+      console.error('Error creating therapist:', error);
+      errorAlert(error.response?.data?.message || error.message || 'Failed to create therapist');
     }
   };
 
@@ -493,31 +509,33 @@ const TherapistManagementInline: React.FC = () => {
   };
 
   // Render form
-  const renderFormFields = () => (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <TextField
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={(value) => setFormData({ ...formData, email: value })}
-            disabled={viewMode === 'edit'}
-            required
-          />
-          {viewMode === 'create' && (
-            <PasswordField
-              label="Password"
-              name="password"
-              value={formData.password}
-              onChange={(value) => setFormData({ ...formData, password: value })}
+  const renderFormFields = () => {
+    console.log('Rendering form fields, viewMode:', viewMode);
+    return (
+      <div className="space-y-8">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TextField
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={(value) => setFormData({ ...formData, email: value })}
+              disabled={viewMode === 'edit'}
               required
             />
-          )}
+            {viewMode === 'create' && (
+              <PasswordField
+                label="Password"
+                name="password"
+                value={formData.password}
+                onChange={(value) => setFormData({ ...formData, password: value })}
+                required
+              />
+            )}
+          </div>
         </div>
-      </div>
 
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
@@ -655,7 +673,8 @@ const TherapistManagementInline: React.FC = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   // Column definitions for the list
   const columns = [
@@ -735,8 +754,12 @@ const TherapistManagementInline: React.FC = () => {
       icon={UsersIcon}
       viewMode={viewMode}
       onViewModeChange={(mode) => {
+        console.log('Changing view mode to:', mode);
         if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
           setViewMode(mode);
+          if (mode === 'create') {
+            resetForm();
+          }
         }
       }}
       isLoading={isLoading}
@@ -870,30 +893,35 @@ const TherapistManagementInline: React.FC = () => {
 
       {/* Create/Edit Form */}
       {(viewMode === 'create' || viewMode === 'edit') && (
-        <form onSubmit={(e) => { e.preventDefault(); viewMode === 'create' ? handleCreate() : handleUpdate(); }} className="space-y-6">
-          {renderFormFields()}
-          
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t">
-            <button
-              type="button"
-              onClick={() => {
-                setViewMode('list');
-                setSelectedTherapist(null);
-                resetForm();
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
-              {viewMode === 'create' ? 'Create Therapist' : 'Update Therapist'}
-            </button>
-          </div>
-        </form>
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            {viewMode === 'create' ? 'Create New Therapist' : 'Edit Therapist'}
+          </h2>
+          <form onSubmit={(e) => { e.preventDefault(); viewMode === 'create' ? handleCreate() : handleUpdate(); }} className="space-y-6">
+            {renderFormFields()}
+            
+            <div className="flex items-center justify-end space-x-3 pt-6 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('list');
+                  setSelectedTherapist(null);
+                  resetForm();
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
+                {viewMode === 'create' ? 'Create Therapist' : 'Update Therapist'}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Detail View */}

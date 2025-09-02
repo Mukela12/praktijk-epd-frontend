@@ -105,23 +105,34 @@ const ClientManagement: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading clients and therapists...');
+      
       const [clientsResponse, therapistsResponse] = await Promise.all([
         realApiService.admin.getClients(),
         realApiService.admin.getTherapists()
       ]);
 
+      console.log('Clients response:', clientsResponse);
+      console.log('Therapists response:', therapistsResponse);
+
       if (clientsResponse.success && clientsResponse.data) {
         const clientsData = Array.isArray(clientsResponse.data) 
           ? clientsResponse.data 
           : (clientsResponse.data as any).clients || [];
+        console.log('Processed clients data:', clientsData.length, 'clients');
         setClients(clientsData);
+      } else {
+        console.error('No clients data in response');
       }
 
       if (therapistsResponse.success && therapistsResponse.data) {
         const therapistsData = Array.isArray(therapistsResponse.data) 
           ? therapistsResponse.data 
           : (therapistsResponse.data as any).therapists || [];
+        console.log('Processed therapists data:', therapistsData.length, 'therapists');
         setTherapists(therapistsData);
+      } else {
+        console.error('No therapists data in response');
       }
     } catch (error) {
       console.error('Failed to load data:', error);

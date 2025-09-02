@@ -145,6 +145,15 @@ const translations = {
   'action.next': { en: 'Next', nl: 'Volgende' },
   'action.previous': { en: 'Previous', nl: 'Vorige' },
   'action.loading': { en: 'Loading...', nl: 'Laden...' },
+  'action.details': { en: 'Details', nl: 'Details' },
+  'action.new': { en: 'New', nl: 'Nieuw' },
+  
+  // CRUD operations
+  'crud.searchPlaceholder': { en: 'Search...', nl: 'Zoeken...' },
+  'crud.viewInfo': { en: 'View information', nl: 'Informatie bekijken' },
+  'crud.updateInfo': { en: 'Update information', nl: 'Informatie bijwerken' },
+  'crud.fillForm': { en: 'Fill in the form to create a new', nl: 'Vul het formulier in om een nieuwe aan te maken' },
+  'crud.total': { en: 'total', nl: 'totaal' },
   
   // Common
   'common.next': { en: 'Next', nl: 'Volgende' },

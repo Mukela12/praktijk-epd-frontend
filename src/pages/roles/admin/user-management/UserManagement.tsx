@@ -112,6 +112,13 @@ const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading users with params:', {
+        page: currentPage,
+        limit: itemsPerPage,
+        role: filters.role,
+        status: filters.status
+      });
+      
       const response = await realApiService.admin.getUsers({
         page: currentPage,
         limit: itemsPerPage,
@@ -119,14 +126,25 @@ const UserManagement: React.FC = () => {
         ...(filters.status !== 'all' && { status: filters.status })
       });
       
+      console.log('API Response:', response);
+      
       if (response.success && response.data) {
-        setUsers(response.data.users || []);
+        const userData = response.data.users || [];
+        console.log('Users loaded:', userData.length, 'users');
+        console.log('First user:', userData[0]);
+        
+        setUsers(userData);
         const pagination = response.data.pagination;
         if (pagination) {
           setTotalPages(Math.ceil(pagination.total / itemsPerPage));
+          console.log('Pagination:', pagination);
         }
+      } else {
+        console.error('API response not successful:', response);
+        errorAlert('No data returned from server');
       }
     } catch (error) {
+      console.error('Error loading users:', error);
       handleApiError(error);
       errorAlert('Failed to load users');
     } finally {

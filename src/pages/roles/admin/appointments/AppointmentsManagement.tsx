@@ -173,9 +173,15 @@ const AppointmentsManagement: React.FC = () => {
 
   const loadClients = async () => {
     try {
+      console.log('Loading clients for dropdown...');
       const response = await realApiService.admin.getClients({ status: 'active' });
+      console.log('Clients dropdown response:', response);
       if (response.success && response.data) {
-        setClients(response.data.clients || []);
+        const clientsData = response.data.clients || [];
+        console.log('Setting clients for dropdown:', clientsData.length, 'clients');
+        setClients(clientsData);
+      } else {
+        console.error('No clients in response for dropdown');
       }
     } catch (error) {
       console.error('Failed to load clients:', error);
@@ -184,9 +190,15 @@ const AppointmentsManagement: React.FC = () => {
 
   const loadTherapists = async () => {
     try {
+      console.log('Loading therapists for dropdown...');
       const response = await realApiService.admin.getTherapists({ status: 'active' });
+      console.log('Therapists dropdown response:', response);
       if (response.success && response.data) {
-        setTherapists(response.data.therapists || []);
+        const therapistsData = response.data.therapists || [];
+        console.log('Setting therapists for dropdown:', therapistsData.length, 'therapists');
+        setTherapists(therapistsData);
+      } else {
+        console.error('No therapists in response for dropdown');
       }
     } catch (error) {
       console.error('Failed to load therapists:', error);
