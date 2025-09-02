@@ -293,15 +293,17 @@ const TherapistManagementInline: React.FC = () => {
 
   // Filter therapists
   const filteredTherapists = therapists.filter(therapist => {
+    const therapistSpecializations = Array.isArray(therapist.specializations) ? therapist.specializations : [];
+    
     const matchesSearch = searchTerm === '' || 
       therapist.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       therapist.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       therapist.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      therapist.specializations.some((spec: string) => spec.toLowerCase().includes(searchTerm.toLowerCase()));
+      therapistSpecializations.some((spec: string) => spec.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = filterStatus === 'all' || therapist.user_status === filterStatus;
     const matchesSpecialization = filterSpecialization === 'all' || 
-      therapist.specializations.includes(filterSpecialization);
+      therapistSpecializations.includes(filterSpecialization);
     
     return matchesSearch && matchesStatus && matchesSpecialization;
   });
@@ -392,7 +394,7 @@ const TherapistManagementInline: React.FC = () => {
                   <div>
                     <dt className="text-sm text-gray-500">Specializations</dt>
                     <dd className="flex flex-wrap gap-1 mt-1">
-                      {selectedTherapist.specializations.map((spec: string, index: number) => (
+                      {Array.isArray(selectedTherapist.specializations) && selectedTherapist.specializations.map((spec: string, index: number) => (
                         <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                           {spec}
                         </span>
@@ -698,20 +700,23 @@ const TherapistManagementInline: React.FC = () => {
     {
       key: 'specializations',
       label: 'Specializations',
-      render: (therapist: TherapistData) => (
-        <div className="flex flex-wrap gap-1">
-          {therapist.specializations.slice(0, 3).map((spec: string, index: number) => (
-            <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-              {spec}
-            </span>
-          ))}
-          {therapist.specializations.length > 3 && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-              +{therapist.specializations.length - 3}
-            </span>
-          )}
-        </div>
-      )
+      render: (therapist: TherapistData) => {
+        const therapistSpecializations = Array.isArray(therapist.specializations) ? therapist.specializations : [];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {therapistSpecializations.slice(0, 3).map((spec: string, index: number) => (
+              <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                {spec}
+              </span>
+            ))}
+            {therapistSpecializations.length > 3 && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                +{therapistSpecializations.length - 3}
+              </span>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'clients',

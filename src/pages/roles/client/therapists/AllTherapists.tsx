@@ -176,24 +176,27 @@ const AllTherapists: React.FC = () => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const therapistSpecializations = Array.isArray(therapist.specializations) ? therapist.specializations : [];
       const matchesSearch = 
         therapist.first_name.toLowerCase().includes(query) ||
         therapist.last_name.toLowerCase().includes(query) ||
-        therapist.specializations?.some(s => s.toLowerCase().includes(query)) ||
+        therapistSpecializations.some(s => s.toLowerCase().includes(query)) ||
         therapist.bio?.toLowerCase().includes(query);
       
       if (!matchesSearch) return false;
     }
 
     // Specialization filter
+    const therapistSpecializations = Array.isArray(therapist.specializations) ? therapist.specializations : [];
     if (filters.specialization !== 'all' && 
-        !therapist.specializations?.includes(filters.specialization)) {
+        !therapistSpecializations.includes(filters.specialization)) {
       return false;
     }
 
     // Language filter
+    const therapistLanguages = Array.isArray(therapist.languages_spoken) ? therapist.languages_spoken : [];
     if (filters.language !== 'all' && 
-        !therapist.languages_spoken?.includes(filters.language)) {
+        !therapistLanguages.includes(filters.language)) {
       return false;
     }
 
@@ -473,7 +476,7 @@ const AllTherapists: React.FC = () => {
 
                   {/* Specializations */}
                   <div className="flex flex-wrap gap-2">
-                    {therapist.specializations?.slice(0, 3).map((spec, index) => (
+                    {Array.isArray(therapist.specializations) && therapist.specializations.slice(0, 3).map((spec, index) => (
                       <span
                         key={index}
                         className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
@@ -481,7 +484,7 @@ const AllTherapists: React.FC = () => {
                         {spec}
                       </span>
                     ))}
-                    {therapist.specializations && therapist.specializations.length > 3 && (
+                    {Array.isArray(therapist.specializations) && therapist.specializations.length > 3 && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
                         +{therapist.specializations.length - 3} more
                       </span>
@@ -496,7 +499,7 @@ const AllTherapists: React.FC = () => {
                     </div>
                     <div className="flex items-center text-gray-600">
                       <GlobeAltIcon className="w-4 h-4 mr-1" />
-                      {therapist.languages_spoken?.join(', ') || 'Dutch, English'}
+                      {Array.isArray(therapist.languages_spoken) ? therapist.languages_spoken.join(', ') : 'Dutch, English'}
                     </div>
                   </div>
 
