@@ -55,10 +55,24 @@ const AllTherapists: React.FC = () => {
         const response = await realApiService.therapists.getAll();
 
         if (response.success && response.data) {
-          const therapistsArray = Array.isArray(response.data) ? response.data : [];
-          setTherapists(therapistsArray);
-          setFilteredTherapists(therapistsArray);
+          // Handle both response.data.therapists and response.data formats
+          const therapistsData = response.data.therapists || response.data;
+          const therapistsArray = Array.isArray(therapistsData) ? therapistsData : [];
+          
+          // Map the data to expected format
+          const mappedTherapists = therapistsArray.map((therapist: any) => ({
+            ...therapist,
+            name: `${therapist.first_name} ${therapist.last_name}`,
+            status: therapist.user_status || therapist.status || 'active',
+            specializations: Array.isArray(therapist.specializations) ? therapist.specializations : [],
+            reimbursement_type: therapist.reimbursement_type || 'no_reimbursement'
+          }));
+          
+          console.log('Loaded therapists:', mappedTherapists.length);
+          setTherapists(mappedTherapists);
+          setFilteredTherapists(mappedTherapists);
         } else {
+          console.log('No therapists data in response');
           setTherapists([]);
           setFilteredTherapists([]);
         }
