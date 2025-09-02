@@ -55,8 +55,12 @@ const AllTherapists: React.FC = () => {
         const response = await realApiService.therapists.getAll();
 
         if (response.success && response.data) {
-          setTherapists(response.data);
-          setFilteredTherapists(response.data);
+          const therapistsArray = Array.isArray(response.data) ? response.data : [];
+          setTherapists(therapistsArray);
+          setFilteredTherapists(therapistsArray);
+        } else {
+          setTherapists([]);
+          setFilteredTherapists([]);
         }
       } catch (error) {
         console.error('Failed to load therapists:', error);
@@ -152,8 +156,8 @@ const AllTherapists: React.FC = () => {
   };
 
   // Get unique values for filters
-  const specializations = [...new Set(therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : []))];
-  const locations = [...new Set(therapists.map(t => t.location).filter(Boolean))];
+  const specializations = [...new Set(Array.isArray(therapists) ? therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : []) : [])];
+  const locations = [...new Set(Array.isArray(therapists) ? therapists.map(t => t.location).filter(Boolean) : [])];
 
   if (isLoading) {
     return (

@@ -114,14 +114,18 @@ const TherapistManagementInline: React.FC = () => {
       
       if (response.success && response.data) {
         // Map the API response to match our TherapistData interface
-        const therapistsData = response.data.therapists || [];
-        const mappedTherapists = therapistsData.map((therapist: any) => ({
+        const therapistsData = response.data.therapists || response.data || [];
+        // Ensure therapistsData is an array
+        const therapistsArray = Array.isArray(therapistsData) ? therapistsData : [];
+        const mappedTherapists = therapistsArray.map((therapist: any) => ({
           ...therapist,
           user_status: therapist.user_status || therapist.status || 'active',
           created_at: therapist.created_at || new Date().toISOString(),
           updated_at: therapist.updated_at || new Date().toISOString()
         }));
         setTherapists(mappedTherapists);
+      } else {
+        setTherapists([]);
       }
     } catch (error) {
       console.error('Failed to load therapists:', error);
@@ -310,7 +314,7 @@ const TherapistManagementInline: React.FC = () => {
 
   // Get unique specializations for filter
   const allSpecializations = Array.from(new Set(
-    therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : [])
+    Array.isArray(therapists) ? therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : []) : []
   )).sort();
 
   // Render detail view
