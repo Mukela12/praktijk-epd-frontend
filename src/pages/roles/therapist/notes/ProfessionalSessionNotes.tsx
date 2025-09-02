@@ -140,7 +140,7 @@ const NoteCard: React.FC<{
       )}
 
       {/* Tags */}
-      {note.tags.length > 0 && (
+      {Array.isArray(note.tags) && note.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {note.tags.map((tag, index) => (
             <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -307,7 +307,7 @@ const ProfessionalSessionNotes: React.FC = () => {
 
     // Apply tag filter
     if (filterTag !== 'all') {
-      filtered = filtered.filter(note => note.tags.includes(filterTag));
+      filtered = filtered.filter(note => Array.isArray(note.tags) && note.tags.includes(filterTag));
     }
 
     // Apply important filter
@@ -382,7 +382,7 @@ const ProfessionalSessionNotes: React.FC = () => {
   // Get unique clients and tags for filters
   const uniqueClients = Array.from(new Set(notes.map(n => ({ id: n.client_id, name: n.client_name }))))
     .map(({ id, name }) => ({ id, name }));
-  const uniqueTags = Array.from(new Set(notes.flatMap(n => n.tags)));
+  const uniqueTags = Array.from(new Set(notes.flatMap(n => Array.isArray(n.tags) ? n.tags : [])));
 
   return (
     <PageTransition>
