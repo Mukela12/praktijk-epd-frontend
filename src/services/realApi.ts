@@ -1719,35 +1719,34 @@ export const realApiService = {
     }
   },
 
-  // Therapists endpoints (generic)
+  // Therapists endpoints (redirected to admin endpoints)
   therapists: {
     getAll: async (params?: { status?: string; page?: number; limit?: number }): Promise<ApiResponse<any>> => {
-      return managedApiCall('/therapists', async () => {
-        const response = await api.get('/therapists', { params });
-        return response.data;
-      }, 30000, params);
+      // Use admin endpoint instead
+      return realApiService.admin.getTherapists(params);
     },
 
     getById: async (id: string): Promise<ApiResponse<any>> => {
-      return managedApiCall(`/therapists/${id}`, async () => {
-        const response = await api.get(`/therapists/${id}`);
-        return response.data;
-      });
+      // For now, return a not implemented error since we don't have a single therapist endpoint
+      throw new Error('Get therapist by ID not implemented. Use admin.getTherapists() instead.');
     },
 
     create: async (therapistData: any): Promise<ApiResponse<any>> => {
-      const response = await api.post('/therapists', therapistData);
-      return response.data;
+      // Use admin create user endpoint
+      return realApiService.admin.createUser({
+        ...therapistData,
+        role: 'therapist'
+      });
     },
 
     update: async (id: string, updates: any): Promise<ApiResponse<any>> => {
-      const response = await api.put(`/therapists/${id}`, updates);
-      return response.data;
+      // Use admin update user endpoint
+      return realApiService.admin.updateUser(id, updates);
     },
 
     delete: async (id: string): Promise<ApiResponse<any>> => {
-      const response = await api.delete(`/therapists/${id}`);
-      return response.data;
+      // Soft delete by changing status
+      return realApiService.admin.updateUser(id, { status: 'inactive' });
     }
   },
 
