@@ -90,7 +90,7 @@ const AppointmentRequests: React.FC = () => {
       ]);
 
       if (requestsResponse.success && requestsResponse.data) {
-        setRequests(requestsResponse.data.requests || []);
+        setRequests((requestsResponse.data as any).requests || []);
       }
 
       if (therapistsResponse.success && therapistsResponse.data) {

@@ -93,12 +93,12 @@ export const adminApi = {
 
   // Company Settings
   getCompanySettings: async (): Promise<ApiResponse<CompanySettings>> => {
-    const response = await api.get('/admin/company-settings');
+    const response = await api.get('/admin/company/settings');
     return response.data;
   },
 
   updateCompanySettings: async (settings: Partial<CompanySettings>): Promise<ApiResponse> => {
-    const response = await api.put('/admin/company-settings', settings);
+    const response = await api.put('/admin/company/settings', settings);
     return response.data;
   },
 
@@ -109,12 +109,205 @@ export const adminApi = {
   },
 
   approveAddressChange: async (id: string): Promise<ApiResponse> => {
-    const response = await api.put(`/admin/address-changes/${id}/approve`);
+    const response = await api.put(`/admin/address-change-requests/${id}/approve`);
     return response.data;
   },
 
   rejectAddressChange: async (id: string, reason: string): Promise<ApiResponse> => {
-    const response = await api.put(`/admin/address-changes/${id}/reject`, { rejectionReason: reason });
+    const response = await api.put(`/admin/address-change-requests/${id}/reject`, { rejectionReason: reason });
+    return response.data;
+  },
+
+  // User Management
+  updateUserStatus: async (userId: string, status: string, reason?: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/users/${userId}/status`, { status, reason });
+    return response.data;
+  },
+
+  updateUserRole: async (userId: string, role: string, reason?: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/users/${userId}/role`, { role, reason });
+    return response.data;
+  },
+
+  deleteUser: async (userId: string): Promise<ApiResponse> => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  getUserById: async (userId: string): Promise<ApiResponse<any>> => {
+    const response = await api.get(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  searchUsers: async (params: { query?: string; role?: string; status?: string }): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/users/search', { params });
+    return response.data;
+  },
+
+  exportUsers: async (format: 'csv' | 'json' = 'json'): Promise<any> => {
+    const response = await api.get('/admin/export/users', { 
+      params: { format },
+      responseType: format === 'csv' ? 'blob' : 'json'
+    });
+    return response.data;
+  },
+
+  // Client Management
+  getClient: async (clientId: string): Promise<ApiResponse<Client>> => {
+    const response = await api.get(`/admin/clients/${clientId}`);
+    return response.data;
+  },
+
+  assignTherapistToClient: async (data: { clientId: string; therapistId: string; notes?: string }): Promise<ApiResponse> => {
+    const response = await api.post('/admin/assign-therapist', data);
+    return response.data;
+  },
+
+  updateClientPaymentLimit: async (clientId: string, newLimit: number, reason: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/clients/${clientId}/payment-limit`, { newLimit, reason });
+    return response.data;
+  },
+
+  // Therapist Management
+  getTherapist: async (therapistId: string): Promise<ApiResponse<Therapist>> => {
+    const response = await api.get(`/admin/therapists/${therapistId}`);
+    return response.data;
+  },
+
+  updateTherapistProfile: async (therapistId: string, updates: any): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/therapists/${therapistId}/profile`, updates);
+    return response.data;
+  },
+
+  updateTherapistPhoto: async (therapistId: string, photoUrl: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/therapists/${therapistId}/photo`, { photoUrl });
+    return response.data;
+  },
+
+  deleteTherapistPhoto: async (therapistId: string): Promise<ApiResponse> => {
+    const response = await api.delete(`/admin/therapists/${therapistId}/photo`);
+    return response.data;
+  },
+
+  createTherapistContract: async (therapistId: string, contractData: any): Promise<ApiResponse> => {
+    const response = await api.post(`/admin/therapists/${therapistId}/contracts`, contractData);
+    return response.data;
+  },
+
+  // Appointment Management
+  getAppointmentRequests: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/appointment-requests', { params });
+    return response.data;
+  },
+
+  assignAppointmentRequest: async (id: string, therapistId: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/appointment-requests/${id}/assign`, { therapistId });
+    return response.data;
+  },
+
+  getSessionProgress: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/session-progress', { params });
+    return response.data;
+  },
+
+  // Waiting List Management
+  assignFromWaitingList: async (id: string, therapistId: string, notes?: string): Promise<ApiResponse> => {
+    const response = await api.post(`/admin/waiting-list/${id}/assign`, { therapistId, notes });
+    return response.data;
+  },
+
+  updateWaitingListStatus: async (applicationId: string, status: string, notes?: string): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/waiting-list/${applicationId}/status`, { status, notes });
+    return response.data;
+  },
+
+  // System Management
+  getSystemSettings: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/system/settings');
+    return response.data;
+  },
+
+  updateSystemSettings: async (settings: any): Promise<ApiResponse> => {
+    const response = await api.put('/admin/system/settings', { settings });
+    return response.data;
+  },
+
+  getAuditLogs: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/audit-logs', { params });
+    return response.data;
+  },
+
+  createBackup: async (options?: { includeFiles?: boolean; includeDatabase?: boolean }): Promise<ApiResponse> => {
+    const response = await api.post('/admin/backup', options);
+    return response.data;
+  },
+
+  // Statistics & Analytics
+  getGlobalStatistics: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/statistics/global');
+    return response.data;
+  },
+
+  getUserReport: async (params?: any): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/reports/users', { params });
+    return response.data;
+  },
+
+  getAppointmentReport: async (params?: any): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/reports/appointments', { params });
+    return response.data;
+  },
+
+  // Service Tests
+  testMoneybirdConnection: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/services/moneybird/test');
+    return response.data;
+  },
+
+  testMollieConnection: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/services/mollie/test');
+    return response.data;
+  },
+
+  // Therapy Management
+  getTherapies: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/therapies', { params });
+    return response.data;
+  },
+
+  createTherapy: async (data: any): Promise<ApiResponse<{ id: string }>> => {
+    const response = await api.post('/admin/therapies', data);
+    return response.data;
+  },
+
+  updateTherapy: async (id: string, updates: any): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/therapies/${id}`, updates);
+    return response.data;
+  },
+
+  deleteTherapy: async (id: string): Promise<ApiResponse> => {
+    const response = await api.delete(`/admin/therapies/${id}`);
+    return response.data;
+  },
+
+  // Psychological Problems Management
+  getPsychologicalProblems: async (params?: any): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/admin/psychological-problems', { params });
+    return response.data;
+  },
+
+  createPsychologicalProblem: async (data: any): Promise<ApiResponse<{ id: string }>> => {
+    const response = await api.post('/admin/psychological-problems', data);
+    return response.data;
+  },
+
+  updatePsychologicalProblem: async (id: string, updates: any): Promise<ApiResponse> => {
+    const response = await api.put(`/admin/psychological-problems/${id}`, updates);
+    return response.data;
+  },
+
+  deletePsychologicalProblem: async (id: string): Promise<ApiResponse> => {
+    const response = await api.delete(`/admin/psychological-problems/${id}`);
     return response.data;
   }
 };
@@ -591,6 +784,90 @@ export const bookkeeperApi = {
       const response = await api.post('/bookkeeper/messages', messageData);
       return response.data;
     }
+  },
+
+  // Clients
+  getClients: async (params?: { page?: number; limit?: number; search?: string; hasOutstandingBalance?: boolean }): Promise<ApiResponse<{ clients: any[]; pagination: any }>> => {
+    const response = await api.get('/bookkeeper/clients', { params });
+    return response.data;
+  },
+
+  // Therapists
+  getTherapists: async (params?: { page?: number; limit?: number; search?: string; includeRevenue?: boolean }): Promise<ApiResponse<{ therapists: any[]; pagination: any }>> => {
+    const response = await api.get('/bookkeeper/therapists', { params });
+    return response.data;
+  },
+
+  // Client Balances
+  getClientBalances: async (params?: { clientId?: string; includeZeroBalance?: boolean; sortBy?: string; sortOrder?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/clients/balances', { params });
+    return response.data;
+  },
+
+  // Payments
+  getPayments: async (params?: { page?: number; limit?: number; startDate?: string; endDate?: string; paymentMethod?: string; clientId?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/payments', { params });
+    return response.data;
+  },
+
+  processPayment: async (paymentData: { invoiceId: string; amount: number; paymentMethod: string; paymentDate: string; reference?: string; notes?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.post('/bookkeeper/payments', paymentData);
+    return response.data;
+  },
+
+  // Financial Reports
+  getFinancialReports: async (params?: { reportType?: string; startDate?: string; endDate?: string; groupBy?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/reports', { params });
+    return response.data;
+  },
+
+  // Analytics
+  getRevenueTrends: async (params?: { period?: string; startDate?: string; endDate?: string; therapistId?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/analytics/revenue-trends', { params });
+    return response.data;
+  },
+
+  getCollectionEfficiency: async (params?: { startDate?: string; endDate?: string; clientId?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/analytics/collection-efficiency', { params });
+    return response.data;
+  },
+
+  // Bulk Actions
+  sendBulkReminders: async (data: { invoiceIds: string[]; reminderType: string; message?: string }): Promise<ApiResponse<any>> => {
+    const response = await api.post('/bookkeeper/bulk-actions/send-reminders', data);
+    return response.data;
+  },
+
+  markBulkOverdue: async (data?: { dryRun?: boolean }): Promise<ApiResponse<any>> => {
+    const response = await api.post('/bookkeeper/bulk-actions/mark-overdue', data);
+    return response.data;
+  },
+
+  // Specific Report Endpoints
+  getRevenueReport: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/reports/revenue');
+    return response.data;
+  },
+
+  getOutstandingReport: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/reports/outstanding');
+    return response.data;
+  },
+
+  getTaxReport: async (): Promise<ApiResponse<any>> => {
+    const response = await api.get('/bookkeeper/reports/tax');
+    return response.data;
+  },
+
+  // Invoice operations
+  updateInvoice: async (invoiceId: string, updates: any): Promise<ApiResponse<any>> => {
+    const response = await api.put(`/bookkeeper/invoices/${invoiceId}`, updates);
+    return response.data;
+  },
+
+  deleteInvoice: async (invoiceId: string): Promise<ApiResponse<any>> => {
+    const response = await api.delete(`/bookkeeper/invoices/${invoiceId}`);
+    return response.data;
   }
 };
 

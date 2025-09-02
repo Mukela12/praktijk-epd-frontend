@@ -398,6 +398,39 @@ export const realApiService = {
       return response.data;
     },
 
+    // Update therapist profile (Admin)
+    updateTherapistProfile: async (therapistId: string, profileData: {
+      licenseNumber?: string;
+      specializations?: string[];
+      therapyTypes?: string[];
+      languages?: string[];
+      bio?: string;
+      qualifications?: string[];
+      hourlyRate?: number;
+      maxClientsPerDay?: number;
+      sessionDuration?: number;
+      breakBetweenSessions?: number;
+      contractStatus?: string;
+      contractStartDate?: string;
+      contractEndDate?: string;
+      maxClients?: number;
+    }): Promise<ApiResponse> => {
+      const response = await api.put(`/admin/therapists/${therapistId}/profile`, profileData);
+      return response.data;
+    },
+
+    // Update therapist photo (Admin)
+    updateTherapistPhoto: async (therapistId: string, photoUrl: string): Promise<ApiResponse<{ photoUrl: string }>> => {
+      const response = await api.put(`/admin/therapists/${therapistId}/photo`, { photoUrl });
+      return response.data;
+    },
+
+    // Delete therapist photo (Admin)
+    deleteTherapistPhoto: async (therapistId: string): Promise<ApiResponse> => {
+      const response = await api.delete(`/admin/therapists/${therapistId}/photo`);
+      return response.data;
+    },
+
     // Waiting list (✅ WORKING)
     getWaitingList: async (params?: any): Promise<ApiResponse<{ waitingList: any[]; total: number }>> => {
       const response = await api.get('/admin/waiting-list', { params });
@@ -555,6 +588,111 @@ export const realApiService = {
 
     getSessionStatistics: async (): Promise<ApiResponse<any>> => {
       const response = await api.get('/admin/sessions/statistics');
+      return response.data;
+    },
+
+    // User Management
+    updateUserStatus: async (userId: string, status: string, reason?: string): Promise<ApiResponse> => {
+      const response = await api.put(`/admin/users/${userId}/status`, { status, reason });
+      return response.data;
+    },
+
+    updateUserRole: async (userId: string, role: string, reason?: string): Promise<ApiResponse> => {
+      const response = await api.put(`/admin/users/${userId}/role`, { role, reason });
+      return response.data;
+    },
+
+    deleteUser: async (userId: string): Promise<ApiResponse> => {
+      const response = await api.delete(`/admin/users/${userId}`);
+      return response.data;
+    },
+
+    getUserById: async (userId: string): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/admin/users/${userId}`);
+      return response.data;
+    },
+
+    searchUsers: async (params: { query?: string; role?: string; status?: string }): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/users/search', { params });
+      return response.data;
+    },
+
+    exportUsers: async (format: 'csv' | 'json' = 'json'): Promise<any> => {
+      const response = await api.get('/admin/export/users', { 
+        params: { format },
+        responseType: format === 'csv' ? 'blob' : 'json'
+      });
+      return response.data;
+    },
+
+    // Appointment Management
+
+    assignAppointmentRequest: async (id: string, therapistId: string): Promise<ApiResponse> => {
+      const response = await api.put(`/admin/appointment-requests/${id}/assign`, { therapistId });
+      return response.data;
+    },
+
+    getSessionProgress: async (params?: any): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/session-progress', { params });
+      return response.data;
+    },
+
+    // Waiting List Management
+    assignFromWaitingList: async (id: string, therapistId: string, notes?: string): Promise<ApiResponse> => {
+      const response = await api.post(`/admin/waiting-list/${id}/assign`, { therapistId, notes });
+      return response.data;
+    },
+
+    updateWaitingListStatus: async (applicationId: string, status: string, notes?: string): Promise<ApiResponse> => {
+      const response = await api.put(`/admin/waiting-list/${applicationId}/status`, { status, notes });
+      return response.data;
+    },
+
+    // System Management
+    getSystemSettings: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/system/settings');
+      return response.data;
+    },
+
+    updateSystemSettings: async (settings: any): Promise<ApiResponse> => {
+      const response = await api.put('/admin/system/settings', { settings });
+      return response.data;
+    },
+
+    getAuditLogs: async (params?: any): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/admin/audit-logs', { params });
+      return response.data;
+    },
+
+    createBackup: async (options?: { includeFiles?: boolean; includeDatabase?: boolean }): Promise<ApiResponse> => {
+      const response = await api.post('/admin/backup', options);
+      return response.data;
+    },
+
+    // Statistics & Analytics
+    getGlobalStatistics: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/statistics/global');
+      return response.data;
+    },
+
+    getUserReport: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/reports/users', { params });
+      return response.data;
+    },
+
+    getAppointmentReport: async (params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/reports/appointments', { params });
+      return response.data;
+    },
+
+    // Service Tests
+    testMoneybirdConnection: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/services/moneybird/test');
+      return response.data;
+    },
+
+    testMollieConnection: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/services/mollie/test');
       return response.data;
     }
   },
@@ -1419,6 +1557,101 @@ export const realApiService = {
         responseType: 'blob'
       });
       return response.data;
+    },
+
+    // Clients
+    getClients: async (params?: { page?: number; limit?: number; search?: string; hasOutstandingBalance?: boolean }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/clients', async () => {
+        const response = await api.get('/bookkeeper/clients', { params });
+        return response.data;
+      }, 30000, params);
+    },
+
+    // Therapists
+    getTherapists: async (params?: { page?: number; limit?: number; search?: string; includeRevenue?: boolean }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/therapists', async () => {
+        const response = await api.get('/bookkeeper/therapists', { params });
+        return response.data;
+      }, 30000, params);
+    },
+
+    // Client Balances
+    getClientBalances: async (params?: { clientId?: string; includeZeroBalance?: boolean; sortBy?: string; sortOrder?: string }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/clients/balances', async () => {
+        const response = await api.get('/bookkeeper/clients/balances', { params });
+        return response.data;
+      }, 30000, params);
+    },
+
+    // Payments
+    getPayments: async (params?: { page?: number; limit?: number; startDate?: string; endDate?: string; paymentMethod?: string; clientId?: string }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/payments', async () => {
+        const response = await api.get('/bookkeeper/payments', { params });
+        return response.data;
+      }, 30000, params);
+    },
+
+    processPayment: async (paymentData: { invoiceId: string; amount: number; paymentMethod: string; paymentDate: string; reference?: string; notes?: string }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/bookkeeper/payments', paymentData);
+      requestManager.clearRelatedCache('/invoices');
+      return response.data;
+    },
+
+    // Financial Reports
+    getFinancialReports: async (params?: { reportType?: string; startDate?: string; endDate?: string; groupBy?: string }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/reports', async () => {
+        const response = await api.get('/bookkeeper/reports', { params });
+        return response.data;
+      }, 60000, params);
+    },
+
+    // Analytics
+    getRevenueTrends: async (params?: { period?: string; startDate?: string; endDate?: string; therapistId?: string }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/analytics/revenue-trends', async () => {
+        const response = await api.get('/bookkeeper/analytics/revenue-trends', { params });
+        return response.data;
+      }, 60000, params);
+    },
+
+    getCollectionEfficiency: async (params?: { startDate?: string; endDate?: string; clientId?: string }): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/analytics/collection-efficiency', async () => {
+        const response = await api.get('/bookkeeper/analytics/collection-efficiency', { params });
+        return response.data;
+      }, 60000, params);
+    },
+
+    // Bulk Actions
+    sendBulkReminders: async (data: { invoiceIds: string[]; reminderType: string; message?: string }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/bookkeeper/bulk-actions/send-reminders', data);
+      return response.data;
+    },
+
+    markBulkOverdue: async (data?: { dryRun?: boolean }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/bookkeeper/bulk-actions/mark-overdue', data);
+      requestManager.clearRelatedCache('/invoices');
+      return response.data;
+    },
+
+    // Specific Report Endpoints
+    getRevenueReport: async (): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/reports/revenue', async () => {
+        const response = await api.get('/bookkeeper/reports/revenue');
+        return response.data;
+      });
+    },
+
+    getOutstandingReport: async (): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/reports/outstanding', async () => {
+        const response = await api.get('/bookkeeper/reports/outstanding');
+        return response.data;
+      });
+    },
+
+    getTaxReport: async (): Promise<ApiResponse<any>> => {
+      return managedApiCall('/bookkeeper/reports/tax', async () => {
+        const response = await api.get('/bookkeeper/reports/tax');
+        return response.data;
+      });
     }
   },
 

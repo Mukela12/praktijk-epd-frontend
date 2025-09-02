@@ -22,7 +22,8 @@ import {
   StarIcon,
   MapPinIcon,
   BriefcaseIcon,
-  CurrencyEuroIcon
+  CurrencyEuroIcon,
+  CameraIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -40,6 +41,7 @@ import {
   NumberField
 } from '@/components/forms/FormFields';
 import { Therapist } from '@/types/entities';
+import TherapistProfileEditModal from '@/components/admin/TherapistProfileEditModal';
 
 interface TherapistData extends Therapist {
   user_status: 'active' | 'inactive' | 'pending';
@@ -74,6 +76,7 @@ const TherapistManagementInline: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSpecialization, setFilterSpecialization] = useState<string>('all');
+  const [showEditModal, setShowEditModal] = useState(false);
   
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -257,29 +260,13 @@ const TherapistManagementInline: React.FC = () => {
   // Edit therapist
   const handleEdit = (therapist: TherapistData) => {
     setSelectedTherapist(therapist);
-    setFormData({
-      email: therapist.email,
-      password: '', // Don't populate password
-      first_name: therapist.first_name,
-      last_name: therapist.last_name,
-      phone: therapist.phone || '',
-      specializations: therapist.specializations || [],
-      languages: therapist.languages || [],
-      qualifications: therapist.qualifications || '',
-      years_of_experience: therapist.years_of_experience || 0,
-      bio: therapist.bio || '',
-      consultation_rate: therapist.consultation_rate || 0,
-      street_address: therapist.street_address || '',
-      postal_code: therapist.postal_code || '',
-      city: therapist.city || '',
-      country: therapist.country || 'Netherlands',
-      available_days: therapist.available_days || [],
-      available_hours: therapist.available_hours || '',
-      accepting_new_clients: therapist.accepting_new_clients ?? true,
-      online_therapy: therapist.online_therapy ?? true,
-      in_person_therapy: therapist.in_person_therapy ?? true
-    });
-    setViewMode('edit');
+    setShowEditModal(true);
+  };
+
+  // Handle modal update
+  const handleModalUpdate = () => {
+    loadTherapists();
+    setShowEditModal(false);
   };
 
   // View therapist details
@@ -346,8 +333,8 @@ const TherapistManagementInline: React.FC = () => {
               onClick={() => handleEdit(selectedTherapist)}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
             >
-              <PencilIcon className="w-5 h-5" />
-              <span>Edit</span>
+              <CameraIcon className="w-5 h-5" />
+              <span>Edit Profile</span>
             </button>
           </div>
 
@@ -911,6 +898,16 @@ const TherapistManagementInline: React.FC = () => {
 
       {/* Detail View */}
       {viewMode === 'detail' && renderDetailView()}
+
+      {/* Edit Modal */}
+      {selectedTherapist && (
+        <TherapistProfileEditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          therapist={selectedTherapist as Therapist}
+          onUpdate={handleModalUpdate}
+        />
+      )}
     </InlineCrudLayout>
   );
 };

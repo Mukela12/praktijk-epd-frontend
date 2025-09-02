@@ -99,8 +99,8 @@ const InvoiceManagement: React.FC = () => {
         setIsLoading(true);
         const [invoicesResponse, clientsResponse, therapistsResponse] = await Promise.all([
           realApiService.bookkeeper.getInvoices(),
-          realApiService.clients.getAll(),
-          realApiService.therapists.getAll()
+          realApiService.bookkeeper.getClients(),
+          realApiService.bookkeeper.getTherapists()
         ]);
 
         if (invoicesResponse.success && invoicesResponse.data) {

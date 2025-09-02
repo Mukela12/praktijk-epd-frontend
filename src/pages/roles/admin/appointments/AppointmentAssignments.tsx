@@ -61,7 +61,7 @@ const AppointmentAssignments: React.FC = () => {
       setIsLoading(true);
       const response = await realApiService.admin.getAppointmentRequests();
       if (response.success && response.data) {
-        const unassignedRequests = response.data.requests?.filter((r: any) => r.status === 'pending' && !r.preferredTherapistId) || [];
+        const unassignedRequests = (response.data as any).requests?.filter((r: any) => r.status === 'pending' && !r.preferredTherapistId) || [];
         setRequests(unassignedRequests);
       }
     } catch (err) {

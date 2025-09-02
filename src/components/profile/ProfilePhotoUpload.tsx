@@ -6,6 +6,7 @@ import {
   ArrowUpTrayIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth, useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { realApiService } from '@/services/realApi';
@@ -113,17 +114,41 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       setIsLoading(true);
       setError(null);
 
-      const response = await realApiService.profile.uploadPhoto(file);
-      
-      if (response.success && response.data) {
-        setPhotoUrl(response.data.photoUrl);
-        setPreview(null);
-        success(t('profile.photo.uploadSuccess') || 'Profile photo updated successfully');
-        onPhotoUpdate?.(response.data.photoUrl);
+      // If admin is editing another user's photo
+      if (userId && userId !== user?.id && user?.role === 'admin') {
+        // Upload to Cloudinary or your storage service first
+        const formData = new FormData();
+        formData.append('photo', file);
         
-        // Update user in auth store if it's the current user
-        if (!userId || userId === user?.id) {
-          user && useAuthStore.getState().updateUser({ profile_photo_url: response.data.photoUrl });
+        // For now, we'll use the profile upload endpoint
+        // In production, you might want a separate admin upload endpoint
+        const response = await realApiService.profile.uploadPhoto(file);
+        
+        if (response.success && response.data) {
+          // Update the therapist's photo URL via admin endpoint
+          const updateResponse = await realApiService.admin.updateTherapistPhoto(userId, response.data.photoUrl);
+          
+          if (updateResponse.success) {
+            setPhotoUrl(response.data.photoUrl);
+            setPreview(null);
+            success(t('profile.photo.uploadSuccess') || 'Profile photo updated successfully');
+            onPhotoUpdate?.(response.data.photoUrl);
+          }
+        }
+      } else {
+        // Regular user uploading their own photo
+        const response = await realApiService.profile.uploadPhoto(file);
+        
+        if (response.success && response.data) {
+          setPhotoUrl(response.data.photoUrl);
+          setPreview(null);
+          success(t('profile.photo.uploadSuccess') || 'Profile photo updated successfully');
+          onPhotoUpdate?.(response.data.photoUrl);
+          
+          // Update user in auth store if it's the current user
+          if (!userId || userId === user?.id) {
+            user && useAuthStore.getState().updateUser({ profile_photo_url: response.data.photoUrl });
+          }
         }
       }
     } catch (error: any) {
@@ -145,17 +170,30 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       setIsLoading(true);
       setError(null);
 
-      const response = await realApiService.profile.deletePhoto();
-      
-      if (response.success) {
-        setPhotoUrl(null);
-        setPreview(null);
-        success(t('profile.photo.deleteSuccess') || 'Profile photo deleted successfully');
-        onPhotoUpdate?.(null);
+      // If admin is deleting another user's photo
+      if (userId && userId !== user?.id && user?.role === 'admin') {
+        const response = await realApiService.admin.deleteTherapistPhoto(userId);
         
-        // Update user in auth store if it's the current user
-        if (!userId || userId === user?.id) {
-          user && useAuthStore.getState().updateUser({ profile_photo_url: undefined });
+        if (response.success) {
+          setPhotoUrl(null);
+          setPreview(null);
+          success(t('profile.photo.deleteSuccess') || 'Profile photo deleted successfully');
+          onPhotoUpdate?.(null);
+        }
+      } else {
+        // Regular user deleting their own photo
+        const response = await realApiService.profile.deletePhoto();
+        
+        if (response.success) {
+          setPhotoUrl(null);
+          setPreview(null);
+          success(t('profile.photo.deleteSuccess') || 'Profile photo deleted successfully');
+          onPhotoUpdate?.(null);
+          
+          // Update user in auth store if it's the current user
+          if (!userId || userId === user?.id) {
+            user && useAuthStore.getState().updateUser({ profile_photo_url: undefined });
+          }
         }
       }
     } catch (error: any) {
@@ -168,46 +206,64 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   };
 
   const isOwnProfile = !userId || userId === user?.id;
-  const canEdit = editable && isOwnProfile;
+  const isAdmin = user?.role === 'admin';
+  const canEdit = editable && (isOwnProfile || isAdmin);
 
   return (
     <div className="flex flex-col items-center space-y-4">
       {/* Photo Display */}
       <div className="relative group">
-        <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-100 ${size !== 'xsmall' ? 'ring-4 ring-white shadow-lg' : 'ring-2 ring-gray-200'} transition-all duration-200 ${canEdit && !isLoading ? 'group-hover:ring-blue-400' : ''}`}>
+        <div className={`
+          ${sizeClasses[size]} rounded-full overflow-hidden
+          ${size !== 'xsmall' ? 'ring-4 ring-white shadow-2xl' : 'ring-2 ring-gray-200 shadow-md'}
+          ${canEdit && !isLoading ? 'group-hover:ring-indigo-400 group-hover:shadow-indigo-200' : ''}
+          transition-all duration-300 transform group-hover:scale-105
+          bg-gradient-to-br from-gray-50 to-gray-100
+        `}>
           {isLoadingPhoto ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <LoadingSpinner size="small" />
+            <div className="w-full h-full flex items-center justify-center backdrop-blur-sm">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 animate-spin" style={{ padding: '2px' }}>
+                  <div className="w-full h-full rounded-full bg-white"></div>
+                </div>
+                <LoadingSpinner size="small" />
+              </div>
             </div>
           ) : preview ? (
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-50"></div>
+            </div>
           ) : photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={t('profile.photo.alt') || 'Profile photo'}
-              className="w-full h-full object-cover transition-opacity duration-200 group-hover:opacity-90"
-            />
+            <div className="relative w-full h-full">
+              <img
+                src={photoUrl}
+                alt={t('profile.photo.alt') || 'Profile photo'}
+                className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
+            </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-              <UserCircleIcon className={`${iconSizes[size]} text-gray-400`} />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+              <UserCircleIcon className={`${iconSizes[size]} text-indigo-300 opacity-70`} />
             </div>
           )}
         </div>
 
         {/* Upload Overlay */}
         {canEdit && !isLoading && size !== 'xsmall' && (
-          <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity duration-200 flex items-center justify-center">
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-black/30 to-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+            <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+                className="p-3 bg-white/95 backdrop-blur-sm rounded-full shadow-2xl hover:shadow-indigo-500/25 transform hover:scale-110 transition-all duration-200 border border-white/50"
                 title={t('profile.photo.upload') || 'Upload photo'}
               >
-                <CameraIcon className="w-6 h-6 text-gray-700" />
+                <CameraIcon className="w-6 h-6 text-indigo-600" />
               </button>
             </div>
           </div>
@@ -215,17 +271,29 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 rounded-full bg-white bg-opacity-80 flex items-center justify-center">
-            <LoadingSpinner size="small" />
+          <div className="absolute inset-0 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center">
+            <div className="flex flex-col items-center">
+              <LoadingSpinner size="small" />
+              <p className="text-xs text-gray-600 mt-2 font-medium">Uploading...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Status Badge for Size > xsmall */}
+        {size !== 'xsmall' && photoUrl && canEdit && (
+          <div className="absolute -bottom-2 -right-2 bg-green-500 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg">
+            <CheckCircleIcon className="w-5 h-5 text-white" />
           </div>
         )}
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 text-sm">
-          <ExclamationCircleIcon className="w-4 h-4" />
-          <span>{error}</span>
+        <div className="animate-shake bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
+          <div className="flex-shrink-0">
+            <ExclamationCircleIcon className="w-5 h-5 text-red-400" />
+          </div>
+          <span className="text-sm text-red-800">{error}</span>
         </div>
       )}
 
@@ -235,20 +303,38 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative inline-flex items-center justify-center px-6 py-2.5 overflow-hidden font-medium text-indigo-600 transition duration-300 ease-out border-2 border-indigo-600 rounded-full shadow-md hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowUpTrayIcon className="w-4 h-4" />
-            <span>{t('profile.photo.upload') || 'Upload Photo'}</span>
+            <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-indigo-600 group-hover:translate-x-0 ease">
+              <ArrowUpTrayIcon className="w-5 h-5" />
+            </span>
+            <span className="absolute flex items-center justify-center w-full h-full text-indigo-600 transition-all duration-300 transform group-hover:translate-x-full ease">
+              <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+              {t('profile.photo.upload') || 'Upload Photo'}
+            </span>
+            <span className="relative invisible">
+              <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+              {t('profile.photo.upload') || 'Upload Photo'}
+            </span>
           </button>
 
           {photoUrl && (
             <button
               onClick={handleDeletePhoto}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative inline-flex items-center justify-center px-6 py-2.5 overflow-hidden font-medium text-red-600 transition duration-300 ease-out border-2 border-red-600 rounded-full shadow-md hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <TrashIcon className="w-4 h-4" />
-              <span>{t('profile.photo.delete') || 'Delete'}</span>
+              <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-red-600 group-hover:translate-x-0 ease">
+                <TrashIcon className="w-5 h-5" />
+              </span>
+              <span className="absolute flex items-center justify-center w-full h-full text-red-600 transition-all duration-300 transform group-hover:translate-x-full ease">
+                <TrashIcon className="w-4 h-4 mr-2" />
+                {t('profile.photo.delete') || 'Delete'}
+              </span>
+              <span className="relative invisible">
+                <TrashIcon className="w-4 h-4 mr-2" />
+                {t('profile.photo.delete') || 'Delete'}
+              </span>
             </button>
           )}
         </div>
@@ -265,9 +351,14 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
       {/* Help Text */}
       {canEdit && (
-        <p className="text-xs text-gray-500 text-center max-w-xs">
-          {t('profile.photo.helpText') || 'Upload a professional photo. Images will be automatically cropped to a square. Maximum file size: 5MB.'}
-        </p>
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+          <div className="relative bg-white rounded-lg p-4 border border-gray-100">
+            <p className="text-xs text-gray-600 text-center max-w-xs leading-relaxed">
+              {t('profile.photo.helpText') || 'Upload a professional photo. Images will be automatically cropped to a square. Maximum file size: 5MB.'}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
