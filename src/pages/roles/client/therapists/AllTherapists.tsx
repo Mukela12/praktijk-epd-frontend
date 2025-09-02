@@ -168,8 +168,8 @@ const AllTherapists: React.FC = () => {
   };
 
   // Get unique values for filters
-  const allSpecializations = [...new Set(therapists.flatMap(t => t.specializations || []))];
-  const allLanguages = [...new Set(therapists.flatMap(t => t.languages_spoken || []))];
+  const allSpecializations = [...new Set(therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : []))];
+  const allLanguages = [...new Set(therapists.flatMap(t => Array.isArray(t.languages_spoken) ? t.languages_spoken : []))];
 
   // Filter therapists
   const filteredTherapists = therapists.filter(therapist => {

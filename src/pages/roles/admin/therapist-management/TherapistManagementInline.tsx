@@ -308,7 +308,7 @@ const TherapistManagementInline: React.FC = () => {
 
   // Get unique specializations for filter
   const allSpecializations = Array.from(new Set(
-    therapists.flatMap(t => t.specializations || [])
+    therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : [])
   )).sort();
 
   // Render detail view

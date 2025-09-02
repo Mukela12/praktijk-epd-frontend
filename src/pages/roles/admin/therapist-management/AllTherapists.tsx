@@ -152,7 +152,7 @@ const AllTherapists: React.FC = () => {
   };
 
   // Get unique values for filters
-  const specializations = [...new Set(therapists.flatMap(t => t.specializations || []))];
+  const specializations = [...new Set(therapists.flatMap(t => Array.isArray(t.specializations) ? t.specializations : []))];
   const locations = [...new Set(therapists.map(t => t.location).filter(Boolean))];
 
   if (isLoading) {
