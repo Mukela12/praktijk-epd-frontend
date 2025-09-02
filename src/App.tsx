@@ -32,6 +32,7 @@ import AgendaPage from '@/pages/roles/admin/agenda/AgendaPage';
 import AllClients from '@/pages/roles/admin/client-management/AllClients';
 import ClientManagement from '@/pages/roles/admin/client-management/ClientManagement';
 import AllTherapists from '@/pages/roles/admin/therapist-management/AllTherapists';
+import TherapistManagementInline from '@/pages/roles/admin/therapist-management/TherapistManagementInline';
 import FinancialDashboard from '@/pages/roles/admin/financial-management/FinancialDashboard';
 import WaitingListManagement from '@/pages/roles/admin/waiting-list/WaitingListManagement';
 import FinancialOverview from '@/pages/roles/admin/financial/FinancialOverview';
@@ -223,6 +224,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="clients" element={<AllClients />} />
                   <Route path="clients/:clientId" element={<ClientManagement />} />
                   <Route path="therapists" element={<AllTherapists />} />
+                  <Route path="therapist-management" element={<TherapistManagementInline />} />
                   <Route path="waiting-list" element={<WaitingListManagement />} />
                   <Route path="financial" element={<FinancialOverview />} />
                   <Route path="financial-dashboard" element={<FinancialDashboard />} />

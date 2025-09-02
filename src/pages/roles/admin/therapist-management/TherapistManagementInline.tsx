@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   UsersIcon,
   PlusIcon,
@@ -67,6 +68,7 @@ type ViewMode = 'list' | 'create' | 'edit' | 'detail';
 
 const TherapistManagementInline: React.FC = () => {
   const { success, error: errorAlert, warning, info } = useAlert();
+  const location = useLocation();
   
   // State
   const [therapists, setTherapists] = useState<TherapistData[]>([]);
@@ -106,6 +108,26 @@ const TherapistManagementInline: React.FC = () => {
   useEffect(() => {
     loadTherapists();
   }, []);
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const viewId = searchParams.get('view');
+    const editId = searchParams.get('edit');
+    
+    if (viewId && therapists.length > 0) {
+      const therapist = therapists.find(t => t.id === viewId);
+      if (therapist) {
+        setSelectedTherapist(therapist);
+        setViewMode('detail');
+      }
+    } else if (editId && therapists.length > 0) {
+      const therapist = therapists.find(t => t.id === editId);
+      if (therapist) {
+        handleEdit(therapist);
+      }
+    }
+  }, [location.search, therapists]);
 
   const loadTherapists = async () => {
     try {
