@@ -28,7 +28,8 @@ import {
   CheckIcon,
   XMarkIcon,
   UserCircleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -84,6 +85,7 @@ const TherapistManagementInline: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSpecialization, setFilterSpecialization] = useState<string>('all');
+  const [filterAccepting, setFilterAccepting] = useState<boolean>(false);
   // Removed modal state - using inline editing
   
   // Form state for create/edit
@@ -358,8 +360,9 @@ const TherapistManagementInline: React.FC = () => {
     const matchesStatus = filterStatus === 'all' || therapist.user_status === filterStatus;
     const matchesSpecialization = filterSpecialization === 'all' || 
       therapistSpecializations.includes(filterSpecialization);
+    const matchesAccepting = !filterAccepting || therapist.accepting_new_clients;
     
-    return matchesSearch && matchesStatus && matchesSpecialization;
+    return matchesSearch && matchesStatus && matchesSpecialization && matchesAccepting;
   });
 
   // Get unique specializations for filter
@@ -373,91 +376,150 @@ const TherapistManagementInline: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl shadow-lg overflow-hidden">
-          <div className="bg-white/80 backdrop-blur-sm p-8">
-            <div className="flex items-start justify-between mb-8">
-              <div className="flex items-center space-x-6">
-                <ProfilePhotoUpload 
-                  userId={selectedTherapist.id}
-                  currentPhotoUrl={selectedTherapist.profile_photo_url}
-                  size="large"
-                  editable={true}
-                  onPhotoUpdate={(url) => {
-                    setSelectedTherapist(prev => prev ? { ...prev, profile_photo_url: url || undefined } : null);
-                    loadTherapists();
-                  }}
-                />
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-900">
+        {/* Professional Header with Enhanced Design */}
+        <div className="bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl shadow-xl overflow-hidden border border-red-100/20">
+          <div className="bg-white/70 backdrop-blur-xl">
+            {/* Top Banner */}
+            <div className="h-32 bg-gradient-to-r from-red-500 to-rose-600 relative">
+              <div className="absolute inset-0 bg-black/20"></div>
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                <button
+                  onClick={() => handleEdit(selectedTherapist)}
+                  className="px-5 py-2.5 bg-white/20 backdrop-blur text-white rounded-xl hover:bg-white/30 flex items-center gap-2 transition-all border border-white/30"
+                >
+                  <PencilIcon className="w-5 h-5" />
+                  <span className="font-medium">Edit Profile</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Profile Section */}
+            <div className="px-8 pb-8">
+              <div className="flex items-end -mt-16 mb-6">
+                <div className="relative">
+                  <ProfilePhotoUpload 
+                    userId={selectedTherapist.id}
+                    currentPhotoUrl={selectedTherapist.profile_photo_url}
+                    size="large"
+                    editable={true}
+                    onPhotoUpdate={(url) => {
+                      setSelectedTherapist(prev => prev ? { ...prev, profile_photo_url: url || undefined } : null);
+                      loadTherapists();
+                    }}
+                  />
+                  <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-lg">
+                    <div className={`w-5 h-5 rounded-full ${
+                      selectedTherapist.user_status === 'active' ? 'bg-green-500' : 
+                      selectedTherapist.user_status === 'pending' ? 'bg-yellow-500' : 'bg-gray-400'
+                    }`} />
+                  </div>
+                </div>
+                
+                <div className="ml-6 flex-1">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-1">
                     Dr. {selectedTherapist.first_name} {selectedTherapist.last_name}
-                  </h2>
-                  <p className="text-gray-600 text-lg">{selectedTherapist.email}</p>
-                  <div className="flex items-center gap-3 mt-3">
+                  </h1>
+                  <p className="text-gray-600 text-lg mb-3">{selectedTherapist.email}</p>
+                  
+                  <div className="flex flex-wrap items-center gap-3">
                     <StatusBadge
                       type="user"
                       status={selectedTherapist.user_status}
                       size="md"
                     />
+                    
+                    {selectedTherapist.years_of_experience && (
+                      <span className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+                        <BriefcaseIcon className="w-4 h-4 mr-1.5" />
+                        {selectedTherapist.years_of_experience} years experience
+                      </span>
+                    )}
+                    
                     {selectedTherapist.rating && (
-                      <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
+                      <div className="inline-flex items-center bg-yellow-50 px-3 py-1 rounded-lg">
                         <StarIcon className="w-5 h-5 text-yellow-500 fill-current" />
-                        <span className="ml-1 text-sm font-medium text-gray-700">
-                          {selectedTherapist.rating.toFixed(1)} ({selectedTherapist.total_reviews || 0} reviews)
+                        <span className="ml-1 text-sm font-semibold text-gray-700">
+                          {selectedTherapist.rating.toFixed(1)}
+                        </span>
+                        <span className="ml-1 text-sm text-gray-500">
+                          ({selectedTherapist.total_reviews || 0} reviews)
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => handleEdit(selectedTherapist)}
-                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center space-x-2 transition-all transform hover:scale-105 shadow-lg"
-              >
-                <PencilIcon className="w-5 h-5" />
-                <span className="font-medium">Edit Profile</span>
-              </button>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-4 gap-4 mt-6 p-4 bg-gray-50 rounded-xl">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-900">{selectedTherapist.client_count || 0}</p>
+                  <p className="text-sm text-gray-600">Active Clients</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">€{selectedTherapist.consultation_rate || 0}</p>
+                  <p className="text-sm text-gray-600">Hourly Rate</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">{selectedTherapist.specializations?.length || 0}</p>
+                  <p className="text-sm text-gray-600">Specializations</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-600">{selectedTherapist.languages?.length || 0}</p>
+                  <p className="text-sm text-gray-600">Languages</p>
+                </div>
+              </div>
             </div>
-
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contact Information Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div className="p-2 bg-red-100 rounded-lg mr-3">
-                <PhoneIcon className="w-6 h-6 text-red-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
+            <div className="flex items-center mb-5">
+              <div className="p-2.5 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl mr-3 shadow-sm">
+                <PhoneIcon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-900">Contact Information</h3>
             </div>
-            <dl className="space-y-4">
-              <div className="pb-4 border-b border-gray-100">
-                <dt className="text-sm font-medium text-gray-500 mb-1">Email Address</dt>
-                <dd className="text-gray-900 flex items-center">
-                  <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-400" />
-                  {selectedTherapist.email}
+            <dl className="space-y-5">
+              <div className="group">
+                <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email Address</dt>
+                <dd className="text-gray-900 flex items-center group-hover:text-red-600 transition-colors">
+                  <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-400 group-hover:text-red-400" />
+                  <a href={`mailto:${selectedTherapist.email}`} className="hover:underline">
+                    {selectedTherapist.email}
+                  </a>
                 </dd>
               </div>
-              <div className="pb-4 border-b border-gray-100">
-                <dt className="text-sm font-medium text-gray-500 mb-1">Phone Number</dt>
-                <dd className="text-gray-900 flex items-center">
-                  <PhoneIcon className="w-4 h-4 mr-2 text-gray-400" />
-                  {selectedTherapist.phone || 'Not provided'}
+              
+              <div className="group">
+                <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Phone Number</dt>
+                <dd className="text-gray-900 flex items-center group-hover:text-red-600 transition-colors">
+                  <PhoneIcon className="w-4 h-4 mr-2 text-gray-400 group-hover:text-red-400" />
+                  {selectedTherapist.phone ? (
+                    <a href={`tel:${selectedTherapist.phone}`} className="hover:underline">
+                      {selectedTherapist.phone}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 italic">Not provided</span>
+                  )}
                 </dd>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 mb-1">Address</dt>
-                <dd className="text-gray-900 flex items-start">
-                  <MapPinIcon className="w-4 h-4 mr-2 text-gray-400 mt-0.5" />
+              
+              <div className="group">
+                <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Address</dt>
+                <dd className="text-gray-900 flex items-start group-hover:text-red-600 transition-colors">
+                  <MapPinIcon className="w-4 h-4 mr-2 text-gray-400 group-hover:text-red-400 mt-0.5 flex-shrink-0" />
                   <div>
                     {selectedTherapist.street_address ? (
                       <>
-                        {selectedTherapist.street_address}<br />
-                        {selectedTherapist.postal_code} {selectedTherapist.city}<br />
-                        {selectedTherapist.country}
+                        <p className="font-medium">{selectedTherapist.street_address}</p>
+                        <p>{selectedTherapist.postal_code} {selectedTherapist.city}</p>
+                        <p>{selectedTherapist.country}</p>
                       </>
                     ) : (
-                      'Not provided'
+                      <span className="text-gray-400 italic">Not provided</span>
                     )}
                   </div>
                 </dd>
@@ -466,10 +528,10 @@ const TherapistManagementInline: React.FC = () => {
           </div>
 
           {/* Professional Information Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <div className="p-2 bg-red-100 rounded-lg mr-3">
-                <AcademicCapIcon className="w-6 h-6 text-red-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
+            <div className="flex items-center mb-5">
+              <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl mr-3 shadow-sm">
+                <AcademicCapIcon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold text-gray-900">Professional Information</h3>
             </div>
@@ -506,8 +568,13 @@ const TherapistManagementInline: React.FC = () => {
           </div>
 
           {/* Service Information Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Information</h3>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6">
+            <div className="flex items-center mb-5">
+              <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl mr-3 shadow-sm">
+                <ClipboardDocumentListIcon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Service Information</h3>
+            </div>
             <dl className="space-y-3">
               <div>
                 <dt className="text-sm text-gray-500">Consultation Rate</dt>
@@ -679,6 +746,13 @@ const TherapistManagementInline: React.FC = () => {
             onChange={(value) => setFormData({ ...formData, specializations: value })}
             placeholder="Add specializations..."
           />
+          <TagsField
+            label="Languages"
+            name="languages"
+            value={formData.languages}
+            onChange={(value) => setFormData({ ...formData, languages: value })}
+            placeholder="Add languages..."
+          />
           <TextField
             label="Qualifications"
             name="qualifications"
@@ -780,14 +854,34 @@ const TherapistManagementInline: React.FC = () => {
       label: 'Therapist',
       render: (therapist: TherapistData) => (
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
-            {therapist.first_name[0]}{therapist.last_name[0]}
+          <div className="relative">
+            {therapist.profile_photo_url ? (
+              <img 
+                src={therapist.profile_photo_url} 
+                alt={`${therapist.first_name} ${therapist.last_name}`}
+                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm">
+                {therapist.first_name[0]}{therapist.last_name[0]}
+              </div>
+            )}
+            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+              therapist.user_status === 'active' ? 'bg-green-500' : 
+              therapist.user_status === 'pending' ? 'bg-yellow-500' : 'bg-gray-400'
+            }`} />
           </div>
           <div>
-            <p className="font-medium text-gray-900">
+            <p className="font-semibold text-gray-900">
               Dr. {therapist.first_name} {therapist.last_name}
             </p>
             <p className="text-sm text-gray-500">{therapist.email}</p>
+            {therapist.phone && (
+              <div className="flex items-center mt-0.5">
+                <PhoneIcon className="w-3 h-3 text-gray-400 mr-1" />
+                <span className="text-xs text-gray-500">{therapist.phone}</span>
+              </div>
+            )}
           </div>
         </div>
       )
@@ -797,16 +891,22 @@ const TherapistManagementInline: React.FC = () => {
       label: 'Specializations',
       render: (therapist: TherapistData) => {
         const therapistSpecializations = Array.isArray(therapist.specializations) ? therapist.specializations : [];
+        if (therapistSpecializations.length === 0) {
+          return <span className="text-sm text-gray-400 italic">None specified</span>;
+        }
         return (
-          <div className="flex flex-wrap gap-1">
-            {therapistSpecializations.slice(0, 3).map((spec: string, index: number) => (
-              <span key={index} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+          <div className="flex flex-wrap gap-1.5 max-w-xs">
+            {therapistSpecializations.slice(0, 2).map((spec: string, index: number) => (
+              <span 
+                key={index} 
+                className="inline-flex items-center px-2.5 py-1 bg-red-50 text-red-700 text-xs font-medium rounded-lg border border-red-100"
+              >
                 {spec}
               </span>
             ))}
-            {therapistSpecializations.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                +{therapistSpecializations.length - 3}
+            {therapistSpecializations.length > 2 && (
+              <span className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg">
+                +{therapistSpecializations.length - 2} more
               </span>
             )}
           </div>
@@ -817,21 +917,37 @@ const TherapistManagementInline: React.FC = () => {
       key: 'clients',
       label: 'Clients',
       render: (therapist: TherapistData) => (
-        <div className="text-sm">
-          <p className="font-medium text-gray-900">{therapist.client_count || 0}</p>
-          <p className="text-gray-500">
-            {therapist.accepting_new_clients ? 'Accepting' : 'Not accepting'}
-          </p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <UserGroupIcon className="w-4 h-4 text-gray-400" />
+            <span className="font-semibold text-gray-900">{therapist.client_count || 0}</span>
+            <span className="text-xs text-gray-500">clients</span>
+          </div>
+          {therapist.accepting_new_clients ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-700 border border-green-200">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+              Accepting
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-50 text-gray-600 border border-gray-200">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+              Full
+            </span>
+          )}
         </div>
       )
     },
     {
       key: 'rate',
-      label: 'Rate',
+      label: 'Hourly Rate',
       render: (therapist: TherapistData) => (
-        <span className="font-medium text-gray-900">
-          €{therapist.consultation_rate || 0}
-        </span>
+        <div className="flex items-center gap-1">
+          <CurrencyEuroIcon className="w-4 h-4 text-gray-400" />
+          <span className="text-lg font-semibold text-gray-900">
+            {therapist.consultation_rate || 0}
+          </span>
+          <span className="text-sm text-gray-500">/hr</span>
+        </div>
       )
     },
     {
@@ -874,42 +990,110 @@ const TherapistManagementInline: React.FC = () => {
     >
       {viewMode === 'list' && (
         <>
-          {/* Search and Filters */}
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex-1 max-w-lg">
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search therapists..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  />
+          {/* Enhanced Search and Filters */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex-1 max-w-2xl">
+                  <div className="relative group">
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, specialization..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Quick Stats */}
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{therapists.length}</p>
+                    <p className="text-sm text-gray-500">Total Therapists</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{therapists.filter(t => t.user_status === 'active').length}</p>
+                    <p className="text-sm text-gray-500">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{therapists.filter(t => t.accepting_new_clients).length}</p>
+                    <p className="text-sm text-gray-500">Accepting</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-gray-700">Filter by:</span>
+                
+                {/* Status Filter */}
+                <div className="relative">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="appearance-none px-4 py-2 pr-10 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent cursor-pointer transition-all text-sm font-medium"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                
+                {/* Specialization Filter */}
+                <div className="relative">
+                  <select
+                    value={filterSpecialization}
+                    onChange={(e) => setFilterSpecialization(e.target.value)}
+                    className="appearance-none px-4 py-2 pr-10 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent cursor-pointer transition-all text-sm font-medium"
+                  >
+                    <option value="all">All Specializations</option>
+                    {allSpecializations.map(spec => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                  <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+                
+                {/* Accepting Clients Filter */}
+                <button
+                  onClick={() => setFilterAccepting(!filterAccepting)}
+                  className={`px-4 py-2 rounded-lg border transition-all text-sm font-medium ${
+                    filterAccepting 
+                      ? 'bg-green-50 border-green-200 text-green-700' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending</option>
-                </select>
-                <select
-                  value={filterSpecialization}
-                  onChange={(e) => setFilterSpecialization(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                >
-                  <option value="all">All Specializations</option>
-                  {allSpecializations.map(spec => (
-                    <option key={spec} value={spec}>{spec}</option>
-                  ))}
-                </select>
+                  <UserGroupIcon className="w-4 h-4 inline-block mr-2" />
+                  Accepting New Clients
+                </button>
+                
+                {/* Clear Filters */}
+                {(filterStatus !== 'all' || filterSpecialization !== 'all' || filterAccepting || searchTerm) && (
+                  <button
+                    onClick={() => {
+                      setFilterStatus('all');
+                      setFilterSpecialization('all');
+                      setFilterAccepting(false);
+                      setSearchTerm('');
+                    }}
+                    className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -937,55 +1121,65 @@ const TherapistManagementInline: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {columns.map((column) => (
-                      <th
-                        key={column.key}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        {column.label}
-                      </th>
-                    ))}
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTherapists.map((therapist) => (
-                    <tr key={therapist.id} className="hover:bg-gray-50">
+            <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr className="bg-gray-50/50">
                       {columns.map((column) => (
-                        <td key={column.key} className="px-6 py-4 whitespace-nowrap">
-                          {column.render(therapist)}
-                        </td>
+                        <th
+                          key={column.key}
+                          className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                        >
+                          {column.label}
+                        </th>
                       ))}
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleView(therapist)}
-                          className="text-red-600 hover:text-red-900 mr-3"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(therapist)}
-                          className="text-red-600 hover:text-red-900 mr-3"
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(therapist.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </td>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {filteredTherapists.map((therapist, index) => (
+                      <tr 
+                        key={therapist.id} 
+                        className="hover:bg-gray-50/50 transition-colors duration-150"
+                      >
+                        {columns.map((column) => (
+                          <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                            {column.render(therapist)}
+                          </td>
+                        ))}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleView(therapist)}
+                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
+                              title="View Details"
+                            >
+                              <EyeIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(therapist)}
+                              className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 group"
+                              title="Edit Therapist"
+                            >
+                              <PencilIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(therapist.id)}
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+                              title="Deactivate Therapist"
+                            >
+                              <TrashIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>
