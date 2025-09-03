@@ -24,7 +24,11 @@ import {
   MapPinIcon,
   BriefcaseIcon,
   CurrencyEuroIcon,
-  CameraIcon
+  CameraIcon,
+  CheckIcon,
+  XMarkIcon,
+  UserCircleIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -63,6 +67,7 @@ interface TherapistData extends Therapist {
   client_count?: number;
   rating?: number;
   total_reviews?: number;
+  profile_photo_url?: string;
 }
 
 type ViewMode = 'list' | 'create' | 'edit' | 'detail';
@@ -329,10 +334,10 @@ const TherapistManagementInline: React.FC = () => {
   };
 
   // Handle modal update
-  const handleModalUpdate = () => {
-    loadTherapists();
-    setShowEditModal(false);
-  };
+  // const handleModalUpdate = () => {
+  //   loadTherapists();
+  //   setShowEditModal(false);
+  // };
 
   // View therapist details
   const handleView = (therapist: TherapistData) => {
@@ -378,7 +383,7 @@ const TherapistManagementInline: React.FC = () => {
                   size="large"
                   editable={true}
                   onPhotoUpdate={(url) => {
-                    setSelectedTherapist(prev => prev ? { ...prev, profile_photo_url: url } : null);
+                    setSelectedTherapist(prev => prev ? { ...prev, profile_photo_url: url || undefined } : null);
                     loadTherapists();
                   }}
                 />
@@ -445,17 +450,15 @@ const TherapistManagementInline: React.FC = () => {
                 <dd className="text-gray-900 flex items-start">
                   <MapPinIcon className="w-4 h-4 mr-2 text-gray-400 mt-0.5" />
                   <div>
-                      {selectedTherapist.street_address ? (
-                        <>
-                          {selectedTherapist.street_address}<br />
-                          {selectedTherapist.postal_code} {selectedTherapist.city}<br />
-                          {selectedTherapist.country}
-                        </>
-                      ) : (
-                        'Not provided'
-                      )}
-                    </dd>
-                  </div>
+                    {selectedTherapist.street_address ? (
+                      <>
+                        {selectedTherapist.street_address}<br />
+                        {selectedTherapist.postal_code} {selectedTherapist.city}<br />
+                        {selectedTherapist.country}
+                      </>
+                    ) : (
+                      'Not provided'
+                    )}
                   </div>
                 </dd>
               </div>
@@ -481,97 +484,96 @@ const TherapistManagementInline: React.FC = () => {
                   ))}
                 </dd>
               </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Languages</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {selectedTherapist.languages?.join(', ') || 'Not specified'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Years of Experience</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {selectedTherapist.years_of_experience || 0} years
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Qualifications</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {selectedTherapist.qualifications || 'Not specified'}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-
-            <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Consultation Rate</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      €{selectedTherapist.consultation_rate || 0} per session
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Service Types</dt>
-                    <dd className="flex items-center gap-2">
-                      {selectedTherapist.online_therapy && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                          Online Therapy
-                        </span>
-                      )}
-                      {selectedTherapist.in_person_therapy && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                          In-Person
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Accepting New Clients</dt>
-                    <dd className="text-sm font-medium">
-                      {selectedTherapist.accepting_new_clients ? (
-                        <span className="text-green-600">Yes</span>
-                      ) : (
-                        <span className="text-red-600">No</span>
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Current Client Count</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {selectedTherapist.client_count || 0} clients
-                    </dd>
-                  </div>
-                </dl>
+                <dt className="text-sm text-gray-500">Languages</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {selectedTherapist.languages?.join(', ') || 'Not specified'}
+                </dd>
               </div>
-
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Bio</h3>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {selectedTherapist.bio || 'No bio provided'}
-                </p>
+                <dt className="text-sm text-gray-500">Years of Experience</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {selectedTherapist.years_of_experience || 0} years
+                </dd>
               </div>
-
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Account Created</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {formatDate(selectedTherapist.created_at)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Last Updated</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {formatDate(selectedTherapist.updated_at)}
-                    </dd>
-                  </div>
-                </dl>
+                <dt className="text-sm text-gray-500">Qualifications</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {selectedTherapist.qualifications || 'Not specified'}
+                </dd>
               </div>
-            </div>
+            </dl>
+          </div>
+
+          {/* Service Information Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Information</h3>
+            <dl className="space-y-3">
+              <div>
+                <dt className="text-sm text-gray-500">Consultation Rate</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  €{selectedTherapist.consultation_rate || 0} per session
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Service Types</dt>
+                <dd className="flex items-center gap-2">
+                  {selectedTherapist.online_therapy && (
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                      Online Therapy
+                    </span>
+                  )}
+                  {selectedTherapist.in_person_therapy && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                      In-Person
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Accepting New Clients</dt>
+                <dd className="text-sm font-medium">
+                  {selectedTherapist.accepting_new_clients ? (
+                    <span className="text-green-600">Yes</span>
+                  ) : (
+                    <span className="text-red-600">No</span>
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Current Client Count</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {selectedTherapist.client_count || 0} clients
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Bio Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Bio</h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+              {selectedTherapist.bio || 'No bio provided'}
+            </p>
+          </div>
+
+          {/* Account Information Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+            <dl className="space-y-3">
+              <div>
+                <dt className="text-sm text-gray-500">Account Created</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {formatDate(selectedTherapist.created_at)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-gray-500">Last Updated</dt>
+                <dd className="text-sm font-medium text-gray-900">
+                  {formatDate(selectedTherapist.updated_at)}
+                </dd>
+              </div>
+            </dl>
           </div>
 
           {/* Therapy Approach Card */}
