@@ -116,24 +116,16 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
 
       // If admin is editing another user's photo
       if (userId && userId !== user?.id && user?.role === 'admin') {
-        // Upload to Cloudinary or your storage service first
-        const formData = new FormData();
-        formData.append('photo', file);
-        
-        // For now, we'll use the profile upload endpoint
-        // In production, you might want a separate admin upload endpoint
-        const response = await realApiService.profile.uploadPhoto(file);
+        // Use the admin upload endpoint
+        const response = await realApiService.admin.uploadTherapistPhoto(userId, file);
         
         if (response.success && response.data) {
-          // Update the therapist's photo URL via admin endpoint
-          const updateResponse = await realApiService.admin.updateTherapistPhoto(userId, response.data.photoUrl);
+          setPhotoUrl(response.data.photoUrl);
+          setPreview(null);
+          success(t('profile.photo.uploadSuccess') || 'Profile photo updated successfully');
+          onPhotoUpdate?.(response.data.photoUrl);
           
-          if (updateResponse.success) {
-            setPhotoUrl(response.data.photoUrl);
-            setPreview(null);
-            success(t('profile.photo.uploadSuccess') || 'Profile photo updated successfully');
-            onPhotoUpdate?.(response.data.photoUrl);
-          }
+          // No need to update auth store for other users
         }
       } else {
         // Regular user uploading their own photo
@@ -216,14 +208,14 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
         <div className={`
           ${sizeClasses[size]} rounded-full overflow-hidden
           ${size !== 'xsmall' ? 'ring-4 ring-white shadow-2xl' : 'ring-2 ring-gray-200 shadow-md'}
-          ${canEdit && !isLoading ? 'group-hover:ring-indigo-400 group-hover:shadow-indigo-200' : ''}
+          ${canEdit && !isLoading ? 'group-hover:ring-red-400 group-hover:shadow-red-200' : ''}
           transition-all duration-300 transform group-hover:scale-105
           bg-gradient-to-br from-gray-50 to-gray-100
         `}>
           {isLoadingPhoto ? (
             <div className="w-full h-full flex items-center justify-center backdrop-blur-sm">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 animate-spin" style={{ padding: '2px' }}>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-400 to-rose-400 animate-spin" style={{ padding: '2px' }}>
                   <div className="w-full h-full rounded-full bg-white"></div>
                 </div>
                 <LoadingSpinner size="small" />
@@ -248,8 +240,8 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
             </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-              <UserCircleIcon className={`${iconSizes[size]} text-indigo-300 opacity-70`} />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 via-rose-50 to-pink-50">
+              <UserCircleIcon className={`${iconSizes[size]} text-red-300 opacity-70`} />
             </div>
           )}
         </div>
@@ -260,10 +252,10 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
             <div className="transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3 bg-white/95 backdrop-blur-sm rounded-full shadow-2xl hover:shadow-indigo-500/25 transform hover:scale-110 transition-all duration-200 border border-white/50"
+                className="p-3 bg-white/95 backdrop-blur-sm rounded-full shadow-2xl hover:shadow-red-500/25 transform hover:scale-110 transition-all duration-200 border border-white/50"
                 title={t('profile.photo.upload') || 'Upload photo'}
               >
-                <CameraIcon className="w-6 h-6 text-indigo-600" />
+                <CameraIcon className="w-6 h-6 text-red-600" />
               </button>
             </div>
           </div>
@@ -303,12 +295,12 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="group relative inline-flex items-center justify-center px-6 py-2.5 overflow-hidden font-medium text-indigo-600 transition duration-300 ease-out border-2 border-indigo-600 rounded-full shadow-md hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative inline-flex items-center justify-center px-6 py-2.5 overflow-hidden font-medium text-red-600 transition duration-300 ease-out border-2 border-red-600 rounded-full shadow-md hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-indigo-600 group-hover:translate-x-0 ease">
+            <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-red-600 group-hover:translate-x-0 ease">
               <ArrowUpTrayIcon className="w-5 h-5" />
             </span>
-            <span className="absolute flex items-center justify-center w-full h-full text-indigo-600 transition-all duration-300 transform group-hover:translate-x-full ease">
+            <span className="absolute flex items-center justify-center w-full h-full text-red-600 transition-all duration-300 transform group-hover:translate-x-full ease">
               <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
               {t('profile.photo.upload') || 'Upload Photo'}
             </span>
@@ -352,7 +344,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
       {/* Help Text */}
       {canEdit && (
         <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-rose-400 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
           <div className="relative bg-white rounded-lg p-4 border border-gray-100">
             <p className="text-xs text-gray-600 text-center max-w-xs leading-relaxed">
               {t('profile.photo.helpText') || 'Upload a professional photo. Images will be automatically cropped to a square. Maximum file size: 5MB.'}

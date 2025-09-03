@@ -128,8 +128,8 @@ const AllTherapists: React.FC = () => {
     switch (type) {
       case 'agb_reimbursed': // Green: Has AGB code, insurance reimbursed
         return 'bg-green-100 text-green-800 border border-green-300';
-      case 'basic_reimbursement': // Blue: Municipality/special programs
-        return 'bg-blue-100 text-blue-800 border border-blue-300';
+      case 'basic_reimbursement': // Orange: Municipality/special programs
+        return 'bg-orange-100 text-orange-800 border border-orange-300';
       case 'no_reimbursement': // Red: Client pays out of pocket
         return 'bg-red-100 text-red-800 border border-red-300';
       case 'on_vacation': // Orange: Not available for sessions
@@ -461,13 +461,13 @@ const AllTherapists: React.FC = () => {
 
                   {/* Stats */}
                   <div className="relative z-10 grid grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-blue-900">{therapist.current_clients || therapist.active_clients || 0}</p>
-                      <p className="text-xs text-blue-700 font-medium">Active Clients</p>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-red-900">{therapist.current_clients || therapist.active_clients || 0}</p>
+                      <p className="text-xs text-red-700 font-medium">Active Clients</p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-green-900">{therapist.max_clients || 20}</p>
-                      <p className="text-xs text-green-700 font-medium">Max Capacity</p>
+                    <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg p-4 text-center">
+                      <p className="text-2xl font-bold text-rose-900">{therapist.max_clients || 20}</p>
+                      <p className="text-xs text-rose-700 font-medium">Max Capacity</p>
                     </div>
                   </div>
 
@@ -490,7 +490,7 @@ const AllTherapists: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => window.alert('Message feature coming soon!')}
-                        className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                        className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
                         title="Send Message"
                       >
                         <ChatBubbleLeftIcon className="w-4 h-4" />
@@ -579,7 +579,7 @@ const AllTherapists: React.FC = () => {
                       </button>
                       <button
                         onClick={() => navigate(`/admin/therapist-management?edit=${therapist.id}`)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-red-600 hover:text-red-900"
                       >
                         Edit
                       </button>

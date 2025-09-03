@@ -30,6 +30,7 @@ import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAlert } from '@/components/ui/CustomAlert';
 import { StatusBadge } from '@/components/layout/PremiumLayout';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 import { formatDate } from '@/utils/dateFormatters';
 import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import { 
@@ -78,7 +79,7 @@ const TherapistManagementInline: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSpecialization, setFilterSpecialization] = useState<string>('all');
-  const [showEditModal, setShowEditModal] = useState(false);
+  // Removed modal state - using inline editing
   
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -302,7 +303,29 @@ const TherapistManagementInline: React.FC = () => {
   // Edit therapist
   const handleEdit = (therapist: TherapistData) => {
     setSelectedTherapist(therapist);
-    setShowEditModal(true);
+    setFormData({
+      email: therapist.email,
+      password: '',
+      first_name: therapist.first_name,
+      last_name: therapist.last_name,
+      phone: therapist.phone || '',
+      specializations: Array.isArray(therapist.specializations) ? therapist.specializations : [],
+      languages: Array.isArray(therapist.languages) ? therapist.languages : [],
+      qualifications: therapist.qualifications || '',
+      years_of_experience: therapist.years_of_experience || 0,
+      bio: therapist.bio || '',
+      consultation_rate: therapist.consultation_rate || therapist.hourly_rate || 0,
+      street_address: therapist.street_address || '',
+      postal_code: therapist.postal_code || '',
+      city: therapist.city || '',
+      country: therapist.country || 'Netherlands',
+      available_days: therapist.available_days || [],
+      available_hours: therapist.available_hours || '',
+      accepting_new_clients: therapist.accepting_new_clients ?? true,
+      online_therapy: therapist.online_therapy ?? true,
+      in_person_therapy: therapist.in_person_therapy ?? true
+    });
+    setViewMode('edit');
   };
 
   // Handle modal update
@@ -345,61 +368,83 @@ const TherapistManagementInline: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
-                {selectedTherapist.first_name[0]}{selectedTherapist.last_name[0]}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Dr. {selectedTherapist.first_name} {selectedTherapist.last_name}
-                </h2>
-                <p className="text-gray-600">{selectedTherapist.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <StatusBadge
-                    type="user"
-                    status={selectedTherapist.user_status}
-                    size="sm"
-                  />
-                  {selectedTherapist.rating && (
-                    <div className="flex items-center">
-                      <StarIcon className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="ml-1 text-sm text-gray-600">
-                        {selectedTherapist.rating.toFixed(1)} ({selectedTherapist.total_reviews || 0} reviews)
-                      </span>
-                    </div>
-                  )}
+        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl shadow-lg overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-sm p-8">
+            <div className="flex items-start justify-between mb-8">
+              <div className="flex items-center space-x-6">
+                <ProfilePhotoUpload 
+                  userId={selectedTherapist.id}
+                  currentPhotoUrl={selectedTherapist.profile_photo_url}
+                  size="large"
+                  editable={true}
+                  onPhotoUpdate={(url) => {
+                    setSelectedTherapist(prev => prev ? { ...prev, profile_photo_url: url } : null);
+                    loadTherapists();
+                  }}
+                />
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Dr. {selectedTherapist.first_name} {selectedTherapist.last_name}
+                  </h2>
+                  <p className="text-gray-600 text-lg">{selectedTherapist.email}</p>
+                  <div className="flex items-center gap-3 mt-3">
+                    <StatusBadge
+                      type="user"
+                      status={selectedTherapist.user_status}
+                      size="md"
+                    />
+                    {selectedTherapist.rating && (
+                      <div className="flex items-center bg-yellow-50 px-3 py-1 rounded-full">
+                        <StarIcon className="w-5 h-5 text-yellow-500 fill-current" />
+                        <span className="ml-1 text-sm font-medium text-gray-700">
+                          {selectedTherapist.rating.toFixed(1)} ({selectedTherapist.total_reviews || 0} reviews)
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => handleEdit(selectedTherapist)}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center space-x-2 transition-all transform hover:scale-105 shadow-lg"
+              >
+                <PencilIcon className="w-5 h-5" />
+                <span className="font-medium">Edit Profile</span>
+              </button>
             </div>
-            <button
-              onClick={() => handleEdit(selectedTherapist)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
-            >
-              <CameraIcon className="w-5 h-5" />
-              <span>Edit Profile</span>
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Contact Information Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-red-100 rounded-lg mr-3">
+                <PhoneIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Contact Information</h3>
+            </div>
+            <dl className="space-y-4">
+              <div className="pb-4 border-b border-gray-100">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Email Address</dt>
+                <dd className="text-gray-900 flex items-center">
+                  <EnvelopeIcon className="w-4 h-4 mr-2 text-gray-400" />
+                  {selectedTherapist.email}
+                </dd>
+              </div>
+              <div className="pb-4 border-b border-gray-100">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Phone Number</dt>
+                <dd className="text-gray-900 flex items-center">
+                  <PhoneIcon className="w-4 h-4 mr-2 text-gray-400" />
+                  {selectedTherapist.phone || 'Not provided'}
+                </dd>
+              </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-                <dl className="space-y-3">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Address</dt>
+                <dd className="text-gray-900 flex items-start">
+                  <MapPinIcon className="w-4 h-4 mr-2 text-gray-400 mt-0.5" />
                   <div>
-                    <dt className="text-sm text-gray-500">Email</dt>
-                    <dd className="text-sm font-medium text-gray-900">{selectedTherapist.email}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Phone</dt>
-                    <dd className="text-sm font-medium text-gray-900">
-                      {selectedTherapist.phone || 'Not provided'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Address</dt>
-                    <dd className="text-sm font-medium text-gray-900">
                       {selectedTherapist.street_address ? (
                         <>
                           {selectedTherapist.street_address}<br />
@@ -411,22 +456,31 @@ const TherapistManagementInline: React.FC = () => {
                       )}
                     </dd>
                   </div>
-                </dl>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Specializations</dt>
-                    <dd className="flex flex-wrap gap-1 mt-1">
-                      {Array.isArray(selectedTherapist.specializations) && selectedTherapist.specializations.map((spec: string, index: number) => (
-                        <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                          {spec}
-                        </span>
-                      ))}
-                    </dd>
                   </div>
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Professional Information Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-red-100 rounded-lg mr-3">
+                <AcademicCapIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Professional Information</h3>
+            </div>
+            <dl className="space-y-4">
+              <div className="pb-4 border-b border-gray-100">
+                <dt className="text-sm font-medium text-gray-500 mb-2">Specializations</dt>
+                <dd className="flex flex-wrap gap-2">
+                  {Array.isArray(selectedTherapist.specializations) && selectedTherapist.specializations.map((spec: string, index: number) => (
+                    <span key={index} className="px-3 py-1 bg-red-50 text-red-700 text-sm rounded-lg font-medium">
+                      {spec}
+                    </span>
+                  ))}
+                </dd>
+              </div>
                   <div>
                     <dt className="text-sm text-gray-500">Languages</dt>
                     <dd className="text-sm font-medium text-gray-900">
@@ -468,7 +522,7 @@ const TherapistManagementInline: React.FC = () => {
                         </span>
                       )}
                       {selectedTherapist.in_person_therapy && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
                           In-Person
                         </span>
                       )}
@@ -518,6 +572,19 @@ const TherapistManagementInline: React.FC = () => {
                 </dl>
               </div>
             </div>
+          </div>
+
+          {/* Therapy Approach Card */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-red-100 rounded-lg mr-3">
+                <AcademicCapIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Therapy Approach</h3>
+            </div>
+            <p className="text-gray-700 leading-relaxed">
+              {selectedTherapist.bio || 'No therapy approach description available.'}
+            </p>
           </div>
         </div>
 
@@ -711,7 +778,7 @@ const TherapistManagementInline: React.FC = () => {
       label: 'Therapist',
       render: (therapist: TherapistData) => (
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md">
             {therapist.first_name[0]}{therapist.last_name[0]}
           </div>
           <div>
@@ -731,7 +798,7 @@ const TherapistManagementInline: React.FC = () => {
         return (
           <div className="flex flex-wrap gap-1">
             {therapistSpecializations.slice(0, 3).map((spec: string, index: number) => (
-              <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+              <span key={index} className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
                 {spec}
               </span>
             ))}
@@ -816,7 +883,7 @@ const TherapistManagementInline: React.FC = () => {
                     placeholder="Search therapists..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   />
                 </div>
               </div>
@@ -824,7 +891,7 @@ const TherapistManagementInline: React.FC = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -834,7 +901,7 @@ const TherapistManagementInline: React.FC = () => {
                 <select
                   value={filterSpecialization}
                   onChange={(e) => setFilterSpecialization(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 >
                   <option value="all">All Specializations</option>
                   {allSpecializations.map(spec => (
@@ -859,7 +926,7 @@ const TherapistManagementInline: React.FC = () => {
                 <div className="mt-6">
                   <button
                     onClick={() => setViewMode('create')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
                     Add Therapist
@@ -896,13 +963,13 @@ const TherapistManagementInline: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => handleView(therapist)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                          className="text-red-600 hover:text-red-900 mr-3"
                         >
                           <EyeIcon className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleEdit(therapist)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                          className="text-red-600 hover:text-red-900 mr-3"
                         >
                           <PencilIcon className="w-5 h-5" />
                         </button>
@@ -939,13 +1006,13 @@ const TherapistManagementInline: React.FC = () => {
                   setSelectedTherapist(null);
                   resetForm();
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
                 {viewMode === 'create' ? 'Create Therapist' : 'Update Therapist'}
@@ -958,15 +1025,6 @@ const TherapistManagementInline: React.FC = () => {
       {/* Detail View */}
       {viewMode === 'detail' && renderDetailView()}
 
-      {/* Edit Modal */}
-      {selectedTherapist && (
-        <TherapistProfileEditModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          therapist={selectedTherapist as Therapist}
-          onUpdate={handleModalUpdate}
-        />
-      )}
     </InlineCrudLayout>
   );
 };

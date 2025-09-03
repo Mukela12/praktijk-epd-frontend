@@ -419,7 +419,20 @@ export const realApiService = {
       return response.data;
     },
 
-    // Update therapist photo (Admin)
+    // Upload therapist photo file (Admin)
+    uploadTherapistPhoto: async (therapistId: string, file: File): Promise<ApiResponse<{ photoUrl: string }>> => {
+      const formData = new FormData();
+      formData.append('photo', file);
+      
+      const response = await api.post(`/admin/therapists/${therapistId}/photo/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    },
+
+    // Update therapist photo URL (Admin)
     updateTherapistPhoto: async (therapistId: string, photoUrl: string): Promise<ApiResponse<{ photoUrl: string }>> => {
       const response = await api.put(`/admin/therapists/${therapistId}/photo`, { photoUrl });
       return response.data;
