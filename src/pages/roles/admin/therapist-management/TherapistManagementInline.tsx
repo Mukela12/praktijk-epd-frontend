@@ -37,6 +37,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import { StatusBadge } from '@/components/layout/PremiumLayout';
 import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 import { formatDate } from '@/utils/dateFormatters';
+import { transformToBackend, transformToFrontend, separateUserAndProfileData } from '@/utils/fieldTransformations';
 import { InlineCrudLayout } from '@/components/crud/InlineCrudLayout';
 import { 
   TextField, 
@@ -47,6 +48,7 @@ import {
   CheckboxField,
   NumberField
 } from '@/components/forms/FormFields';
+import { TagsFieldWithSuggestions, THERAPIST_SPECIALIZATIONS, LANGUAGES } from '@/components/forms/TagsFieldWithSuggestions';
 import { Therapist } from '@/types/entities';
 import TherapistProfileEditModal from '@/components/admin/TherapistProfileEditModal';
 
@@ -56,11 +58,20 @@ interface TherapistData extends Therapist {
   qualifications?: string;
   years_of_experience?: number;
   consultation_rate?: number;
+  consultationRate?: number;
   street_address?: string;
   postal_code?: string;
   city?: string;
   country?: string;
   available_days?: string[];
+  kvk_number?: string;
+  big_number?: string;
+  therapy_types?: string[];
+  session_duration?: number;
+  break_between_sessions?: number;
+  max_daily_sessions?: number;
+  max_weekly_sessions?: number;
+  max_clients_per_day?: number;
   available_hours?: string;
   accepting_new_clients?: boolean;
   online_therapy?: boolean;
@@ -109,7 +120,18 @@ const TherapistManagementInline: React.FC = () => {
     available_hours: '',
     accepting_new_clients: true,
     online_therapy: true,
-    in_person_therapy: true
+    in_person_therapy: true,
+    // Additional fields
+    license_number: '',
+    kvk_number: '',
+    big_number: '',
+    therapy_types: [] as string[],
+    session_duration: 60,
+    break_between_sessions: 15,
+    max_clients: 20,
+    max_daily_sessions: 8,
+    max_weekly_sessions: 40,
+    max_clients_per_day: 8
   });
 
   // Load data
@@ -147,12 +169,16 @@ const TherapistManagementInline: React.FC = () => {
         const therapistsData = response.data.therapists || response.data || [];
         // Ensure therapistsData is an array
         const therapistsArray = Array.isArray(therapistsData) ? therapistsData : [];
-        const mappedTherapists = therapistsArray.map((therapist: any) => ({
-          ...therapist,
-          user_status: therapist.user_status || therapist.status || 'active',
-          created_at: therapist.created_at || new Date().toISOString(),
-          updated_at: therapist.updated_at || new Date().toISOString()
-        }));
+        const mappedTherapists = therapistsArray.map((therapist: any) => {
+          const frontendData = transformToFrontend(therapist);
+          return {
+            ...therapist,
+            ...frontendData,
+            user_status: therapist.user_status || therapist.status || 'active',
+            created_at: therapist.created_at || new Date().toISOString(),
+            updated_at: therapist.updated_at || new Date().toISOString()
+          };
+        });
         setTherapists(mappedTherapists);
       } else {
         setTherapists([]);
@@ -199,22 +225,34 @@ const TherapistManagementInline: React.FC = () => {
       });
 
       if (response.success && response.data?.id) {
-        // Update therapist-specific fields
-        await realApiService.admin.updateUser(response.data.id, {
+        // Update therapist-specific fields using the dedicated endpoint
+        const profileData = transformToBackend({
           specializations: formData.specializations,
           languages: formData.languages,
           qualifications: formData.qualifications,
-          years_of_experience: formData.years_of_experience,
+          yearsOfExperience: formData.years_of_experience,
           bio: formData.bio,
-          consultation_rate: formData.consultation_rate,
-          street_address: formData.street_address,
-          postal_code: formData.postal_code,
+          consultationRate: formData.consultation_rate,
+          streetAddress: formData.street_address,
+          postalCode: formData.postal_code,
           city: formData.city,
           country: formData.country,
-          accepting_new_clients: formData.accepting_new_clients,
-          online_therapy: formData.online_therapy,
-          in_person_therapy: formData.in_person_therapy
+          acceptingNewClients: formData.accepting_new_clients,
+          onlineTherapy: formData.online_therapy,
+          inPersonTherapy: formData.in_person_therapy,
+          licenseNumber: formData.license_number,
+          kvkNumber: formData.kvk_number,
+          bigNumber: formData.big_number,
+          therapyTypes: formData.therapy_types,
+          sessionDuration: formData.session_duration,
+          breakBetweenSessions: formData.break_between_sessions,
+          maxClients: formData.max_clients,
+          maxDailySessions: formData.max_daily_sessions,
+          maxWeeklySessions: formData.max_weekly_sessions,
+          maxClientsPerDay: formData.max_clients_per_day
         });
+        
+        await realApiService.admin.updateTherapistProfile(response.data.id, profileData);
 
         success('Therapist created successfully');
         setViewMode('list');
@@ -232,26 +270,46 @@ const TherapistManagementInline: React.FC = () => {
     if (!selectedTherapist) return;
 
     try {
-      const updates = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
+      // Separate user fields from profile fields
+      const { userData, profileData } = separateUserAndProfileData({
+        firstName: formData.first_name,
+        lastName: formData.last_name,
         phone: formData.phone,
         specializations: formData.specializations,
         languages: formData.languages,
         qualifications: formData.qualifications,
-        years_of_experience: formData.years_of_experience,
+        yearsOfExperience: formData.years_of_experience,
         bio: formData.bio,
-        consultation_rate: formData.consultation_rate,
-        street_address: formData.street_address,
-        postal_code: formData.postal_code,
+        consultationRate: formData.consultation_rate,
+        streetAddress: formData.street_address,
+        postalCode: formData.postal_code,
         city: formData.city,
         country: formData.country,
-        accepting_new_clients: formData.accepting_new_clients,
-        online_therapy: formData.online_therapy,
-        in_person_therapy: formData.in_person_therapy
-      };
+        acceptingNewClients: formData.accepting_new_clients,
+        onlineTherapy: formData.online_therapy,
+        inPersonTherapy: formData.in_person_therapy,
+        licenseNumber: formData.license_number,
+        kvkNumber: formData.kvk_number,
+        bigNumber: formData.big_number,
+        therapyTypes: formData.therapy_types,
+        sessionDuration: formData.session_duration,
+        breakBetweenSessions: formData.break_between_sessions,
+        maxClients: formData.max_clients,
+        maxDailySessions: formData.max_daily_sessions,
+        maxWeeklySessions: formData.max_weekly_sessions,
+        maxClientsPerDay: formData.max_clients_per_day
+      });
 
-      const response = await realApiService.admin.updateUser(selectedTherapist.id, updates);
+      // Update basic user info if changed
+      let response = { success: true };
+      if (Object.keys(userData).length > 0) {
+        response = await realApiService.admin.updateUser(selectedTherapist.id, userData);
+      }
+      
+      // Update profile data using dedicated endpoint
+      if (response.success && Object.keys(profileData).length > 0) {
+        response = await realApiService.admin.updateTherapistProfile(selectedTherapist.id, profileData);
+      }
 
       if (response.success) {
         success('Therapist updated successfully');
@@ -303,7 +361,17 @@ const TherapistManagementInline: React.FC = () => {
       available_hours: '',
       accepting_new_clients: true,
       online_therapy: true,
-      in_person_therapy: true
+      in_person_therapy: true,
+      license_number: '',
+      kvk_number: '',
+      big_number: '',
+      therapy_types: [],
+      session_duration: 60,
+      break_between_sessions: 15,
+      max_clients: 20,
+      max_daily_sessions: 8,
+      max_weekly_sessions: 40,
+      max_clients_per_day: 8
     });
   };
 
@@ -321,7 +389,7 @@ const TherapistManagementInline: React.FC = () => {
       qualifications: therapist.qualifications || '',
       years_of_experience: therapist.years_of_experience || 0,
       bio: therapist.bio || '',
-      consultation_rate: therapist.consultation_rate || therapist.hourly_rate || 0,
+      consultation_rate: therapist.consultationRate || therapist.consultation_rate || therapist.hourly_rate || 0,
       street_address: therapist.street_address || '',
       postal_code: therapist.postal_code || '',
       city: therapist.city || '',
@@ -330,7 +398,17 @@ const TherapistManagementInline: React.FC = () => {
       available_hours: therapist.available_hours || '',
       accepting_new_clients: therapist.accepting_new_clients ?? true,
       online_therapy: therapist.online_therapy ?? true,
-      in_person_therapy: therapist.in_person_therapy ?? true
+      in_person_therapy: therapist.in_person_therapy ?? true,
+      license_number: therapist.license_number || '',
+      kvk_number: therapist.kvk_number || '',
+      big_number: therapist.big_number || '',
+      therapy_types: Array.isArray(therapist.therapy_types) ? therapist.therapy_types : [],
+      session_duration: therapist.session_duration || 60,
+      break_between_sessions: therapist.break_between_sessions || 15,
+      max_clients: therapist.max_clients || 20,
+      max_daily_sessions: therapist.max_daily_sessions || 8,
+      max_weekly_sessions: therapist.max_weekly_sessions || 40,
+      max_clients_per_day: therapist.max_clients_per_day || 8
     });
     setViewMode('edit');
   };
@@ -736,19 +814,23 @@ const TherapistManagementInline: React.FC = () => {
             Professional Information
           </h3>
         <div className="space-y-6">
-          <TagsField
+          <TagsFieldWithSuggestions
             label="Specializations"
             name="specializations"
             value={formData.specializations}
             onChange={(value) => setFormData({ ...formData, specializations: value })}
-            placeholder="Add specializations..."
+            suggestions={THERAPIST_SPECIALIZATIONS}
+            placeholder="Search specializations or add custom..."
+            allowCustom={true}
           />
-          <TagsField
+          <TagsFieldWithSuggestions
             label="Languages"
             name="languages"
             value={formData.languages}
             onChange={(value) => setFormData({ ...formData, languages: value })}
-            placeholder="Add languages..."
+            suggestions={LANGUAGES}
+            placeholder="Search languages or add custom..."
+            allowCustom={true}
           />
           <TextField
             label="Qualifications"
@@ -765,6 +847,89 @@ const TherapistManagementInline: React.FC = () => {
             rows={4}
             placeholder="Professional bio and approach to therapy..."
           />
+          
+          {/* Registration Numbers */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <TextField
+              label="License Number"
+              name="license_number"
+              value={formData.license_number}
+              onChange={(value) => setFormData({ ...formData, license_number: value })}
+              placeholder="Professional license"
+            />
+            <TextField
+              label="KVK Number"
+              name="kvk_number"
+              value={formData.kvk_number}
+              onChange={(value) => setFormData({ ...formData, kvk_number: value })}
+              placeholder="Chamber of Commerce"
+            />
+            <TextField
+              label="BIG Number"
+              name="big_number"
+              value={formData.big_number}
+              onChange={(value) => setFormData({ ...formData, big_number: value })}
+              placeholder="Healthcare registration"
+            />
+          </div>
+          
+          {/* Session Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NumberField
+              label="Session Duration (minutes)"
+              name="session_duration"
+              value={formData.session_duration}
+              onChange={(value) => setFormData({ ...formData, session_duration: value })}
+              min={15}
+              max={240}
+              step={15}
+            />
+            <NumberField
+              label="Break Between Sessions (minutes)"
+              name="break_between_sessions"
+              value={formData.break_between_sessions}
+              onChange={(value) => setFormData({ ...formData, break_between_sessions: value })}
+              min={0}
+              max={60}
+              step={5}
+            />
+          </div>
+          
+          {/* Capacity Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NumberField
+              label="Max Clients"
+              name="max_clients"
+              value={formData.max_clients}
+              onChange={(value) => setFormData({ ...formData, max_clients: value })}
+              min={1}
+              max={100}
+            />
+            <NumberField
+              label="Max Clients Per Day"
+              name="max_clients_per_day"
+              value={formData.max_clients_per_day}
+              onChange={(value) => setFormData({ ...formData, max_clients_per_day: value })}
+              min={1}
+              max={20}
+            />
+            <NumberField
+              label="Max Daily Sessions"
+              name="max_daily_sessions"
+              value={formData.max_daily_sessions}
+              onChange={(value) => setFormData({ ...formData, max_daily_sessions: value })}
+              min={1}
+              max={20}
+            />
+            <NumberField
+              label="Max Weekly Sessions"
+              name="max_weekly_sessions"
+              value={formData.max_weekly_sessions}
+              onChange={(value) => setFormData({ ...formData, max_weekly_sessions: value })}
+              min={1}
+              max={80}
+            />
+          </div>
         </div>
         </div>
         
