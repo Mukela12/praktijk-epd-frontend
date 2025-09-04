@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { PlusIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useTranslation } from '@/contexts/LanguageContext';
 
@@ -70,39 +70,57 @@ export const InlineCrudLayout: React.FC<InlineCrudLayoutProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-sm p-6 text-white animate-fadeIn">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            {viewMode !== 'list' && onBack && (
+      {/* Enhanced Consistent Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Gradient Top Bar */}
+        <div className="h-2 bg-gradient-to-r from-red-500 to-rose-600"></div>
+        
+        {/* Header Content */}
+        <div className="p-6">
+          {/* Breadcrumb */}
+          {viewMode !== 'list' && (
+            <nav className="flex items-center text-sm mb-4">
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="text-gray-500 hover:text-gray-700 flex items-center group"
               >
-                <ArrowLeftIcon className="w-5 h-5" />
+                <ArrowLeftIcon className="w-4 h-4 mr-1 group-hover:-translate-x-0.5 transition-transform" />
+                Back to {title}
               </button>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold flex items-center">
-                {Icon && <Icon className="w-8 h-8 mr-3" />}
-                {getViewTitle()}
-              </h1>
-              <p className="text-blue-100 mt-1">
-                {getViewSubtitle()}
-              </p>
+              <ChevronRightIcon className="w-4 h-4 mx-2 text-gray-400" />
+              <span className="text-gray-900 font-medium">
+                {viewMode === 'create' ? 'New' : viewMode === 'edit' ? 'Edit' : 'Details'}
+              </span>
+            </nav>
+          )}
+          
+          {/* Main Header */}
+          <div className="flex justify-between items-start">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-sm">
+                {Icon && <Icon className="w-8 h-8 text-white" />}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                  {getViewTitle()}
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  {getViewSubtitle()}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            {headerActions}
-            {viewMode === 'list' && showCreateButton && (
-              <button
-                onClick={() => onViewModeChange('create')}
-                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 hover:scale-105"
-              >
-                <PlusIcon className="w-5 h-5" />
-                <span>{createButtonText || `${t('action.add')} ${title}`}</span>
-              </button>
-            )}
+            <div className="flex items-center space-x-3">
+              {headerActions}
+              {viewMode === 'list' && showCreateButton && (
+                <button
+                  onClick={() => onViewModeChange('create')}
+                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-5 py-2.5 rounded-lg flex items-center space-x-2 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  <span>{createButtonText || `${t('action.add')} ${title}`}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -122,7 +140,7 @@ export const InlineCrudLayout: React.FC<InlineCrudLayoutProps> = ({
           </div>
         </div>
       ) : (
-        <div className="animate-slideInUp">
+        <div className="animate-fadeIn">
           {children}
         </div>
       )}

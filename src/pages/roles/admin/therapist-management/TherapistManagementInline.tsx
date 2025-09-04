@@ -657,17 +657,6 @@ const TherapistManagementInline: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={() => {
-              setViewMode('list');
-              setSelectedTherapist(null);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            Back to List
-          </button>
-        </div>
       </div>
     );
   };
@@ -700,9 +689,13 @@ const TherapistManagementInline: React.FC = () => {
             )}
           </div>
         </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+        
+        {/* Personal Information Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <UserCircleIcon className="w-5 h-5 mr-2 text-blue-600" />
+            Personal Information
+          </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <TextField
             label="First Name"
@@ -734,10 +727,14 @@ const TherapistManagementInline: React.FC = () => {
             max={50}
           />
         </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Information</h3>
+        </div>
+        
+        {/* Professional Information Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <AcademicCapIcon className="w-5 h-5 mr-2 text-purple-600" />
+            Professional Information
+          </h3>
         <div className="space-y-6">
           <TagsField
             label="Specializations"
@@ -769,10 +766,14 @@ const TherapistManagementInline: React.FC = () => {
             placeholder="Professional bio and approach to therapy..."
           />
         </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Settings</h3>
+        </div>
+        
+        {/* Service Settings Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <CurrencyEuroIcon className="w-5 h-5 mr-2 text-green-600" />
+            Service Settings
+          </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <NumberField
             label="Consultation Rate (€)"
@@ -803,10 +804,14 @@ const TherapistManagementInline: React.FC = () => {
             />
           </div>
         </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
+        </div>
+        
+        {/* Location Information Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <MapPinIcon className="w-5 h-5 mr-2 text-amber-600" />
+            Location Information
+          </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <TextField
@@ -842,8 +847,8 @@ const TherapistManagementInline: React.FC = () => {
             ]}
           />
         </div>
+        </div>
       </div>
-    </div>
     );
   };
 
@@ -965,12 +970,11 @@ const TherapistManagementInline: React.FC = () => {
 
   return (
     <InlineCrudLayout
-      title="Therapist Management"
-      subtitle="Manage all therapists in the system"
+      title="Therapists"
+      subtitle={viewMode === 'list' ? `${therapists.length} therapists in the system` : undefined}
       icon={UsersIcon}
       viewMode={viewMode}
       onViewModeChange={(mode) => {
-        console.log('Changing view mode to:', mode);
         if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
           setViewMode(mode);
           if (mode === 'create') {
@@ -980,7 +984,7 @@ const TherapistManagementInline: React.FC = () => {
       }}
       isLoading={isLoading}
       showCreateButton={viewMode === 'list'}
-      createButtonText="Add Therapist"
+      createButtonText="Add New Therapist"
       totalCount={therapists.length}
       onBack={viewMode !== 'list' ? () => {
         setViewMode('list');
@@ -990,8 +994,8 @@ const TherapistManagementInline: React.FC = () => {
     >
       {viewMode === 'list' && (
         <>
-          {/* Enhanced Search and Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          {/* Search and Filters */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="space-y-4">
               {/* Search Bar */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1100,28 +1104,30 @@ const TherapistManagementInline: React.FC = () => {
 
           {/* Therapist List */}
           {filteredTherapists.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No therapists found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || filterStatus !== 'all' || filterSpecialization !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Get started by adding your first therapist'}
-              </p>
-              {searchTerm === '' && filterStatus === 'all' && filterSpecialization === 'all' && (
-                <div className="mt-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <UsersIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No therapists found</h3>
+                <p className="text-gray-500 mb-6">
+                  {searchTerm || filterStatus !== 'all' || filterSpecialization !== 'all' || filterAccepting
+                    ? 'Try adjusting your filters to see more results'
+                    : 'Get started by adding your first therapist to the system'}
+                </p>
+                {searchTerm === '' && filterStatus === 'all' && filterSpecialization === 'all' && !filterAccepting && (
                   <button
                     onClick={() => setViewMode('create')}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-lg hover:from-red-700 hover:to-rose-700 transition-all shadow-sm"
                   >
-                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                    Add Therapist
+                    <PlusIcon className="mr-2 h-5 w-5" />
+                    Add Your First Therapist
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
-            <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
