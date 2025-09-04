@@ -261,7 +261,17 @@ const TherapistManagementInline: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating therapist:', error);
-      errorAlert(error.response?.data?.message || error.message || 'Failed to create therapist');
+      
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        errorAlert('A user with this email address already exists. Please use a different email address.');
+      } else if (error.response?.data?.message) {
+        errorAlert(error.response.data.message);
+      } else if (error.response?.data?.error) {
+        errorAlert(error.response.data.error);
+      } else {
+        errorAlert('Failed to create therapist. Please check your input and try again.');
+      }
     }
   };
 
