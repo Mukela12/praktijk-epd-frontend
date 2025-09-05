@@ -395,3 +395,204 @@ export function useRoleBasedApi() {
 
   return { api, role: user?.role };
 }
+
+// Main API hook that consolidates all API functions
+export function useRealApi() {
+  // Admin functions
+  const getAdminClients = useCallback(async (params?: { 
+    status?: string; 
+    therapistId?: string; 
+    page?: number; 
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }) => {
+    try {
+      const response = await realApiService.admin.getClients(params);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch clients');
+    } catch (error) {
+      console.error('[useRealApi] getAdminClients error:', error);
+      throw error;
+    }
+  }, []);
+
+  const getAdminClientStats = useCallback(async () => {
+    try {
+      const response = await realApiService.admin.getDashboard();
+      if (response.success && response.data) {
+        return response.data.clientStats;
+      }
+      throw new Error(response.message || 'Failed to fetch client stats');
+    } catch (error) {
+      console.error('[useRealApi] getAdminClientStats error:', error);
+      throw error;
+    }
+  }, []);
+
+  const deleteUser = useCallback(async (userId: string) => {
+    try {
+      const response = await realApiService.admin.deleteUser(userId);
+      if (response.success) {
+        toast.success('User deleted successfully');
+        return response;
+      }
+      throw new Error(response.message || 'Failed to delete user');
+    } catch (error) {
+      console.error('[useRealApi] deleteUser error:', error);
+      toast.error('Failed to delete user');
+      throw error;
+    }
+  }, []);
+
+  const updateUser = useCallback(async (userId: string, updates: any) => {
+    try {
+      const response = await realApiService.admin.updateUser(userId, updates);
+      if (response.success) {
+        toast.success('User updated successfully');
+        return response;
+      }
+      throw new Error(response.message || 'Failed to update user');
+    } catch (error) {
+      console.error('[useRealApi] updateUser error:', error);
+      toast.error('Failed to update user');
+      throw error;
+    }
+  }, []);
+
+  const updateUserStatus = useCallback(async (userId: string, status: string, reason?: string) => {
+    try {
+      const response = await realApiService.admin.updateUserStatus(userId, status, reason);
+      if (response.success) {
+        toast.success('User status updated successfully');
+        return response;
+      }
+      throw new Error(response.message || 'Failed to update user status');
+    } catch (error) {
+      console.error('[useRealApi] updateUserStatus error:', error);
+      toast.error('Failed to update user status');
+      throw error;
+    }
+  }, []);
+
+  const getAdminUsers = useCallback(async (params?: { 
+    page?: number; 
+    limit?: number; 
+    role?: string; 
+    status?: string; 
+    search?: string 
+  }) => {
+    try {
+      const response = await realApiService.admin.getUsers(params);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch users');
+    } catch (error) {
+      console.error('[useRealApi] getAdminUsers error:', error);
+      throw error;
+    }
+  }, []);
+
+  const createUser = useCallback(async (userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    phone?: string;
+  }) => {
+    try {
+      const response = await realApiService.admin.createUser(userData);
+      if (response.success) {
+        toast.success('User created successfully');
+        return response;
+      }
+      throw new Error(response.message || 'Failed to create user');
+    } catch (error) {
+      console.error('[useRealApi] createUser error:', error);
+      toast.error('Failed to create user');
+      throw error;
+    }
+  }, []);
+
+  const getAdminDashboard = useCallback(async () => {
+    try {
+      const response = await realApiService.admin.getDashboard();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch dashboard data');
+    } catch (error) {
+      console.error('[useRealApi] getAdminDashboard error:', error);
+      throw error;
+    }
+  }, []);
+
+  const getClient = useCallback(async (clientId: string) => {
+    try {
+      const response = await realApiService.admin.getClient(clientId);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch client');
+    } catch (error) {
+      console.error('[useRealApi] getClient error:', error);
+      throw error;
+    }
+  }, []);
+
+  return {
+    // Admin functions
+    getAdminClients,
+    getAdminClientStats,
+    getAdminUsers,
+    getAdminDashboard,
+    createUser,
+    updateUser,
+    deleteUser,
+    updateUserStatus,
+    getClient,
+    
+    // Export hooks for direct usage
+    useAdminDashboard,
+    useAdminUsers,
+    useAdminClients,
+    useAdminTherapists,
+    useAdminWaitingList,
+    useAdminFinancialOverview,
+    
+    // Therapist hooks
+    useTherapistDashboard,
+    useTherapistProfile,
+    useTherapistClients,
+    useTherapistAppointments,
+    
+    // Client hooks
+    useClientDashboard,
+    useClientProfile,
+    useClientAppointments,
+    useClientMessages,
+    
+    // Assistant hooks
+    useAssistantDashboard,
+    useAssistantSupportTickets,
+    
+    // Bookkeeper hooks
+    useBookkeeperDashboard,
+    useBookkeeperInvoices,
+    
+    // Common hooks
+    useMessages,
+    
+    // Utility hooks
+    useApiCall,
+    useRoleBasedApi,
+    
+    // Direct API service access
+    api: realApiService
+  };
+}

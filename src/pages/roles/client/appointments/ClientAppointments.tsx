@@ -289,7 +289,7 @@ const ClientAppointments: React.FC = () => {
                   </div>
                   <div>
                     <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                      My Wellness Calendar
+                      My Calendar
                     </h1>
                     <p className="text-slate-600 text-lg">
                       Your journey to healing, one session at a time

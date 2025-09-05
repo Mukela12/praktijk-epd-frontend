@@ -42,7 +42,7 @@ const UnpaidInvoiceAlert: React.FC<UnpaidInvoiceAlertProps> = ({ className = '' 
   const loadUnpaidInvoices = async () => {
     try {
       setIsLoading(true);
-      const response = await realApiService.client.getInvoices({ status: 'UNPAID' });
+      const response = await realApiService.client.getInvoices({ status: 'unpaid' });
       
       if (response.success && response.data) {
         const data = response.data as any;

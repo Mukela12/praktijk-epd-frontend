@@ -821,7 +821,7 @@ const ClientProfile: React.FC = () => {
                     <h4 className="font-medium text-blue-900">Data Protection</h4>
                     <p className="text-sm text-blue-700 mt-1">
                       Your personal information is protected under GDPR and Dutch privacy laws. 
-                      You have the right to access, modify, or delete your data at any time.
+                      You have the right to access and modify your data at any time.
                     </p>
                   </div>
                 </div>

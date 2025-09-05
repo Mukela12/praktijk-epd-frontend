@@ -94,7 +94,7 @@ const BookAppointment: React.FC = () => {
   const checkUnpaidInvoices = async () => {
     try {
       setIsCheckingInvoices(true);
-      const response = await realApiService.client.getInvoices({ status: 'UNPAID' });
+      const response = await realApiService.client.getInvoices({ status: 'unpaid' });
       
       if (response.success && response.data) {
         const data = response.data as any;
@@ -172,10 +172,9 @@ const BookAppointment: React.FC = () => {
       const requestData = {
         preferredDate: selectedDate,
         preferredTime: selectedTime,
-        therapyType,
+        therapyType: urgency === 'urgent' ? 'emergency' : 'regular', // Map urgency to therapy type
         urgencyLevel: urgency,
-        reason: problemDescription,
-        ...(selectedTherapist && { therapistId: selectedTherapist.id })
+        reason: problemDescription
       };
 
       const response = await realApiService.client.requestAppointment(requestData);
