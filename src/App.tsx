@@ -31,8 +31,6 @@ import ClientDashboard from '@/pages/roles/client/Dashboard';
 import AgendaPage from '@/pages/roles/admin/agenda/AgendaPage';
 import AllClients from '@/pages/roles/admin/client-management/AllClients';
 import ClientManagement from '@/pages/roles/admin/client-management/ClientManagement';
-import AllTherapists from '@/pages/roles/admin/therapist-management/AllTherapists';
-import TherapistManagementInline from '@/pages/roles/admin/therapist-management/TherapistManagementInline';
 import FinancialDashboard from '@/pages/roles/admin/financial-management/FinancialDashboard';
 import WaitingListManagement from '@/pages/roles/admin/waiting-list/WaitingListManagement';
 import FinancialOverview from '@/pages/roles/admin/financial/FinancialOverview';
@@ -46,6 +44,7 @@ import PsychologicalProblemsManagement from '@/pages/roles/admin/psychological-p
 import AddressChangeManagement from '@/pages/roles/admin/AddressChangeManagement';
 import UserManagement from '@/pages/roles/admin/user-management/UserManagement';
 import AdminAppointmentsManagement from '@/pages/roles/admin/appointments/AppointmentsManagement';
+import TherapistManagement from '@/pages/roles/admin/therapist-management'; // New modular therapist management
 
 // Therapist Components
 import TherapistCalendar from '@/pages/roles/therapist/calendar/TherapistCalendar';
@@ -223,8 +222,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="agenda" element={<AgendaPage />} />
                   <Route path="clients" element={<AllClients />} />
                   <Route path="clients/:clientId" element={<ClientManagement />} />
-                  <Route path="therapists" element={<AllTherapists />} />
-                  <Route path="therapist-management" element={<TherapistManagementInline />} />
+                  <Route path="therapists/*" element={<TherapistManagement />} />
                   <Route path="waiting-list" element={<WaitingListManagement />} />
                   <Route path="financial" element={<FinancialOverview />} />
                   <Route path="financial-dashboard" element={<FinancialDashboard />} />
