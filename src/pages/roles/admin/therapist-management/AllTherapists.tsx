@@ -35,6 +35,8 @@ interface TherapistFilters {
 type ViewMode = 'list' | 'grid';
 
 const AllTherapists: React.FC = () => {
+  console.log('⚠️ OLD AllTherapists Component Loaded - This should NOT be used');
+  
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [therapists, setTherapists] = useState<any[]>([]);

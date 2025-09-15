@@ -8,6 +8,7 @@ import BulkActions from './BulkActions';
 import TherapistCard from './TherapistCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumTable, PremiumButton, PremiumEmptyState } from '@/components/layout/PremiumLayout';
+import { DiagnosticInfo } from '../DiagnosticInfo';
 
 const TherapistList: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +58,9 @@ const TherapistList: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Diagnostic Info - Remove this after verifying */}
+      <DiagnosticInfo />
+      
       {/* Page Header */}
       <div className="flex justify-between items-center">
         <div>
