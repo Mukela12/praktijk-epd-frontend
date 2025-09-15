@@ -18,6 +18,7 @@ import UserManagement from './user-management/UserManagement';
 // Therapist Management
 import AllTherapists from './therapist-management/AllTherapists';
 import TherapistManagementInline from './therapist-management/TherapistManagementInline';
+import TherapistManagement from './therapist-management'; // New modular therapist management
 
 // Appointments Management
 import AppointmentsManagement from './appointments/AppointmentsManagement';
@@ -193,7 +194,8 @@ const AdminRouter: React.FC = () => {
         <Route path="/clients/legacy" element={<AllClients />} />
         
         {/* Therapist Management */}
-        <Route path="/therapists" element={<TherapistManagementInline />} />
+        <Route path="/therapists/*" element={<TherapistManagement />} />
+        <Route path="/therapists-inline" element={<TherapistManagementInline />} />
         <Route path="/therapists/legacy" element={<AllTherapists />} />
         
         {/* Appointments Management */}

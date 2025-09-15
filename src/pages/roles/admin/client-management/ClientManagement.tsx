@@ -187,7 +187,6 @@ const ClientManagement: React.FC = () => {
       if (viewMode === 'create') {
         const response = await realApiService.admin.createUser({
           email: formData.email,
-          password: 'TempPassword123!', // Temporary password
           firstName: formData.firstName,
           lastName: formData.lastName,
           role: 'client',

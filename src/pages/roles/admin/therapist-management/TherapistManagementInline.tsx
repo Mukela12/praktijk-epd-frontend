@@ -104,6 +104,11 @@ const TherapistManagementInline: React.FC = () => {
   const [therapistToDelete, setTherapistToDelete] = useState<TherapistData | null>(null);
   const [isPermanentDelete, setIsPermanentDelete] = useState(false);
   
+  // Loading states for operations
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Form state for create/edit
   const [formData, setFormData] = useState({
     email: '',
@@ -198,11 +203,13 @@ const TherapistManagementInline: React.FC = () => {
   // Create new therapist
   const handleCreate = async () => {
     try {
+      setIsCreating(true);
       console.log('Creating therapist with data:', formData);
       
       // Validate required fields
       if (!formData.email || !formData.first_name || !formData.last_name) {
         warning('Please fill in all required fields');
+        setIsCreating(false);
         return;
       }
 
@@ -210,12 +217,12 @@ const TherapistManagementInline: React.FC = () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         warning('Please enter a valid email address');
+        setIsCreating(false);
         return;
       }
 
       const response = await realApiService.admin.createUser({
         email: formData.email,
-        password: 'TempPassword123!', // Temporary password - user will be required to change on first login
         firstName: formData.first_name,
         lastName: formData.last_name,
         role: 'therapist',
@@ -257,6 +264,7 @@ const TherapistManagementInline: React.FC = () => {
         setViewMode('list');
         resetForm();
         loadTherapists();
+        setIsCreating(false);
       }
     } catch (error: any) {
       console.error('Error creating therapist:', error);
@@ -271,6 +279,7 @@ const TherapistManagementInline: React.FC = () => {
       } else {
         errorAlert('Failed to create therapist. Please check your input and try again.');
       }
+      setIsCreating(false);
     }
   };
 
@@ -279,6 +288,7 @@ const TherapistManagementInline: React.FC = () => {
     if (!selectedTherapist) return;
 
     try {
+      setIsUpdating(true);
       // Separate user fields from profile fields
       const { userData, profileData } = separateUserAndProfileData({
         firstName: formData.first_name,
@@ -326,9 +336,11 @@ const TherapistManagementInline: React.FC = () => {
         setSelectedTherapist(null);
         resetForm();
         loadTherapists();
+        setIsUpdating(false);
       }
     } catch (error: any) {
       errorAlert(error.response?.data?.message || 'Failed to update therapist');
+      setIsUpdating(false);
     }
   };
 
@@ -344,6 +356,7 @@ const TherapistManagementInline: React.FC = () => {
     if (!therapistToDelete) return;
 
     try {
+      setIsDeleting(true);
       if (isPermanentDelete) {
         // Use the delete endpoint with permanent flag
         const response = await realApiService.admin.deleteUser(therapistToDelete.id);
@@ -365,8 +378,10 @@ const TherapistManagementInline: React.FC = () => {
       
       // Reload the list
       loadTherapists();
+      setIsDeleting(false);
     } catch (error: any) {
       errorAlert(error.response?.data?.message || 'Failed to delete therapist');
+      setIsDeleting(false);
     }
   };
 
@@ -491,7 +506,10 @@ const TherapistManagementInline: React.FC = () => {
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="absolute bottom-4 right-4 flex gap-2">
                 <button
-                  onClick={() => handleEdit(selectedTherapist)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(selectedTherapist);
+                  }}
                   className="px-5 py-2.5 bg-white/20 backdrop-blur text-white rounded-xl hover:bg-white/30 flex items-center gap-2 transition-all border border-white/30"
                 >
                   <PencilIcon className="w-5 h-5" />
@@ -1365,21 +1383,30 @@ const TherapistManagementInline: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1">
                             <button
-                              onClick={() => handleView(therapist)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleView(therapist);
+                              }}
                               className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
                               title="View Details"
                             >
                               <EyeIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
                             <button
-                              onClick={() => handleEdit(therapist)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(therapist);
+                              }}
                               className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200 group"
                               title="Edit Therapist"
                             >
                               <PencilIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
                             <button
-                              onClick={() => handleDelete(therapist)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(therapist);
+                              }}
                               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
                               title="Delete Therapist"
                             >
@@ -1420,10 +1447,23 @@ const TherapistManagementInline: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                disabled={isCreating || isUpdating}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
-                {viewMode === 'create' ? 'Create Therapist' : 'Update Therapist'}
+                {(isCreating || isUpdating) ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {viewMode === 'create' ? 'Creating...' : 'Updating...'}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="-ml-1 mr-2 h-5 w-5" />
+                    {viewMode === 'create' ? 'Create Therapist' : 'Update Therapist'}
+                  </>
+                )}
               </button>
             </div>
           </form>

@@ -78,7 +78,6 @@ const ClientManagementInline: React.FC = () => {
   // Form state for create/edit
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -132,14 +131,13 @@ const ClientManagementInline: React.FC = () => {
   const handleCreate = async () => {
     try {
       // Validate required fields
-      if (!formData.email || !formData.password || !formData.first_name || !formData.last_name) {
+      if (!formData.email || !formData.first_name || !formData.last_name) {
         warning('Please fill in all required fields');
         return;
       }
 
       const response = await realApiService.admin.createUser({
         email: formData.email,
-        password: formData.password,
         firstName: formData.first_name,
         lastName: formData.last_name,
         role: 'client',
@@ -213,7 +211,6 @@ const ClientManagementInline: React.FC = () => {
   const resetForm = () => {
     setFormData({
       email: '',
-      password: '',
       first_name: '',
       last_name: '',
       phone: '',
@@ -235,7 +232,6 @@ const ClientManagementInline: React.FC = () => {
     setSelectedClient(client);
     setFormData({
       email: client.email,
-      password: '', // Don't populate password
       first_name: client.first_name,
       last_name: client.last_name,
       phone: client.phone || '',
@@ -733,21 +729,6 @@ const ClientManagementInline: React.FC = () => {
                     required
                   />
                 </div>
-                {viewMode === 'create' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                )}
               </div>
             </div>
 

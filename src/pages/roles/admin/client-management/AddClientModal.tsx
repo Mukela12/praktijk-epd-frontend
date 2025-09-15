@@ -88,7 +88,6 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
       // First create the user account
       const response = await realApiService.admin.createUser({
         email: formData.email,
-        password: 'TempPassword123!', // Temporary password, user will need to reset
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: 'client',

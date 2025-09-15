@@ -355,7 +355,6 @@ export const realApiService = {
 
     createUser: async (userData: {
       email: string;
-      password: string;
       firstName: string;
       lastName: string;
       role: string;
@@ -395,6 +394,13 @@ export const realApiService = {
     // Therapist management (✅ WORKING)
     getTherapists: async (params?: any): Promise<ApiResponse<{ therapists: Therapist[]; pagination?: any }>> => {
       const response = await api.get('/admin/therapists', { params });
+      return response.data;
+    },
+
+    // Get therapist by ID (Admin)
+    getTherapistById: async (therapistId: string): Promise<ApiResponse<Therapist>> => {
+      // Using the /admin/users/:id endpoint since backend doesn't have specific therapist endpoint
+      const response = await api.get(`/admin/users/${therapistId}`);
       return response.data;
     },
 
@@ -615,8 +621,10 @@ export const realApiService = {
       return response.data;
     },
 
-    deleteUser: async (userId: string): Promise<ApiResponse> => {
-      const response = await api.delete(`/admin/users/${userId}`);
+    deleteUser: async (userId: string, permanent: boolean = false): Promise<ApiResponse> => {
+      const response = await api.delete(`/admin/users/${userId}`, {
+        params: { permanent }
+      });
       return response.data;
     },
 
