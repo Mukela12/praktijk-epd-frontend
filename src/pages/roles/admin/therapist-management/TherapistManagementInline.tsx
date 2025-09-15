@@ -215,6 +215,7 @@ const TherapistManagementInline: React.FC = () => {
 
       const response = await realApiService.admin.createUser({
         email: formData.email,
+        password: 'TempPassword123!', // Temporary password - user will be required to change on first login
         firstName: formData.first_name,
         lastName: formData.last_name,
         role: 'therapist',
@@ -345,7 +346,7 @@ const TherapistManagementInline: React.FC = () => {
     try {
       if (isPermanentDelete) {
         // Use the delete endpoint with permanent flag
-        const response = await realApiService.admin.deleteUser(therapistToDelete.id, true);
+        const response = await realApiService.admin.deleteUser(therapistToDelete.id);
         if (response.success) {
           success('Therapist permanently deleted');
         }
@@ -1173,16 +1174,17 @@ const TherapistManagementInline: React.FC = () => {
   ];
 
   return (
-    <InlineCrudLayout
-      title="Therapists"
-      subtitle={viewMode === 'list' ? `${therapists.length} therapists in the system` : undefined}
-      icon={UsersIcon}
-      viewMode={viewMode}
-      onViewModeChange={(mode) => {
-        if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
-          setViewMode(mode);
-          if (mode === 'create') {
-            resetForm();
+    <>
+      <InlineCrudLayout
+        title="Therapists"
+        subtitle={viewMode === 'list' ? `${therapists.length} therapists in the system` : undefined}
+        icon={UsersIcon}
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'list' || mode === 'create' || mode === 'edit' || mode === 'detail') {
+            setViewMode(mode);
+            if (mode === 'create') {
+              resetForm();
           }
         }
       }}
@@ -1476,6 +1478,7 @@ const TherapistManagementInline: React.FC = () => {
         )
       }
     />
+    </>
   );
 };
 
