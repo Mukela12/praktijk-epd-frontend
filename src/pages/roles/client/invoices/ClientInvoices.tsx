@@ -15,14 +15,21 @@ import {
   DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { clientApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
 import { Invoice as InvoiceEntity, InvoiceItem as InvoiceItemEntity } from '@/types/entities';
-import { formatDate, formatCurrency } from '@/utils/dateFormatters';
 import InvoiceView from '@/components/invoices/InvoiceView';
 import InvoiceViewInline from '@/components/invoices/InvoiceViewInline';
+
+// Format currency helper
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('nl-NL', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount);
+};
 
 // Extend the Invoice type to include computed fields
 interface Invoice extends InvoiceEntity {
@@ -67,10 +74,10 @@ const ClientInvoices: React.FC = () => {
     try {
       setIsLoading(true);
       const params = filter === 'all' ? {} : { status: filter };
-      const response = await clientApi.getInvoices(params);
+      const response = await realApiService.billing.getClientInvoices(user?.id || '', params);
       
       if (response.success && response.data) {
-        const invoiceData = response.data.invoices || [];
+        const invoiceData = response.data.invoices || response.data || [];
         // Process invoices to add computed fields
         const processedInvoices = invoiceData.map((inv: any) => ({
           ...inv,
@@ -126,21 +133,14 @@ const ClientInvoices: React.FC = () => {
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       setIsDownloading(true);
-      // In a real app, this would call an API to get the PDF
-      const response = await clientApi.downloadInvoice(invoiceId);
+      // Get invoice data
+      const response = await realApiService.billing.getInvoiceById(invoiceId);
       
-      // Create blob and download
-      const blob = new Blob([response], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${invoiceId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      success('Invoice downloaded successfully');
+      if (response.success && response.data) {
+        // In production, this would generate a proper PDF
+        // For now, we'll show the invoice data
+        info('PDF download will be available soon. You can view the invoice details for now.');
+      }
     } catch (err) {
       error('Failed to download invoice');
     } finally {
@@ -180,12 +180,6 @@ const ClientInvoices: React.FC = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('nl-NL', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
 
   const filteredInvoices = invoices.filter(invoice => {
     if (searchTerm) {

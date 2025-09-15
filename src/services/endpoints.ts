@@ -129,8 +129,10 @@ export const adminApi = {
     return response.data;
   },
 
-  deleteUser: async (userId: string): Promise<ApiResponse> => {
-    const response = await api.delete(`/admin/users/${userId}`);
+  deleteUser: async (userId: string, permanent: boolean = false): Promise<ApiResponse> => {
+    const response = await api.delete(`/admin/users/${userId}`, { 
+      params: { permanent } 
+    });
     return response.data;
   },
 

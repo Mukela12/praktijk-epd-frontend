@@ -12,7 +12,7 @@ import {
   DocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
-import { clientApi } from '@/services/endpoints';
+import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/store/authStore';
@@ -60,9 +60,9 @@ const PaymentMethods: React.FC = () => {
   const fetchPaymentMethods = async () => {
     try {
       setIsLoading(true);
-      const response = await clientApi.getPaymentMethods();
+      const response = await realApiService.billing.getPaymentMethods(user?.id || '');
       if (response.success && response.data) {
-        setMethods(response.data.paymentMethods || []);
+        setMethods(response.data.payment_methods || response.data || []);
       }
     } catch (err) {
       // If endpoint doesn't exist yet, show empty state
@@ -96,10 +96,10 @@ const PaymentMethods: React.FC = () => {
 
     try {
       setAddingMethod(true);
-      const response = await clientApi.addPaymentMethod({
+      const response = await realApiService.billing.setupSepa(user?.id || '', {
         iban: formData.iban.replace(/\s/g, ''),
-        accountHolder: formData.accountHolder,
-        mandateText: 'Ik machtig PraktijkEPD om betalingen af te schrijven voor therapiesessies.'
+        account_holder: formData.accountHolder,
+        mandate_text: 'Ik machtig PraktijkEPD om betalingen af te schrijven voor therapiesessies.'
       });
 
       if (response.success) {
@@ -119,7 +119,7 @@ const PaymentMethods: React.FC = () => {
   const handleRemoveMethod = async (methodId: string) => {
     try {
       setRemovingMethodId(methodId);
-      await clientApi.removePaymentMethod(methodId);
+      await realApiService.billing.deletePaymentMethod(user?.id || '', methodId);
       success('SEPA-machtiging verwijderd');
       fetchPaymentMethods();
     } catch (err) {
@@ -131,7 +131,7 @@ const PaymentMethods: React.FC = () => {
 
   const handleSetDefault = async (methodId: string) => {
     try {
-      await clientApi.setDefaultPaymentMethod(methodId);
+      await realApiService.billing.setDefaultPaymentMethod(user?.id || '', methodId);
       success('Standaard betaalmethode ingesteld');
       fetchPaymentMethods();
     } catch (err) {

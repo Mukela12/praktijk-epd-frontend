@@ -1935,6 +1935,77 @@ export const realApiService = {
       return response.data;
     },
 
+    // Session billing
+    createSessionBilling: async (data: {
+      appointment_id: string;
+      client_id: string;
+      duration_minutes: number;
+      treatment_code_id: string;
+      notes?: string;
+      deductible_applied: boolean;
+      deductible_amount?: number;
+      create_invoice: boolean;
+      send_invoice: boolean;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/billing/sessions', data);
+      return response.data;
+    },
+
+    // Payment methods
+    getPaymentMethods: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/billing/clients/${clientId}/payment-methods`);
+      return response.data;
+    },
+    
+    addPaymentMethod: async (clientId: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/billing/clients/${clientId}/payment-methods`, data);
+      return response.data;
+    },
+    
+    updatePaymentMethod: async (clientId: string, methodId: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/billing/clients/${clientId}/payment-methods/${methodId}`, data);
+      return response.data;
+    },
+    
+    deletePaymentMethod: async (clientId: string, methodId: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/billing/clients/${clientId}/payment-methods/${methodId}`);
+      return response.data;
+    },
+    
+    setDefaultPaymentMethod: async (clientId: string, methodId: string): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/billing/clients/${clientId}/payment-methods/${methodId}/default`);
+      return response.data;
+    },
+
+    // Payment preferences
+    getPaymentPreferences: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/billing/clients/${clientId}/preferences`);
+      return response.data;
+    },
+    
+    updatePaymentPreferences: async (clientId: string, preferences: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/billing/clients/${clientId}/preferences`, preferences);
+      return response.data;
+    },
+
+    // Manual invoice generation
+    generateManualInvoice: async (data: {
+      client_id: string;
+      therapist_id: string;
+      items: Array<{
+        description: string;
+        quantity: number;
+        unit_price: number;
+        vat_rate: number;
+      }>;
+      notes?: string;
+      due_date?: string;
+      send_immediately: boolean;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/billing/invoices/manual', data);
+      return response.data;
+    },
+
     // Reports
     getRevenueReport: async (params?: any): Promise<ApiResponse<any>> => {
       const response = await api.get('/billing/reports/revenue', { params });
@@ -1943,6 +2014,42 @@ export const realApiService = {
     
     getTaxReport: async (params?: any): Promise<ApiResponse<any>> => {
       const response = await api.get('/billing/reports/tax', { params });
+      return response.data;
+    },
+
+    // Client billing
+    getClientInvoices: async (clientId: string, params?: any): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/billing/clients/${clientId}/invoices`, { params });
+      return response.data;
+    },
+    
+    getClientBalance: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.get(`/billing/clients/${clientId}/balance`);
+      return response.data;
+    },
+
+    // Payment processing
+    processPayment: async (invoiceId: string, data: {
+      payment_method_id: string;
+      amount: number;
+      payment_date?: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/billing/invoices/${invoiceId}/payment`, data);
+      return response.data;
+    },
+
+    // SEPA setup
+    setupSepa: async (clientId: string, data: {
+      iban: string;
+      account_holder: string;
+      mandate_text: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/billing/clients/${clientId}/sepa/setup`, data);
+      return response.data;
+    },
+    
+    revokeSepaMandate: async (clientId: string, mandateId: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/billing/clients/${clientId}/sepa/${mandateId}`);
       return response.data;
     }
   },

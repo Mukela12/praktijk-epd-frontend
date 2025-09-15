@@ -51,6 +51,7 @@ import {
 import { TagsFieldWithSuggestions, THERAPIST_SPECIALIZATIONS, LANGUAGES } from '@/components/forms/TagsFieldWithSuggestions';
 import { Therapist } from '@/types/entities';
 import TherapistProfileEditModal from '@/components/admin/TherapistProfileEditModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 interface TherapistData extends Therapist {
   user_status: 'active' | 'inactive' | 'pending';
@@ -97,18 +98,21 @@ const TherapistManagementInline: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSpecialization, setFilterSpecialization] = useState<string>('all');
   const [filterAccepting, setFilterAccepting] = useState<boolean>(false);
-  // Removed modal state - using inline editing
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [therapistToDelete, setTherapistToDelete] = useState<TherapistData | null>(null);
+  const [isPermanentDelete, setIsPermanentDelete] = useState(false);
   
   // Form state for create/edit
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     first_name: '',
     last_name: '',
     phone: '',
     specializations: [] as string[],
     languages: [] as string[],
-    qualifications: '',
+    qualifications: [] as string[],
     years_of_experience: 0,
     bio: '',
     consultation_rate: 0,
@@ -197,7 +201,7 @@ const TherapistManagementInline: React.FC = () => {
       console.log('Creating therapist with data:', formData);
       
       // Validate required fields
-      if (!formData.email || !formData.password || !formData.first_name || !formData.last_name) {
+      if (!formData.email || !formData.first_name || !formData.last_name) {
         warning('Please fill in all required fields');
         return;
       }
@@ -209,15 +213,8 @@ const TherapistManagementInline: React.FC = () => {
         return;
       }
 
-      // Validate password length
-      if (formData.password.length < 6) {
-        warning('Password must be at least 6 characters long');
-        return;
-      }
-
       const response = await realApiService.admin.createUser({
         email: formData.email,
-        password: formData.password,
         firstName: formData.first_name,
         lastName: formData.last_name,
         role: 'therapist',
@@ -254,7 +251,8 @@ const TherapistManagementInline: React.FC = () => {
         
         await realApiService.admin.updateTherapistProfile(response.data.id, profileData);
 
-        success('Therapist created successfully');
+        success('Therapist created successfully! A temporary password has been sent to their email address.');
+        info('The therapist will receive login credentials via email and will be prompted to change their password on first login.');
         setViewMode('list');
         resetForm();
         loadTherapists();
@@ -333,19 +331,41 @@ const TherapistManagementInline: React.FC = () => {
     }
   };
 
-  // Delete therapist
-  const handleDelete = async (therapistId: string) => {
-    if (!window.confirm('Are you sure you want to delete this therapist? This action cannot be undone.')) {
-      return;
-    }
+  // Delete therapist - opens confirmation modal
+  const handleDelete = (therapist: TherapistData) => {
+    setTherapistToDelete(therapist);
+    setShowDeleteModal(true);
+    setIsPermanentDelete(false);
+  };
+
+  // Confirm delete - actually performs the deletion
+  const confirmDelete = async () => {
+    if (!therapistToDelete) return;
 
     try {
-      // Change status to inactive instead of deleting
-      await realApiService.admin.updateUser(therapistId, { user_status: 'inactive' });
-      success('Therapist deactivated successfully');
+      if (isPermanentDelete) {
+        // Use the delete endpoint with permanent flag
+        const response = await realApiService.admin.deleteUser(therapistToDelete.id, true);
+        if (response.success) {
+          success('Therapist permanently deleted');
+        }
+      } else {
+        // Soft delete - change status to inactive
+        const response = await realApiService.admin.updateUser(therapistToDelete.id, { status: 'inactive' });
+        if (response.success) {
+          success('Therapist deactivated successfully');
+        }
+      }
+      
+      // Reset modal state
+      setShowDeleteModal(false);
+      setTherapistToDelete(null);
+      setIsPermanentDelete(false);
+      
+      // Reload the list
       loadTherapists();
     } catch (error: any) {
-      errorAlert('Failed to deactivate therapist');
+      errorAlert(error.response?.data?.message || 'Failed to delete therapist');
     }
   };
 
@@ -353,13 +373,12 @@ const TherapistManagementInline: React.FC = () => {
   const resetForm = () => {
     setFormData({
       email: '',
-      password: '',
       first_name: '',
       last_name: '',
       phone: '',
       specializations: [],
       languages: [],
-      qualifications: '',
+      qualifications: [],
       years_of_experience: 0,
       bio: '',
       consultation_rate: 0,
@@ -390,13 +409,12 @@ const TherapistManagementInline: React.FC = () => {
     setSelectedTherapist(therapist);
     setFormData({
       email: therapist.email,
-      password: '',
       first_name: therapist.first_name,
       last_name: therapist.last_name,
       phone: therapist.phone || '',
       specializations: Array.isArray(therapist.specializations) ? therapist.specializations : [],
       languages: Array.isArray(therapist.languages) ? therapist.languages : [],
-      qualifications: therapist.qualifications || '',
+      qualifications: Array.isArray(therapist.qualifications) ? therapist.qualifications : [],
       years_of_experience: therapist.years_of_experience || 0,
       bio: therapist.bio || '',
       consultation_rate: therapist.consultationRate || therapist.consultation_rate || therapist.hourly_rate || 0,
@@ -756,6 +774,13 @@ const TherapistManagementInline: React.FC = () => {
       <div className="space-y-8">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+          {viewMode === 'create' && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Note:</strong> A temporary password will be automatically generated and sent to the therapist's email address. They will be required to change it on first login.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TextField
               label="Email"
@@ -766,15 +791,6 @@ const TherapistManagementInline: React.FC = () => {
               disabled={viewMode === 'edit'}
               required
             />
-            {viewMode === 'create' && (
-              <PasswordField
-                label="Password"
-                name="password"
-                value={formData.password}
-                onChange={(value) => setFormData({ ...formData, password: value })}
-                required
-              />
-            )}
           </div>
         </div>
         
@@ -842,12 +858,25 @@ const TherapistManagementInline: React.FC = () => {
             placeholder="Search languages or add custom..."
             allowCustom={true}
           />
-          <TextField
+          <TagsFieldWithSuggestions
             label="Qualifications"
             name="qualifications"
             value={formData.qualifications}
             onChange={(value) => setFormData({ ...formData, qualifications: value })}
-            placeholder="e.g., PhD in Clinical Psychology, Licensed Therapist"
+            suggestions={[
+              'PhD in Clinical Psychology',
+              'Master in Psychology',
+              'Licensed Clinical Psychologist',
+              'Licensed Therapist',
+              'Certified CBT Therapist',
+              'EMDR Practitioner',
+              'Family Therapist',
+              'Child Psychologist',
+              'Addiction Counselor',
+              'Trauma Specialist'
+            ]}
+            placeholder="Add qualifications..."
+            allowCustom={true}
           />
           <TextareaField
             label="Bio"
@@ -1348,9 +1377,9 @@ const TherapistManagementInline: React.FC = () => {
                               <PencilIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
                             <button
-                              onClick={() => handleDelete(therapist.id)}
+                              onClick={() => handleDelete(therapist)}
                               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
-                              title="Deactivate Therapist"
+                              title="Delete Therapist"
                             >
                               <TrashIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                             </button>
@@ -1403,6 +1432,50 @@ const TherapistManagementInline: React.FC = () => {
       {viewMode === 'detail' && renderDetailView()}
 
     </InlineCrudLayout>
+
+    {/* Delete Confirmation Modal */}
+    <ConfirmationModal
+      isOpen={showDeleteModal}
+      onClose={() => {
+        setShowDeleteModal(false);
+        setTherapistToDelete(null);
+        setIsPermanentDelete(false);
+      }}
+      onConfirm={confirmDelete}
+      title="Delete Therapist"
+      message={`Are you sure you want to ${isPermanentDelete ? 'permanently delete' : 'deactivate'} ${therapistToDelete?.first_name} ${therapistToDelete?.last_name}?`}
+      confirmText={isPermanentDelete ? "Permanently Delete" : "Deactivate"}
+      cancelText="Cancel"
+      variant="danger"
+      icon={TrashIcon}
+      showPermanentOption={true}
+      isPermanent={isPermanentDelete}
+      onPermanentChange={setIsPermanentDelete}
+      additionalInfo={
+        therapistToDelete && (
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">
+              <strong>Email:</strong> {therapistToDelete.email}
+            </p>
+            {therapistToDelete.client_count && therapistToDelete.client_count > 0 && (
+              <p className="text-sm text-yellow-600">
+                <ExclamationTriangleIcon className="inline-block w-4 h-4 mr-1" />
+                This therapist has {therapistToDelete.client_count} assigned client(s).
+              </p>
+            )}
+            {isPermanentDelete ? (
+              <p className="text-sm text-red-600 font-semibold">
+                This action cannot be undone. All data will be permanently removed.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                The therapist will be deactivated and can be reactivated later.
+              </p>
+            )}
+          </div>
+        )
+      }
+    />
   );
 };
 
