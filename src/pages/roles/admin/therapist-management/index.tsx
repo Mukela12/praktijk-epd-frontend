@@ -10,8 +10,6 @@ const CreateView = React.lazy(() => import('./components/CreateView/CreateWizard
 const EditView = React.lazy(() => import('./components/EditView/EditForm'));
 
 const TherapistManagement: React.FC = () => {
-  console.log('🚀 NEW Therapist Management System Loaded - Version 2.0');
-  
   return (
     <TherapistProvider>
       <React.Suspense fallback={<LoadingSpinner />}>
