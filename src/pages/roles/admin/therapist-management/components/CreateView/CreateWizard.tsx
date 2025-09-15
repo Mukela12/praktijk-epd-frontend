@@ -113,7 +113,16 @@ const CreateWizard: React.FC = () => {
       console.log('📥 [CreateWizard] User creation response:', userResponse);
 
       if (userResponse.success && userResponse.data) {
-        const therapistId = userResponse.data.id;
+        // Extract therapist ID from response - backend returns it as userId
+        const therapistId = userResponse.data.userId || userResponse.data.id || userResponse.data.data?.userId;
+        
+        console.log('🔍 [CreateWizard] Extracted therapist ID:', therapistId);
+        
+        if (!therapistId) {
+          console.error('❌ [CreateWizard] No therapist ID found in response:', userResponse.data);
+          error('Failed to get therapist ID from server response');
+          return;
+        }
         
         // Update therapist profile with additional information
         const profilePayload = {
@@ -136,11 +145,14 @@ const CreateWizard: React.FC = () => {
         
         console.log('📥 [CreateWizard] Profile update response:', profileResponse);
 
-        success('Therapist created successfully');
-        navigate(`/admin/therapists/${therapistId}`);
+        success('Therapist created successfully! 🎉');
+        // Delay navigation slightly to show success message
+        setTimeout(() => {
+          navigate(`/admin/therapists/${therapistId}`);
+        }, 1000);
       } else {
         console.error('❌ [CreateWizard] User creation failed:', userResponse);
-        error('Failed to create therapist user');
+        error(userResponse.message || 'Failed to create therapist user');
       }
     } catch (err: any) {
       console.error('❌ [CreateWizard] Failed to create therapist:', err);
@@ -149,7 +161,22 @@ const CreateWizard: React.FC = () => {
         response: err.response?.data,
         status: err.response?.status
       });
-      error(err.response?.data?.message || 'Failed to create therapist');
+      
+      // Handle specific error cases with user-friendly messages
+      if (err.response?.status === 409) {
+        error('A user with this email already exists. Please use a different email address.');
+      } else if (err.response?.status === 400) {
+        const validationErrors = err.response?.data?.errors;
+        if (validationErrors && Array.isArray(validationErrors)) {
+          error(`Validation error: ${validationErrors[0].msg || validationErrors[0].message}`);
+        } else {
+          error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+        }
+      } else if (err.response?.status === 500) {
+        error('Server error occurred. Please try again later.');
+      } else {
+        error(err.response?.data?.message || 'Failed to create therapist. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

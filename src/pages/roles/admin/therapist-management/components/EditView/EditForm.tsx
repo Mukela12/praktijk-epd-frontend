@@ -76,10 +76,11 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Basic information updated successfully');
+        success('Basic information updated successfully! ✅');
+        console.log('✅ [EditForm] Basic info update successful');
       } else {
         console.error('❌ [EditForm] Update failed, response not successful:', response);
-        error('Failed to update basic information');
+        error(response.message || 'Failed to update basic information');
       }
     } catch (err: any) {
       console.error('❌ [EditForm] Failed to update basic info:', err);
@@ -88,11 +89,16 @@ const EditForm: React.FC = () => {
         response: err.response?.data,
         status: err.response?.status
       });
-      const errorMessage = err.response?.data?.message || 'Failed to update basic information';
-      error(errorMessage);
-      // Handle specific error cases
+      
+      // Handle specific error cases with user-friendly messages
       if (err.response?.status === 409) {
-        error('Email already exists. Please use a different email.');
+        error('Email already exists. Please use a different email address.');
+      } else if (err.response?.status === 404) {
+        error('User not found. Please refresh the page and try again.');
+      } else if (err.response?.status === 400) {
+        error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+      } else {
+        error(err.response?.data?.message || 'Failed to update basic information. Please try again.');
       }
     } finally {
       setSaving(false);
@@ -127,10 +133,11 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Professional information updated successfully');
+        success('Professional information updated successfully! ✅');
+        console.log('✅ [EditForm] Professional info update successful');
       } else {
         console.error('❌ [EditForm] Professional update failed:', response);
-        error('Failed to update professional information');
+        error(response.message || 'Failed to update professional information');
       }
     } catch (err: any) {
       console.error('❌ [EditForm] Failed to update professional info:', err);
@@ -139,7 +146,15 @@ const EditForm: React.FC = () => {
         response: err.response?.data,
         status: err.response?.status
       });
-      error(err.response?.data?.message || 'Failed to update professional information');
+      
+      // User-friendly error messages
+      if (err.response?.status === 404) {
+        error('Therapist profile not found. Please refresh the page.');
+      } else if (err.response?.status === 400) {
+        error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+      } else {
+        error(err.response?.data?.message || 'Failed to update professional information. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
@@ -161,11 +176,20 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Service settings updated successfully');
+        success('Service settings updated successfully! ✅');
+        console.log('✅ [EditForm] Service settings update successful');
+      } else {
+        error(response.message || 'Failed to update service settings');
       }
     } catch (err: any) {
-      console.error('Failed to update service settings:', err);
-      error(err.response?.data?.message || 'Failed to update service settings');
+      console.error('❌ [EditForm] Failed to update service settings:', err);
+      
+      // User-friendly error messages
+      if (err.response?.status === 400) {
+        error(err.response?.data?.message || 'Invalid settings provided. Please check your inputs.');
+      } else {
+        error(err.response?.data?.message || 'Failed to update service settings. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
