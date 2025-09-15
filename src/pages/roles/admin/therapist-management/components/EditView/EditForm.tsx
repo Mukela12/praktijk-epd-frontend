@@ -51,24 +51,43 @@ const EditForm: React.FC = () => {
   const handleBasicInfoSubmit = async (data: any) => {
     if (!therapist) return;
     
+    console.log('🔄 [EditForm] Submitting basic info update:', {
+      therapistId: therapist.id,
+      data: data
+    });
+    
     try {
       setSaving(true);
       
       // Update user basic info
-      const response = await realApiService.admin.updateUser(therapist.id, {
+      const payload = {
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         phone: data.phone,
         status: data.status
-      });
+      };
+      
+      console.log('📤 [EditForm] Sending updateUser payload:', payload);
+      
+      const response = await realApiService.admin.updateUser(therapist.id, payload);
+      
+      console.log('📥 [EditForm] UpdateUser response:', response);
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
         success('Basic information updated successfully');
+      } else {
+        console.error('❌ [EditForm] Update failed, response not successful:', response);
+        error('Failed to update basic information');
       }
     } catch (err: any) {
-      console.error('Failed to update basic info:', err);
+      console.error('❌ [EditForm] Failed to update basic info:', err);
+      console.error('❌ [EditForm] Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       const errorMessage = err.response?.data?.message || 'Failed to update basic information';
       error(errorMessage);
       // Handle specific error cases
@@ -83,24 +102,43 @@ const EditForm: React.FC = () => {
   const handleProfessionalInfoSubmit = async (data: any) => {
     if (!therapist) return;
     
+    console.log('🔄 [EditForm] Submitting professional info update:', {
+      therapistId: therapist.id,
+      data: data
+    });
+    
     try {
       setSaving(true);
       
-      const response = await realApiService.admin.updateTherapistProfile(therapist.id, {
+      const payload = {
         licenseNumber: data.license_number,
         specializations: data.specializations,
-        therapyTypes: data.specializations,
+        therapyTypes: data.therapy_types, // Fixed: was using data.specializations
         languages: data.languages,
         bio: data.bio,
         qualifications: data.qualifications
-      });
+      };
+      
+      console.log('📤 [EditForm] Sending updateTherapistProfile payload:', payload);
+      
+      const response = await realApiService.admin.updateTherapistProfile(therapist.id, payload);
+      
+      console.log('📥 [EditForm] UpdateTherapistProfile response:', response);
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
         success('Professional information updated successfully');
+      } else {
+        console.error('❌ [EditForm] Professional update failed:', response);
+        error('Failed to update professional information');
       }
     } catch (err: any) {
-      console.error('Failed to update professional info:', err);
+      console.error('❌ [EditForm] Failed to update professional info:', err);
+      console.error('❌ [EditForm] Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       error(err.response?.data?.message || 'Failed to update professional information');
     } finally {
       setSaving(false);

@@ -18,6 +18,7 @@ const ActivityTab: React.FC<ActivityTabProps> = ({ therapistId }) => {
   }, [therapistId]);
 
   const loadActivities = async () => {
+    console.log('🔍 [ActivityTab] Loading activities for therapist:', therapistId);
     try {
       setLoading(true);
       // Use the audit logs endpoint filtered by userId
@@ -26,9 +27,13 @@ const ActivityTab: React.FC<ActivityTabProps> = ({ therapistId }) => {
         limit: 20
       });
       
+      console.log('📊 [ActivityTab] Audit logs response:', response);
+      
       if (response.success && response.data) {
         // Handle both array and object with logs property
         const logs = Array.isArray(response.data) ? response.data : ((response.data as any).logs || []);
+        console.log('📋 [ActivityTab] Extracted logs:', logs);
+        
         // Transform audit logs to activity items
         const transformedActivities = logs.map((log: any) => ({
           id: log.id,
@@ -47,8 +52,10 @@ const ActivityTab: React.FC<ActivityTabProps> = ({ therapistId }) => {
         // Fallback to empty array if no data
         setActivities([]);
       }
-    } catch (error) {
-      console.error('Failed to load activities:', error);
+    } catch (error: any) {
+      console.error('❌ [ActivityTab] Failed to load activities:', error);
+      console.error('❌ [ActivityTab] Error response:', error.response?.data);
+      console.error('❌ [ActivityTab] Error status:', error.response?.status);
       setActivities([]);
     } finally {
       setLoading(false);

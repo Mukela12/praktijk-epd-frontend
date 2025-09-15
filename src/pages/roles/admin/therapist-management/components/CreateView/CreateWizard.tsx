@@ -21,6 +21,7 @@ interface TherapistFormData {
   license_number?: string;
   years_of_experience?: number;
   specializations: string[];
+  therapy_types?: string[];
   languages: string[];
   bio?: string;
   qualifications: string[];
@@ -91,26 +92,34 @@ const CreateWizard: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    console.log('🆕 [CreateWizard] Creating therapist with data:', formData);
+    
     try {
       setIsSubmitting(true);
       
       // Create user first
-      const userResponse = await realApiService.admin.createUser({
+      const userPayload = {
         firstName: formData.first_name,
         lastName: formData.last_name,
         email: formData.email,
         phone: formData.phone,
         role: 'therapist'
-      });
+      };
+      
+      console.log('📤 [CreateWizard] Creating user:', userPayload);
+      
+      const userResponse = await realApiService.admin.createUser(userPayload);
+      
+      console.log('📥 [CreateWizard] User creation response:', userResponse);
 
       if (userResponse.success && userResponse.data) {
         const therapistId = userResponse.data.id;
         
         // Update therapist profile with additional information
-        await realApiService.admin.updateTherapistProfile(therapistId, {
+        const profilePayload = {
           licenseNumber: formData.license_number,
           specializations: formData.specializations,
-          therapyTypes: formData.specializations, // Using same as specializations for now
+          therapyTypes: formData.therapy_types || formData.specializations, // Fixed: use therapy_types
           languages: formData.languages,
           bio: formData.bio,
           qualifications: formData.qualifications,
@@ -119,13 +128,27 @@ const CreateWizard: React.FC = () => {
           sessionDuration: formData.session_duration,
           breakBetweenSessions: formData.break_between_sessions,
           maxClients: formData.max_clients
-        });
+        };
+        
+        console.log('📤 [CreateWizard] Updating therapist profile:', profilePayload);
+        
+        const profileResponse = await realApiService.admin.updateTherapistProfile(therapistId, profilePayload);
+        
+        console.log('📥 [CreateWizard] Profile update response:', profileResponse);
 
         success('Therapist created successfully');
         navigate(`/admin/therapists/${therapistId}`);
+      } else {
+        console.error('❌ [CreateWizard] User creation failed:', userResponse);
+        error('Failed to create therapist user');
       }
     } catch (err: any) {
-      console.error('Failed to create therapist:', err);
+      console.error('❌ [CreateWizard] Failed to create therapist:', err);
+      console.error('❌ [CreateWizard] Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       error(err.response?.data?.message || 'Failed to create therapist');
     } finally {
       setIsSubmitting(false);

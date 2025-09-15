@@ -50,7 +50,7 @@ export const useTherapistContext = () => {
 };
 
 export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { success, error: errorAlert } = useAlert();
+  const { success, error: errorAlert, warning } = useAlert();
   
   // State
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -270,20 +270,36 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Bulk operations
   const bulkUpdateStatus = async (ids: string[], status: string) => {
+    console.log('🔄 [TherapistContext] Bulk update status:', { ids, status });
+    
     try {
       setLoading(true);
       
       // Update each therapist's status
-      const promises = ids.map(id => 
-        realApiService.admin.updateUser(id, { status })
-      );
+      const promises = ids.map(id => {
+        console.log(`📤 [TherapistContext] Updating therapist ${id} status to ${status}`);
+        return realApiService.admin.updateUser(id, { user_status: status });
+      });
       
-      await Promise.all(promises);
+      const results = await Promise.allSettled(promises);
       
-      success(`Successfully updated ${ids.length} therapist(s) status to ${status}`);
+      // Check results
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log('📊 [TherapistContext] Bulk update results:', { succeeded, failed, total: ids.length });
+      
+      if (failed > 0) {
+        console.error('❌ [TherapistContext] Some updates failed:', results.filter(r => r.status === 'rejected'));
+        warning(`Updated ${succeeded} therapist(s), but ${failed} failed`);
+      } else {
+        success(`Successfully updated ${ids.length} therapist(s) status to ${status}`);
+      }
+      
       clearSelection();
       await loadTherapists();
-    } catch (err) {
+    } catch (err: any) {
+      console.error('❌ [TherapistContext] Bulk update failed:', err);
       errorAlert('Failed to update therapist status');
     } finally {
       setLoading(false);
@@ -291,19 +307,35 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const bulkDelete = async (ids: string[], permanent: boolean) => {
+    console.log('🗑️ [TherapistContext] Bulk delete:', { ids, permanent });
+    
     try {
       setLoading(true);
       
-      const promises = ids.map(id => 
-        realApiService.admin.deleteUser(id)
-      );
+      const promises = ids.map(id => {
+        console.log(`📤 [TherapistContext] Deleting therapist ${id} (permanent: ${permanent})`);
+        return realApiService.admin.deleteUser(id, permanent);
+      });
       
-      await Promise.all(promises);
+      const results = await Promise.allSettled(promises);
       
-      success(`Successfully ${permanent ? 'permanently deleted' : 'deactivated'} ${ids.length} therapist(s)`);
+      // Check results
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log('📊 [TherapistContext] Bulk delete results:', { succeeded, failed, total: ids.length });
+      
+      if (failed > 0) {
+        console.error('❌ [TherapistContext] Some deletes failed:', results.filter(r => r.status === 'rejected'));
+        warning(`Deleted ${succeeded} therapist(s), but ${failed} failed`);
+      } else {
+        success(`Successfully ${permanent ? 'permanently deleted' : 'deactivated'} ${ids.length} therapist(s)`);
+      }
+      
       clearSelection();
       await loadTherapists();
-    } catch (err) {
+    } catch (err: any) {
+      console.error('❌ [TherapistContext] Bulk delete failed:', err);
       errorAlert('Failed to delete therapists');
     } finally {
       setLoading(false);
