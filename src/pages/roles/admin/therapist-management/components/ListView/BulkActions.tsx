@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useTherapistContext } from '../shared/TherapistContext';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import { useAlert } from '@/components/ui/CustomAlert';
+import { useNotifications } from '@/components/ui/NotificationProvider';
 
 const BulkActions: React.FC = () => {
   const { 
@@ -20,7 +20,7 @@ const BulkActions: React.FC = () => {
     exportTherapists
   } = useTherapistContext();
   
-  const { info } = useAlert();
+  const { addNotification } = useNotifications();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isPermanentDelete, setIsPermanentDelete] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -44,7 +44,12 @@ const BulkActions: React.FC = () => {
   };
 
   const handleAssignClients = () => {
-    info('Bulk client assignment feature coming soon');
+    addNotification({
+      type: 'info',
+      title: 'Coming Soon',
+      message: 'Bulk client assignment feature coming soon',
+      duration: 5000
+    });
   };
 
   return (

@@ -8,7 +8,7 @@ import ClientsTab from './ClientsTab';
 import ScheduleTab from './ScheduleTab';
 import ActivityTab from './ActivityTab';
 import { realApiService } from '@/services/realApi';
-import { useAlert } from '@/components/ui/CustomAlert';
+import { useNotifications } from '@/components/ui/NotificationProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Therapist, TherapistStatus } from '../shared/therapistTypes';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -17,7 +17,7 @@ import { transformBackendToTherapist } from '../shared/dataTransformers';
 const TherapistProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { success, error } = useAlert();
+  const { addNotification } = useNotifications();
   const [therapist, setTherapist] = useState<Therapist | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -42,7 +42,12 @@ const TherapistProfile: React.FC = () => {
         setTherapist(therapistData);
       }
     } catch (err) {
-      error('Failed to load therapist details');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load therapist details',
+        duration: 7000
+      });
       navigate('/admin/therapists');
     } finally {
       setLoading(false);
@@ -65,11 +70,21 @@ const TherapistProfile: React.FC = () => {
       const response = await realApiService.admin.deleteUser(therapist.id);
       
       if (response.success) {
-        success(isPermanentDelete ? 'Therapist permanently deleted' : 'Therapist deactivated successfully');
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: isPermanentDelete ? 'Therapist permanently deleted' : 'Therapist deactivated successfully',
+          duration: 5000
+        });
         navigate('/admin/therapists');
       }
     } catch (err) {
-      error('Failed to delete therapist');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to delete therapist',
+        duration: 7000
+      });
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);

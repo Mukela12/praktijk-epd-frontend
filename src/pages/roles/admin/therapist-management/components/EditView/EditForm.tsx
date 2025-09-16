@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
-import { useAlert } from '@/components/ui/CustomAlert';
+import { useNotifications } from '@/components/ui/NotificationProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import BasicInfoForm from './BasicInfoForm';
 import ProfessionalInfoForm from './ProfessionalInfoForm';
@@ -13,7 +13,7 @@ import { transformBackendToTherapist } from '../shared/dataTransformers';
 const EditForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { success, error } = useAlert();
+  const { addNotification } = useNotifications();
   const [therapist, setTherapist] = useState<Therapist | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +38,12 @@ const EditForm: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to load therapist:', err);
       const errorMessage = err.response?.data?.message || 'Failed to load therapist details';
-      error(errorMessage);
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: errorMessage,
+        duration: 7000
+      });
       // Only navigate away if it's a 404
       if (err.response?.status === 404) {
         navigate('/admin/therapists');
@@ -59,13 +64,13 @@ const EditForm: React.FC = () => {
     try {
       setSaving(true);
       
-      // Update user basic info
+      // Update user basic info - backend expects camelCase
       const payload = {
-        first_name: data.first_name,
-        last_name: data.last_name,
+        firstName: data.first_name,
+        lastName: data.last_name,
         email: data.email,
         phone: data.phone,
-        status: data.status
+        user_status: data.status  // Backend looks for user_status for status updates
       };
       
       console.log('📤 [EditForm] Sending updateUser payload:', payload);
@@ -76,11 +81,21 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Basic information updated successfully! ✅');
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Basic information updated successfully!',
+          duration: 5000
+        });
         console.log('✅ [EditForm] Basic info update successful');
       } else {
         console.error('❌ [EditForm] Update failed, response not successful:', response);
-        error(response.message || 'Failed to update basic information');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: response.message || 'Failed to update basic information',
+          duration: 7000
+        });
       }
     } catch (err: any) {
       console.error('❌ [EditForm] Failed to update basic info:', err);
@@ -92,13 +107,33 @@ const EditForm: React.FC = () => {
       
       // Handle specific error cases with user-friendly messages
       if (err.response?.status === 409) {
-        error('Email already exists. Please use a different email address.');
+        addNotification({
+          type: 'error',
+          title: 'Duplicate Email',
+          message: 'Email already exists. Please use a different email address.',
+          duration: 7000
+        });
       } else if (err.response?.status === 404) {
-        error('User not found. Please refresh the page and try again.');
+        addNotification({
+          type: 'error',
+          title: 'User Not Found',
+          message: 'User not found. Please refresh the page and try again.',
+          duration: 7000
+        });
       } else if (err.response?.status === 400) {
-        error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+        addNotification({
+          type: 'error',
+          title: 'Invalid Data',
+          message: err.response?.data?.message || 'Invalid data provided. Please check your inputs.',
+          duration: 7000
+        });
       } else {
-        error(err.response?.data?.message || 'Failed to update basic information. Please try again.');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: err.response?.data?.message || 'Failed to update basic information. Please try again.',
+          duration: 7000
+        });
       }
     } finally {
       setSaving(false);
@@ -133,11 +168,21 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Professional information updated successfully! ✅');
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Professional information updated successfully!',
+          duration: 5000
+        });
         console.log('✅ [EditForm] Professional info update successful');
       } else {
         console.error('❌ [EditForm] Professional update failed:', response);
-        error(response.message || 'Failed to update professional information');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: response.message || 'Failed to update professional information',
+          duration: 7000
+        });
       }
     } catch (err: any) {
       console.error('❌ [EditForm] Failed to update professional info:', err);
@@ -149,11 +194,26 @@ const EditForm: React.FC = () => {
       
       // User-friendly error messages
       if (err.response?.status === 404) {
-        error('Therapist profile not found. Please refresh the page.');
+        addNotification({
+          type: 'error',
+          title: 'Profile Not Found',
+          message: 'Therapist profile not found. Please refresh the page.',
+          duration: 7000
+        });
       } else if (err.response?.status === 400) {
-        error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+        addNotification({
+          type: 'error',
+          title: 'Invalid Data',
+          message: err.response?.data?.message || 'Invalid data provided. Please check your inputs.',
+          duration: 7000
+        });
       } else {
-        error(err.response?.data?.message || 'Failed to update professional information. Please try again.');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: err.response?.data?.message || 'Failed to update professional information. Please try again.',
+          duration: 7000
+        });
       }
     } finally {
       setSaving(false);
@@ -176,19 +236,39 @@ const EditForm: React.FC = () => {
 
       if (response.success) {
         setTherapist({ ...therapist, ...data });
-        success('Service settings updated successfully! ✅');
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Service settings updated successfully!',
+          duration: 5000
+        });
         console.log('✅ [EditForm] Service settings update successful');
       } else {
-        error(response.message || 'Failed to update service settings');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: response.message || 'Failed to update service settings',
+          duration: 7000
+        });
       }
     } catch (err: any) {
       console.error('❌ [EditForm] Failed to update service settings:', err);
       
       // User-friendly error messages
       if (err.response?.status === 400) {
-        error(err.response?.data?.message || 'Invalid settings provided. Please check your inputs.');
+        addNotification({
+          type: 'error',
+          title: 'Invalid Settings',
+          message: err.response?.data?.message || 'Invalid settings provided. Please check your inputs.',
+          duration: 7000
+        });
       } else {
-        error(err.response?.data?.message || 'Failed to update service settings. Please try again.');
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: err.response?.data?.message || 'Failed to update service settings. Please try again.',
+          duration: 7000
+        });
       }
     } finally {
       setSaving(false);

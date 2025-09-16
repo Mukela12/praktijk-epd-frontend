@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Therapist, FilterState, SortState } from './therapistTypes';
 import { realApiService } from '@/services/realApi';
-import { useAlert } from '@/components/ui/CustomAlert';
+import { useNotifications } from '@/components/ui/NotificationProvider';
 import { transformToFrontend } from '@/utils/fieldTransformations';
 
 interface TherapistContextType {
@@ -50,7 +50,7 @@ export const useTherapistContext = () => {
 };
 
 export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { success, error: errorAlert, warning } = useAlert();
+  const { addNotification } = useNotifications();
   
   // State
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -116,11 +116,16 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (err) {
       console.error('Failed to load therapists:', err);
       setError('Failed to load therapists');
-      errorAlert('Failed to load therapists data');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load therapists data',
+        duration: 7000
+      });
     } finally {
       setLoading(false);
     }
-  }, [filters, sort, errorAlert]);
+  }, [filters, sort, addNotification]);
 
   // Filter logic
   const applyFilters = (therapists: Therapist[], filters: FilterState): Therapist[] => {
@@ -291,16 +296,31 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (failed > 0) {
         console.error('❌ [TherapistContext] Some updates failed:', results.filter(r => r.status === 'rejected'));
-        warning(`Updated ${succeeded} therapist(s), but ${failed} failed`);
+        addNotification({
+          type: 'warning',
+          title: 'Partial Success',
+          message: `Updated ${succeeded} therapist(s), but ${failed} failed`,
+          duration: 5000
+        });
       } else {
-        success(`Successfully updated ${ids.length} therapist(s) status to ${status}`);
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: `Successfully updated ${ids.length} therapist(s) status to ${status}`,
+          duration: 5000
+        });
       }
       
       clearSelection();
       await loadTherapists();
     } catch (err: any) {
       console.error('❌ [TherapistContext] Bulk update failed:', err);
-      errorAlert('Failed to update therapist status');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update therapist status',
+        duration: 7000
+      });
     } finally {
       setLoading(false);
     }
@@ -327,16 +347,31 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (failed > 0) {
         console.error('❌ [TherapistContext] Some deletes failed:', results.filter(r => r.status === 'rejected'));
-        warning(`Deleted ${succeeded} therapist(s), but ${failed} failed`);
+        addNotification({
+          type: 'warning',
+          title: 'Partial Success',
+          message: `Deleted ${succeeded} therapist(s), but ${failed} failed`,
+          duration: 5000
+        });
       } else {
-        success(`Successfully ${permanent ? 'permanently deleted' : 'deactivated'} ${ids.length} therapist(s)`);
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: `Successfully ${permanent ? 'permanently deleted' : 'deactivated'} ${ids.length} therapist(s)`,
+          duration: 5000
+        });
       }
       
       clearSelection();
       await loadTherapists();
     } catch (err: any) {
       console.error('❌ [TherapistContext] Bulk delete failed:', err);
-      errorAlert('Failed to delete therapists');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to delete therapists',
+        duration: 7000
+      });
     } finally {
       setLoading(false);
     }
@@ -400,9 +435,19 @@ export const TherapistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       link.click();
       document.body.removeChild(link);
       
-      success(`Successfully exported ${therapistsToExport.length} therapist(s)`);
+      addNotification({
+        type: 'success',
+        title: 'Success',
+        message: `Successfully exported ${therapistsToExport.length} therapist(s)`,
+        duration: 5000
+      });
     } catch (err) {
-      errorAlert('Failed to export therapists');
+      addNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to export therapists',
+        duration: 7000
+      });
     } finally {
       setLoading(false);
     }

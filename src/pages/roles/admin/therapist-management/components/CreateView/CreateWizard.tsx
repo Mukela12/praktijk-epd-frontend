@@ -6,7 +6,7 @@ import ProfessionalInfoStep from './ProfessionalInfoStep';
 import ServiceSettingsStep from './ServiceSettingsStep';
 import ReviewStep from './ReviewStep';
 import { realApiService } from '@/services/realApi';
-import { useAlert } from '@/components/ui/CustomAlert';
+import { useNotifications } from '@/components/ui/NotificationProvider';
 
 interface TherapistFormData {
   // Basic Info
@@ -50,7 +50,7 @@ interface TherapistFormData {
 
 const CreateWizard: React.FC = () => {
   const navigate = useNavigate();
-  const { success, error } = useAlert();
+  const { addNotification } = useNotifications();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<TherapistFormData>({
@@ -120,7 +120,12 @@ const CreateWizard: React.FC = () => {
         
         if (!therapistId) {
           console.error('❌ [CreateWizard] No therapist ID found in response:', userResponse.data);
-          error('Failed to get therapist ID from server response');
+          addNotification({
+            type: 'error',
+            title: 'Creation Failed',
+            message: 'Failed to get therapist ID from server response',
+            duration: 7000
+          });
           return;
         }
         
@@ -145,14 +150,24 @@ const CreateWizard: React.FC = () => {
         
         console.log('📥 [CreateWizard] Profile update response:', profileResponse);
 
-        success('Therapist created successfully! 🎉');
+        addNotification({
+          type: 'success',
+          title: 'Success',
+          message: 'Therapist created successfully!',
+          duration: 5000
+        });
         // Delay navigation slightly to show success message
         setTimeout(() => {
           navigate(`/admin/therapists/${therapistId}`);
         }, 1000);
       } else {
         console.error('❌ [CreateWizard] User creation failed:', userResponse);
-        error(userResponse.message || 'Failed to create therapist user');
+        addNotification({
+          type: 'error',
+          title: 'Creation Failed',
+          message: userResponse.message || 'Failed to create therapist user',
+          duration: 7000
+        });
       }
     } catch (err: any) {
       console.error('❌ [CreateWizard] Failed to create therapist:', err);
@@ -164,18 +179,43 @@ const CreateWizard: React.FC = () => {
       
       // Handle specific error cases with user-friendly messages
       if (err.response?.status === 409) {
-        error('A user with this email already exists. Please use a different email address.');
+        addNotification({
+          type: 'error',
+          title: 'Duplicate Email',
+          message: 'A user with this email already exists. Please use a different email address.',
+          duration: 7000
+        });
       } else if (err.response?.status === 400) {
         const validationErrors = err.response?.data?.errors;
         if (validationErrors && Array.isArray(validationErrors)) {
-          error(`Validation error: ${validationErrors[0].msg || validationErrors[0].message}`);
+          addNotification({
+            type: 'error',
+            title: 'Validation Error',
+            message: `Validation error: ${validationErrors[0].msg || validationErrors[0].message}`,
+            duration: 7000
+          });
         } else {
-          error(err.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+          addNotification({
+            type: 'error',
+            title: 'Invalid Data',
+            message: err.response?.data?.message || 'Invalid data provided. Please check your inputs.',
+            duration: 7000
+          });
         }
       } else if (err.response?.status === 500) {
-        error('Server error occurred. Please try again later.');
+        addNotification({
+          type: 'error',
+          title: 'Server Error',
+          message: 'Server error occurred. Please try again later.',
+          duration: 7000
+        });
       } else {
-        error(err.response?.data?.message || 'Failed to create therapist. Please try again.');
+        addNotification({
+          type: 'error',
+          title: 'Creation Failed',
+          message: err.response?.data?.message || 'Failed to create therapist. Please try again.',
+          duration: 7000
+        });
       }
     } finally {
       setIsSubmitting(false);
