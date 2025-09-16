@@ -7,6 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import BasicInfoForm from './BasicInfoForm';
 import ProfessionalInfoForm from './ProfessionalInfoForm';
 import ServiceSettingsForm from './ServiceSettingsForm';
+import ProfilePhotoForm from './ProfilePhotoForm';
 import { Therapist, TherapistStatus } from '../shared/therapistTypes';
 import { transformBackendToTherapist } from '../shared/dataTransformers';
 
@@ -17,7 +18,7 @@ const EditForm: React.FC = () => {
   const [therapist, setTherapist] = useState<Therapist | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'basic' | 'professional' | 'service'>('basic');
+  const [activeSection, setActiveSection] = useState<'basic' | 'professional' | 'service' | 'photo'>('basic');
 
   useEffect(() => {
     if (id) {
@@ -275,6 +276,26 @@ const EditForm: React.FC = () => {
     }
   };
 
+  const handlePhotoUpdate = async (data: any) => {
+    if (!therapist) return;
+    
+    console.log('📸 [EditForm] Photo updated:', data);
+    
+    // Update local therapist state with new photo URL
+    setTherapist({ ...therapist, ...data });
+    
+    // Reload therapist data to ensure consistency
+    try {
+      const response = await realApiService.admin.getTherapistById(therapist.id);
+      if (response.success && response.data) {
+        const therapistData = transformBackendToTherapist(response.data);
+        setTherapist(therapistData);
+      }
+    } catch (err) {
+      console.error('Failed to reload therapist data:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -362,6 +383,18 @@ const EditForm: React.FC = () => {
             >
               Service Settings
             </button>
+            <button
+              onClick={() => setActiveSection('photo')}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${activeSection === 'photo'
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              Profile Photo
+            </button>
           </nav>
         </div>
       </div>
@@ -387,6 +420,13 @@ const EditForm: React.FC = () => {
             <ServiceSettingsForm
               therapist={therapist}
               onSubmit={handleServiceSettingsSubmit}
+              isSaving={saving}
+            />
+          )}
+          {activeSection === 'photo' && (
+            <ProfilePhotoForm
+              therapist={therapist}
+              onSubmit={handlePhotoUpdate}
               isSaving={saving}
             />
           )}
