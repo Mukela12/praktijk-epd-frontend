@@ -7,6 +7,7 @@ import {
   PlusIcon,
   XMarkIcon 
 } from '@heroicons/react/24/outline';
+import { LANGUAGE_OPTIONS, THERAPY_TYPES, COMMON_SPECIALIZATIONS } from '../shared/constants';
 
 interface ProfessionalInfoStepProps {
   formData: any;
@@ -18,38 +19,7 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
   const [newLanguage, setNewLanguage] = useState('');
   const [newQualification, setNewQualification] = useState('');
 
-  // Valid therapy types as per database enum
-  const therapyTypes = [
-    { value: 'individual', label: 'Individual Therapy' },
-    { value: 'group', label: 'Group Therapy' },
-    { value: 'couple', label: 'Couples Therapy' },
-    { value: 'family', label: 'Family Therapy' },
-    { value: 'child', label: 'Child Therapy' }
-  ];
-
-  const commonSpecializations = [
-    'CBT (Cognitive Behavioral Therapy)',
-    'EMDR',
-    'Trauma Therapy',
-    'Anxiety Disorders',
-    'Depression',
-    'Couples Therapy',
-    'Family Therapy',
-    'Child Psychology',
-    'Addiction Counseling',
-    'Grief Counseling'
-  ];
-
-  const commonLanguages = [
-    'Dutch',
-    'English',
-    'German',
-    'French',
-    'Spanish',
-    'Arabic',
-    'Turkish',
-    'Polish'
-  ];
+  // Use constants from shared file
 
   const addSpecialization = () => {
     if (newSpecialization && !formData.specializations.includes(newSpecialization)) {
@@ -67,9 +37,10 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
   };
 
   const addLanguage = () => {
-    if (newLanguage && !formData.languages.includes(newLanguage)) {
+    const selectedLang = LANGUAGE_OPTIONS.find(l => l.display === newLanguage);
+    if (selectedLang && !formData.languages.includes(selectedLang.code)) {
       updateFormData({
-        languages: [...formData.languages, newLanguage]
+        languages: [...formData.languages, selectedLang.code]
       });
       setNewLanguage('');
     }
@@ -187,7 +158,7 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             >
               <option value="">Select or type a specialization</option>
-              {commonSpecializations.map(spec => (
+              {COMMON_SPECIALIZATIONS.map(spec => (
                 <option key={spec} value={spec}>{spec}</option>
               ))}
             </select>
@@ -227,7 +198,7 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
         </label>
         <p className="text-sm text-gray-500 mb-3">Select the types of therapy sessions offered</p>
         <div className="space-y-2">
-          {therapyTypes.map((type) => (
+          {THERAPY_TYPES.map((type) => (
             <label key={type.value} className="flex items-center">
               <input
                 type="checkbox"
@@ -262,8 +233,8 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             >
               <option value="">Select a language</option>
-              {commonLanguages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
+              {LANGUAGE_OPTIONS.map(lang => (
+                <option key={lang.code} value={lang.display}>{lang.display}</option>
               ))}
             </select>
             <button
@@ -275,21 +246,24 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {formData.languages.map((lang: string) => (
-              <span
-                key={lang}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700"
-              >
-                {lang}
-                <button
-                  type="button"
-                  onClick={() => removeLanguage(lang)}
-                  className="ml-2 text-green-600 hover:text-green-800"
+            {formData.languages.map((langCode: string) => {
+              const lang = LANGUAGE_OPTIONS.find(l => l.code === langCode);
+              return (
+                <span
+                  key={langCode}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700"
                 >
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
-              </span>
-            ))}
+                  {lang?.display || langCode}
+                  <button
+                    type="button"
+                    onClick={() => removeLanguage(langCode)}
+                    className="ml-2 text-green-600 hover:text-green-800"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
