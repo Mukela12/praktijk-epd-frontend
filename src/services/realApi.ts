@@ -420,6 +420,16 @@ export const realApiService = {
       contractStartDate?: string;
       contractEndDate?: string;
       maxClients?: number;
+      yearsOfExperience?: number;
+      onlineTherapy?: boolean;
+      inPersonTherapy?: boolean;
+      acceptingNewClients?: boolean;
+      streetAddress?: string;
+      postalCode?: string;
+      city?: string;
+      country?: string;
+      kvkNumber?: string;
+      bigNumber?: string;
     }): Promise<ApiResponse> => {
       const response = await api.put(`/admin/therapists/${therapistId}/profile`, profileData);
       return response.data;

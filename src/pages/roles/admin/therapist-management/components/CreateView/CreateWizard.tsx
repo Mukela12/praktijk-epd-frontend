@@ -142,7 +142,16 @@ const CreateWizard: React.FC = () => {
           maxClientsPerDay: formData.max_clients,
           sessionDuration: formData.session_duration,
           breakBetweenSessions: formData.break_between_sessions,
-          maxClients: formData.max_clients
+          maxClients: formData.max_clients,
+          yearsOfExperience: formData.years_of_experience,
+          kvkNumber: formData.kvk_number,
+          bigNumber: formData.big_number,
+          streetAddress: formData.street_address,
+          city: formData.city,
+          postalCode: formData.postal_code,
+          country: formData.country,
+          onlineTherapy: formData.online_therapy,
+          inPersonTherapy: formData.in_person_therapy
         };
         
         console.log('📤 [CreateWizard] Updating therapist profile:', profilePayload);

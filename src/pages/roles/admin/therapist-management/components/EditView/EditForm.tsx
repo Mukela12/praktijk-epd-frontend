@@ -158,7 +158,14 @@ const EditForm: React.FC = () => {
         therapyTypes: data.therapy_types, // Fixed: was using data.specializations
         languages: data.languages,
         bio: data.bio,
-        qualifications: data.qualifications
+        qualifications: data.qualifications,
+        yearsOfExperience: data.years_of_experience,
+        kvkNumber: data.kvk_number,
+        bigNumber: data.big_number,
+        streetAddress: data.street_address,
+        city: data.city,
+        postalCode: data.postal_code,
+        country: data.country
       };
       
       console.log('📤 [EditForm] Sending updateTherapistProfile payload:', payload);
@@ -232,7 +239,9 @@ const EditForm: React.FC = () => {
         maxClientsPerDay: data.max_clients,
         sessionDuration: data.session_duration,
         breakBetweenSessions: data.break_between_sessions,
-        maxClients: data.max_clients
+        maxClients: data.max_clients,
+        onlineTherapy: data.online_therapy,
+        inPersonTherapy: data.in_person_therapy
       });
 
       if (response.success) {
