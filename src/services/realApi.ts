@@ -359,7 +359,7 @@ export const realApiService = {
       lastName: string;
       role: string;
       phone?: string;
-    }): Promise<ApiResponse<{ id: string }>> => {
+    }): Promise<ApiResponse<{ userId: string; temporaryPassword?: string }>> => {
       const response = await api.post('/admin/users', userData);
       if (response.data.success) {
         requestManager.clearRelatedCache('/admin/users');

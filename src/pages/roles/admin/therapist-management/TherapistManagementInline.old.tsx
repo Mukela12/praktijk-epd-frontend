@@ -231,7 +231,7 @@ const TherapistManagementInline: React.FC = () => {
         phone: formData.phone || undefined
       });
 
-      if (response.success && response.data?.id) {
+      if (response.success && response.data?.userId) {
         // Update therapist-specific fields using the dedicated endpoint
         const profileData = transformToBackend({
           specializations: formData.specializations,
@@ -259,7 +259,7 @@ const TherapistManagementInline: React.FC = () => {
           maxClientsPerDay: formData.max_clients_per_day
         });
         
-        await realApiService.admin.updateTherapistProfile(response.data.id, profileData);
+        await realApiService.admin.updateTherapistProfile(response.data.userId, profileData);
 
         success('Therapist created successfully! A temporary password has been sent to their email address.');
         info('The therapist will receive login credentials via email and will be prompted to change their password on first login.');

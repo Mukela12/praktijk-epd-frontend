@@ -114,7 +114,7 @@ const CreateWizard: React.FC = () => {
 
       if (userResponse.success && userResponse.data) {
         // Extract therapist ID from response - backend returns it as userId
-        const therapistId = userResponse.data.userId || userResponse.data.id || userResponse.data.data?.userId;
+        const therapistId = userResponse.data.userId;
         
         console.log('🔍 [CreateWizard] Extracted therapist ID:', therapistId);
         
