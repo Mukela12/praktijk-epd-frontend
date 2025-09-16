@@ -21,6 +21,7 @@ const ProfessionalInfoForm: React.FC<ProfessionalInfoFormProps> = ({ therapist, 
     license_number: therapist.license_number || '',
     years_of_experience: therapist.years_of_experience || 0,
     specializations: therapist.specializations || [],
+    therapy_types: therapist.therapy_types || [],
     languages: therapist.languages || [],
     bio: therapist.bio || '',
     qualifications: therapist.qualifications || [],
@@ -35,6 +36,15 @@ const ProfessionalInfoForm: React.FC<ProfessionalInfoFormProps> = ({ therapist, 
   const [newSpecialization, setNewSpecialization] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
   const [newQualification, setNewQualification] = useState('');
+
+  // Valid therapy types as per database enum
+  const therapyTypes = [
+    { value: 'individual', label: 'Individual Therapy' },
+    { value: 'group', label: 'Group Therapy' },
+    { value: 'couple', label: 'Couples Therapy' },
+    { value: 'family', label: 'Family Therapy' },
+    { value: 'child', label: 'Child Therapy' }
+  ];
 
   const commonSpecializations = [
     'CBT (Cognitive Behavioral Therapy)',
@@ -222,6 +232,35 @@ const ProfessionalInfoForm: React.FC<ProfessionalInfoFormProps> = ({ therapist, 
               </span>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Therapy Types */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <BriefcaseIcon className="inline-block w-5 h-5 mr-1" />
+          Therapy Types
+        </label>
+        <p className="text-sm text-gray-500 mb-3">Select the types of therapy sessions offered</p>
+        <div className="space-y-2">
+          {therapyTypes.map((type) => (
+            <label key={type.value} className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.therapy_types?.includes(type.value) || false}
+                onChange={(e) => {
+                  const currentTypes = formData.therapy_types || [];
+                  if (e.target.checked) {
+                    setFormData({ ...formData, therapy_types: [...currentTypes, type.value] });
+                  } else {
+                    setFormData({ ...formData, therapy_types: currentTypes.filter((t: string) => t !== type.value) });
+                  }
+                }}
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">{type.label}</span>
+            </label>
+          ))}
         </div>
       </div>
 

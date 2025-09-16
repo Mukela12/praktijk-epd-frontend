@@ -59,6 +59,7 @@ const CreateWizard: React.FC = () => {
     email: '',
     phone: '',
     specializations: [],
+    therapy_types: [], // Initialize therapy types
     languages: [],
     qualifications: [],
     session_duration: 60,
@@ -133,7 +134,7 @@ const CreateWizard: React.FC = () => {
         const profilePayload = {
           licenseNumber: formData.license_number,
           specializations: formData.specializations,
-          therapyTypes: formData.therapy_types || formData.specializations, // Fixed: use therapy_types
+          therapyTypes: formData.therapy_types || [], // Only send valid therapy types
           languages: formData.languages,
           bio: formData.bio,
           qualifications: formData.qualifications,

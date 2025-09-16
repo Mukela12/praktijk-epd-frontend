@@ -112,6 +112,26 @@ const ReviewStep: React.FC<ReviewStepProps> = ({ formData }) => {
             </dd>
           </div>
           <div className="sm:col-span-2">
+            <dt className="text-sm font-medium text-gray-500">Therapy Types</dt>
+            <dd className="mt-1">
+              {formData.therapy_types && formData.therapy_types.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {formData.therapy_types.map((type: string, idx: number) => (
+                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      {type === 'individual' ? 'Individual' : 
+                       type === 'group' ? 'Group' :
+                       type === 'couple' ? 'Couples' :
+                       type === 'family' ? 'Family' :
+                       type === 'child' ? 'Child' : type}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-sm text-gray-900">None selected</span>
+              )}
+            </dd>
+          </div>
+          <div className="sm:col-span-2">
             <dt className="text-sm font-medium text-gray-500">Languages</dt>
             <dd className="mt-1">
               {formData.languages.length > 0 ? (

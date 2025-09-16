@@ -18,6 +18,15 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
   const [newLanguage, setNewLanguage] = useState('');
   const [newQualification, setNewQualification] = useState('');
 
+  // Valid therapy types as per database enum
+  const therapyTypes = [
+    { value: 'individual', label: 'Individual Therapy' },
+    { value: 'group', label: 'Group Therapy' },
+    { value: 'couple', label: 'Couples Therapy' },
+    { value: 'family', label: 'Family Therapy' },
+    { value: 'child', label: 'Child Therapy' }
+  ];
+
   const commonSpecializations = [
     'CBT (Cognitive Behavioral Therapy)',
     'EMDR',
@@ -207,6 +216,35 @@ const ProfessionalInfoStep: React.FC<ProfessionalInfoStepProps> = ({ formData, u
               </span>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Therapy Types */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <BriefcaseIcon className="inline-block w-5 h-5 mr-1" />
+          Therapy Types
+        </label>
+        <p className="text-sm text-gray-500 mb-3">Select the types of therapy sessions offered</p>
+        <div className="space-y-2">
+          {therapyTypes.map((type) => (
+            <label key={type.value} className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.therapy_types?.includes(type.value) || false}
+                onChange={(e) => {
+                  const currentTypes = formData.therapy_types || [];
+                  if (e.target.checked) {
+                    updateFormData({ therapy_types: [...currentTypes, type.value] });
+                  } else {
+                    updateFormData({ therapy_types: currentTypes.filter((t: string) => t !== type.value) });
+                  }
+                }}
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">{type.label}</span>
+            </label>
+          ))}
         </div>
       </div>
 
