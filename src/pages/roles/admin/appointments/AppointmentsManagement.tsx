@@ -60,6 +60,17 @@ interface Appointment {
   therapist_last_name?: string;
   therapist_email?: string;
   therapist_phone?: string;
+  // Additional fields that might come from backend
+  appointment_time?: string;
+  clientFirstName?: string;
+  clientLastName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  therapistFirstName?: string;
+  therapistLastName?: string;
+  therapistEmail?: string;
+  duration_minutes?: number;
+  type?: string;
 }
 
 interface Client {
@@ -96,6 +107,17 @@ const AppointmentsManagement: React.FC = () => {
     therapist: 'all',
     date: 'all',
     paymentStatus: 'all'
+  });
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    scheduled: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0,
+    noShow: 0,
+    todayCount: 0,
+    weekCount: 0,
+    pendingPayments: 0
   });
 
   // Form state
@@ -145,13 +167,44 @@ const AppointmentsManagement: React.FC = () => {
   const loadAppointments = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading appointments with filters:', filters);
+      
       const response = await realApiService.admin.getAppointments({
         ...(filters.status !== 'all' && { status: filters.status }),
-        ...(filters.therapist !== 'all' && { therapistId: filters.therapist })
+        ...(filters.therapist !== 'all' && { therapistId: filters.therapist }),
+        page: 1,
+        limit: 100 // Load more appointments
       });
+      
+      console.log('Appointments response:', response);
       
       if (response.success && response.data) {
         let appointmentsData = response.data.appointments || [];
+        console.log('Raw appointments data:', appointmentsData.length, 'appointments');
+        
+        // Map data to ensure all fields are present
+        appointmentsData = appointmentsData.map(apt => {
+          const rawApt = apt as any;
+          return {
+            ...apt,
+            // Ensure time fields are present
+            start_time: apt.start_time || rawApt.appointment_time,
+            appointment_time: rawApt.appointment_time || apt.start_time,
+            // Ensure name fields are present
+            client_first_name: apt.client_first_name || rawApt.clientFirstName,
+            client_last_name: apt.client_last_name || rawApt.clientLastName,
+            client_email: rawApt.client_email || rawApt.clientEmail,
+            client_phone: rawApt.client_phone || rawApt.clientPhone,
+            therapist_first_name: apt.therapist_first_name || rawApt.therapistFirstName,
+            therapist_last_name: apt.therapist_last_name || rawApt.therapistLastName,
+            therapist_email: rawApt.therapist_email || rawApt.therapistEmail,
+            // Ensure other fields have defaults
+            duration: apt.duration || rawApt.duration_minutes || 60,
+            therapy_type: apt.therapy_type || rawApt.type || 'individual',
+            payment_status: apt.payment_status || 'pending',
+            invoice_sent: apt.invoice_sent || false
+          };
+        });
         
         // Apply date filter
         appointmentsData = filterAppointmentsByDate(appointmentsData);
@@ -161,11 +214,48 @@ const AppointmentsManagement: React.FC = () => {
           appointmentsData = appointmentsData.filter(apt => apt.payment_status === filters.paymentStatus);
         }
         
+        console.log('Filtered appointments:', appointmentsData.length);
         setAppointments(appointmentsData);
+        
+        // Calculate statistics
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const weekFromNow = new Date(today);
+        weekFromNow.setDate(weekFromNow.getDate() + 7);
+        
+        const stats = {
+          total: appointmentsData.length,
+          scheduled: appointmentsData.filter(apt => apt.status === 'scheduled').length,
+          confirmed: appointmentsData.filter(apt => apt.status === 'confirmed').length,
+          completed: appointmentsData.filter(apt => apt.status === 'completed').length,
+          cancelled: appointmentsData.filter(apt => apt.status === 'cancelled').length,
+          noShow: appointmentsData.filter(apt => apt.status === 'no-show').length,
+          todayCount: appointmentsData.filter(apt => {
+            const aptDate = new Date(apt.appointment_date);
+            aptDate.setHours(0, 0, 0, 0);
+            return aptDate.getTime() === today.getTime();
+          }).length,
+          weekCount: appointmentsData.filter(apt => {
+            const aptDate = new Date(apt.appointment_date);
+            return aptDate >= today && aptDate <= weekFromNow;
+          }).length,
+          pendingPayments: appointmentsData.filter(apt => apt.payment_status === 'pending').length
+        };
+        
+        setStatistics(stats);
+        
+        // If we have statistics from the API response, merge them
+        if (response.data && 'statistics' in response.data) {
+          setStatistics(prev => ({ ...prev, ...(response.data as any).statistics }));
+        }
+      } else {
+        console.error('Invalid response structure:', response);
+        errorAlert('Invalid response from server');
       }
     } catch (error) {
+      console.error('Error loading appointments:', error);
       handleApiError(error);
-      errorAlert('Failed to load appointments');
+      errorAlert('Failed to load appointments. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -502,13 +592,17 @@ const AppointmentsManagement: React.FC = () => {
                     <UserIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        {selectedAppointment.client_first_name} {selectedAppointment.client_last_name}
+                        {selectedAppointment.client_first_name || 'Unknown'} {selectedAppointment.client_last_name || 'Client'}
                       </p>
                       {selectedAppointment.client_email && (
-                        <p className="text-sm text-gray-600">{selectedAppointment.client_email}</p>
+                        <a href={`mailto:${selectedAppointment.client_email}`} className="text-sm text-blue-600 hover:text-blue-800">
+                          {selectedAppointment.client_email}
+                        </a>
                       )}
                       {selectedAppointment.client_phone && (
-                        <p className="text-sm text-gray-600">{selectedAppointment.client_phone}</p>
+                        <a href={`tel:${selectedAppointment.client_phone}`} className="text-sm text-blue-600 hover:text-blue-800 block">
+                          {selectedAppointment.client_phone}
+                        </a>
                       )}
                     </div>
                   </div>
@@ -523,13 +617,17 @@ const AppointmentsManagement: React.FC = () => {
                     <UserIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        {selectedAppointment.therapist_first_name} {selectedAppointment.therapist_last_name}
+                        Dr. {selectedAppointment.therapist_first_name || 'Unknown'} {selectedAppointment.therapist_last_name || 'Therapist'}
                       </p>
                       {selectedAppointment.therapist_email && (
-                        <p className="text-sm text-gray-600">{selectedAppointment.therapist_email}</p>
+                        <a href={`mailto:${selectedAppointment.therapist_email}`} className="text-sm text-blue-600 hover:text-blue-800">
+                          {selectedAppointment.therapist_email}
+                        </a>
                       )}
                       {selectedAppointment.therapist_phone && (
-                        <p className="text-sm text-gray-600">{selectedAppointment.therapist_phone}</p>
+                        <a href={`tel:${selectedAppointment.therapist_phone}`} className="text-sm text-blue-600 hover:text-blue-800 block">
+                          {selectedAppointment.therapist_phone}
+                        </a>
                       )}
                     </div>
                   </div>
@@ -548,7 +646,8 @@ const AppointmentsManagement: React.FC = () => {
                         {formatDate(selectedAppointment.appointment_date)}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {formatTime(selectedAppointment.start_time)} - {formatTime(selectedAppointment.end_time)}
+                        {selectedAppointment.start_time ? formatTime(selectedAppointment.start_time) : 'Time TBD'} 
+                        {selectedAppointment.end_time && ` - ${formatTime(selectedAppointment.end_time)}`}
                       </p>
                     </div>
                   </div>
@@ -786,13 +885,29 @@ const AppointmentsManagement: React.FC = () => {
       return (
         <PremiumEmptyState
           icon={CalendarDaysIcon}
-          title="No appointments found"
-          description={searchTerm || filters.status !== 'all' || filters.date !== 'all' 
-            ? "Try adjusting your search or filters" 
-            : "Schedule your first appointment to get started"}
+          title={searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
+            ? "No appointments match your filters"
+            : "No appointments scheduled yet"}
+          description={searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
+            ? "Try adjusting your search criteria or filters to see more results" 
+            : "Start scheduling appointments to manage therapy sessions"}
           action={{
-            label: "Create Appointment",
-            onClick: () => setViewMode('create')
+            label: searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
+              ? "Clear Filters"
+              : "Schedule First Appointment",
+            onClick: () => {
+              if (searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all') {
+                setSearchTerm('');
+                setFilters({
+                  status: 'all',
+                  therapist: 'all',
+                  date: 'all',
+                  paymentStatus: 'all'
+                });
+              } else {
+                setViewMode('create');
+              }
+            }
           }}
         />
       );
@@ -828,60 +943,93 @@ const AppointmentsManagement: React.FC = () => {
                     setSelectedAppointment(appointment);
                     setViewMode('detail');
                   }}
+                  className="hover:shadow-lg transition-shadow duration-200"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1">
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <ClockIcon className="w-6 h-6 text-blue-600" />
+                        <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                          <ClockIcon className="w-7 h-7 text-blue-700" />
                         </div>
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-lg font-medium text-gray-900">
-                            {formatTime(appointment.start_time)} - {formatTime(appointment.end_time)}
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-1">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {appointment.start_time ? formatTime(appointment.start_time) : 'Time TBD'} 
+                            {appointment.end_time && ` - ${formatTime(appointment.end_time)}`}
                           </h4>
                           <StatusBadge
                             type="scheduled"
                             status={appointment.status}
                             size="sm"
                           />
-                        </div>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <div className="flex items-center space-x-1 text-sm text-gray-600">
-                            <UserIcon className="w-4 h-4" />
-                            <span>
-                              {appointment.client_first_name} {appointment.client_last_name}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1 text-sm text-gray-600">
-                            <UserIcon className="w-4 h-4" />
-                            <span>
-                              Dr. {appointment.therapist_first_name} {appointment.therapist_last_name}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4 mt-1">
-                          {appointment.therapy_type && (
-                            <span className="text-xs text-gray-500">
-                              {appointment.therapy_type}
-                            </span>
-                          )}
-                          {appointment.location && (
-                            <div className="flex items-center space-x-1 text-xs text-gray-500">
-                              <MapPinIcon className="w-3 h-3" />
-                              <span>{appointment.location}</span>
-                            </div>
-                          )}
                           <StatusBadge
                             type="paid"
                             status={appointment.payment_status}
                             size="sm"
                           />
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div>
+                            <div className="flex items-center space-x-2 text-sm">
+                              <div className="flex items-center space-x-1 text-gray-700">
+                                <UserIcon className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium">Client:</span>
+                                <span className="text-gray-900">
+                                  {appointment.client_first_name || 'Unknown'} {appointment.client_last_name || ''}
+                                </span>
+                              </div>
+                            </div>
+                            {appointment.client_email && (
+                              <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                                <EnvelopeIcon className="w-3 h-3" />
+                                <span>{appointment.client_email}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2 text-sm">
+                              <div className="flex items-center space-x-1 text-gray-700">
+                                <UserIcon className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium">Therapist:</span>
+                                <span className="text-gray-900">
+                                  Dr. {appointment.therapist_first_name || 'Unknown'} {appointment.therapist_last_name || ''}
+                                </span>
+                              </div>
+                            </div>
+                            {appointment.therapist_email && (
+                              <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                                <EnvelopeIcon className="w-3 h-3" />
+                                <span>{appointment.therapist_email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-4 mt-2">
+                          {appointment.therapy_type && (
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs font-medium text-gray-500 uppercase">Type:</span>
+                              <span className="text-xs text-gray-700 capitalize">
+                                {appointment.therapy_type.replace('_', ' ')}
+                              </span>
+                            </div>
+                          )}
+                          {appointment.location && (
+                            <div className="flex items-center space-x-1">
+                              <MapPinIcon className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-700 capitalize">{appointment.location}</span>
+                            </div>
+                          )}
+                          {appointment.duration && (
+                            <div className="flex items-center space-x-1">
+                              <ClockIcon className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-700">{appointment.duration} min</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col items-end space-y-2 ml-4">
                       {appointment.status === 'scheduled' && (
                         <PremiumButton
                           variant="outline"
@@ -891,32 +1039,50 @@ const AppointmentsManagement: React.FC = () => {
                             e?.stopPropagation();
                             handleStatusChange(appointment.id, 'confirmed');
                           }}
+                          className="whitespace-nowrap"
                         >
                           Confirm
                         </PremiumButton>
                       )}
-                      <PremiumButton
-                        variant="outline"
-                        size="sm"
-                        icon={PencilIcon}
-                        onClick={(e) => {
-                          e?.stopPropagation();
-                          setSelectedAppointment(appointment);
-                          setFormData({
-                            clientId: appointment.client_id,
-                            therapistId: appointment.therapist_id,
-                            appointmentDate: appointment.appointment_date,
-                            startTime: appointment.start_time,
-                            endTime: appointment.end_time,
-                            therapyType: appointment.therapy_type || 'individual',
-                            location: appointment.location || 'office',
-                            notes: appointment.session_notes || ''
-                          });
-                          setViewMode('edit');
-                        }}
-                      >
-                        Edit
-                      </PremiumButton>
+                      <div className="flex items-center space-x-1">
+                        <PremiumButton
+                          variant="outline"
+                          size="sm"
+                          icon={PencilIcon}
+                          onClick={(e) => {
+                            e?.stopPropagation();
+                            setSelectedAppointment(appointment);
+                            setFormData({
+                              clientId: appointment.client_id,
+                              therapistId: appointment.therapist_id,
+                              appointmentDate: appointment.appointment_date,
+                              startTime: appointment.start_time || appointment.appointment_time || '',
+                              endTime: appointment.end_time || '',
+                              therapyType: appointment.therapy_type || 'individual',
+                              location: appointment.location || 'office',
+                              notes: appointment.session_notes || ''
+                            });
+                            setViewMode('edit');
+                          }}
+                          className="p-2"
+                        >
+                          <span className="sr-only">Edit</span>
+                        </PremiumButton>
+                        {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+                          <PremiumButton
+                            variant="outline"
+                            size="sm"
+                            icon={TrashIcon}
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              handleDeleteAppointment(appointment.id);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 border-red-300"
+                          >
+                            <span className="sr-only">Cancel</span>
+                          </PremiumButton>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </ListItemCard>
@@ -951,11 +1117,82 @@ const AppointmentsManagement: React.FC = () => {
     >
       {viewMode === 'list' && (
         <>
+          {/* Statistics Summary */}
+          {appointments.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+              <PremiumCard className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <CalendarDaysIcon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{statistics.total}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+              <PremiumCard className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <CalendarIcon className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase">Today</p>
+                    <p className="text-2xl font-bold text-gray-900">{statistics.todayCount}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+              <PremiumCard className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <ClockIcon className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase">This Week</p>
+                    <p className="text-2xl font-bold text-gray-900">{statistics.weekCount}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+              <PremiumCard className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase">Scheduled</p>
+                    <p className="text-2xl font-bold text-gray-900">{statistics.scheduled}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+              <PremiumCard className="p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <BanknotesIcon className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase">Pending Pay</p>
+                    <p className="text-2xl font-bold text-gray-900">{statistics.pendingPayments}</p>
+                  </div>
+                </div>
+              </PremiumCard>
+            </div>
+          )}
+          
           <FilterBar
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={
               <>
+                <PremiumButton
+                  variant="outline"
+                  size="sm"
+                  icon={ArrowPathIcon}
+                  onClick={() => loadAppointments()}
+                  className={`mr-2 ${isLoading ? 'animate-spin' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Loading...' : 'Refresh'}
+                </PremiumButton>
                 <select
                   value={filters.date}
                   onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}

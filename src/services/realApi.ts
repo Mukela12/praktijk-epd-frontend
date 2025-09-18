@@ -386,8 +386,20 @@ export const realApiService = {
       return response.data;
     },
 
-    getClient: async (clientId: string): Promise<ApiResponse<Client>> => {
+    getClient: async (clientId: string): Promise<ApiResponse<any>> => {
       const response = await api.get(`/admin/clients/${clientId}`);
+      return response.data;
+    },
+    createClient: async (data: any): Promise<ApiResponse<any>> => {
+      const response = await api.post('/admin/clients', data);
+      return response.data;
+    },
+    updateClient: async (clientId: string, data: any): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/clients/${clientId}`, data);
+      return response.data;
+    },
+    deleteClient: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.delete(`/admin/clients/${clientId}`);
       return response.data;
     },
 
