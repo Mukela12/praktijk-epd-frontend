@@ -88,9 +88,18 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack, onEdit })
           <div>
             <dt className="text-sm font-medium text-gray-500">Full Name</dt>
             <dd className="mt-1 text-sm text-gray-900">
+              {client.salutation ? `${client.salutation} ` : ''}
+              {client.initials ? `${client.initials} ` : ''}
+              {client.name_prefix ? `${client.name_prefix} ` : ''}
               {client.first_name} {client.last_name}
             </dd>
           </div>
+          {client.bsn && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">BSN</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.bsn}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-sm font-medium text-gray-500">Date of Birth</dt>
             <dd className="mt-1 text-sm text-gray-900">
@@ -132,14 +141,23 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack, onEdit })
               </dd>
             </div>
           </div>
+          {client.mobile_phone && (
+            <div className="flex items-start">
+              <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Mobile Phone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.mobile_phone}</dd>
+              </div>
+            </div>
+          )}
           <div className="flex items-start">
             <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
             <div>
               <dt className="text-sm font-medium text-gray-500">Address</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {client.street_address ? (
+                {(client.street_address || client.street_name) ? (
                   <>
-                    {client.street_address}<br />
+                    {client.street_address || `${client.street_name || ''} ${client.house_number || ''}`.trim()}<br />
                     {client.postal_code} {client.city}<br />
                     {client.country || 'Netherlands'}
                   </>
@@ -170,6 +188,134 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack, onEdit })
           </div>
         </dl>
       </div>
+
+      {/* Financial Information */}
+      {client.bank_account_iban && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Information</h3>
+          <dl className="space-y-4">
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Bank Account (IBAN)</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.bank_account_iban}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {/* Mailing Address */}
+      {(client.mailing_street_name || client.mailing_postal_code) && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Mailing Address</h3>
+          <dl className="space-y-4">
+            <div className="flex items-start">
+              <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Mailing Address</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {client.mailing_street_name} {client.mailing_house_number}<br />
+                  {client.mailing_postal_code} {client.mailing_city}<br />
+                  {client.mailing_country || 'Netherlands'}
+                </dd>
+              </div>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {/* Medical Information */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Medical Information</h3>
+        <dl className="space-y-4">
+          {client.general_practitioner_name && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">General Practitioner</dt>
+              <dd className="mt-1 text-sm text-gray-900">
+                {client.general_practitioner_name}
+                {client.general_practitioner_phone && (
+                  <><br />Phone: {client.general_practitioner_phone}</>
+                )}
+                {client.general_practitioner_email && (
+                  <><br />Email: {client.general_practitioner_email}</>
+                )}
+              </dd>
+            </div>
+          )}
+          {client.medical_notes && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Medical Notes</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.medical_notes}</dd>
+            </div>
+          )}
+          {client.primary_complaint && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Primary Complaint</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.primary_complaint}</dd>
+            </div>
+          )}
+          {client.treatment_history && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Treatment History</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.treatment_history}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      {/* Guardian Information */}
+      {client.guardian_name && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Guardian Information</h3>
+          <dl className="space-y-4">
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Guardian Name</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.guardian_name}</dd>
+            </div>
+            {client.guardian_relation && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Relation</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.guardian_relation}</dd>
+              </div>
+            )}
+            {client.guardian_phone && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.guardian_phone}</dd>
+              </div>
+            )}
+            {client.guardian_email && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Email</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.guardian_email}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
+      {/* Emergency Contact */}
+      {client.emergency_contact_name && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Emergency Contact</h3>
+          <dl className="space-y-4">
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Name</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.emergency_contact_name}</dd>
+            </div>
+            {client.emergency_contact_phone && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.emergency_contact_phone}</dd>
+              </div>
+            )}
+            {client.emergency_contact_relation && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Relation</dt>
+                <dd className="mt-1 text-sm text-gray-900">{client.emergency_contact_relation}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
 
       {/* Account Status */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -215,6 +361,24 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack, onEdit })
               {formatDate(client.created_at)}
             </dd>
           </div>
+          {client.newsletter_subscribed !== undefined && (
+            <div className="flex items-center justify-between">
+              <dt className="text-sm font-medium text-gray-500">Newsletter Subscription</dt>
+              <dd>
+                {client.newsletter_subscribed ? (
+                  <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                ) : (
+                  <XCircleIcon className="h-5 w-5 text-red-500" />
+                )}
+              </dd>
+            </div>
+          )}
+          {client.referral_source && (
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Referral Source</dt>
+              <dd className="mt-1 text-sm text-gray-900">{client.referral_source}</dd>
+            </div>
+          )}
         </dl>
       </div>
     </div>

@@ -208,13 +208,14 @@ interface AdminDashboardData {
   }>;
 }
 
-// Client type based on backend response
+// Client type based on backend response including all CSV imported fields
 interface Client {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
   phone?: string;
+  mobile_phone?: string;
   user_status: 'active' | 'inactive' | 'pending';
   preferred_language: string;
   email_verified: boolean;
@@ -226,6 +227,8 @@ interface Client {
   insurance_company?: string;
   insurance_number?: string;
   street_address?: string;
+  street_name?: string;
+  house_number?: string;
   postal_code?: string;
   city?: string;
   country?: string;
@@ -238,6 +241,32 @@ interface Client {
   total_appointments?: string;
   completed_appointments?: string;
   unpaid_appointments?: string;
+  // Additional CSV imported fields
+  bsn?: string;
+  initials?: string;
+  name_prefix?: string;
+  salutation?: string;
+  mailing_street_name?: string;
+  mailing_house_number?: string;
+  mailing_postal_code?: string;
+  mailing_city?: string;
+  mailing_country?: string;
+  bank_account_iban?: string;
+  general_practitioner_name?: string;
+  general_practitioner_phone?: string;
+  general_practitioner_email?: string;
+  guardian_name?: string;
+  guardian_phone?: string;
+  guardian_email?: string;
+  guardian_relation?: string;
+  newsletter_subscribed?: boolean;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relation?: string;
+  medical_notes?: string;
+  referral_source?: string;
+  primary_complaint?: string;
+  treatment_history?: string;
 }
 
 // Therapist type
