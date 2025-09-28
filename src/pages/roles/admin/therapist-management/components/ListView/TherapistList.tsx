@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusIcon, ChevronLeftIcon, ChevronRightIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ChevronLeftIcon, ChevronRightIcon, UsersIcon, DocumentArrowUpIcon } from '@heroicons/react/24/outline';
 import { useTherapistContext } from '../shared/TherapistContext';
 import ListHeader from './ListHeader';
 import TherapistFilters from './TherapistFilters';
@@ -8,9 +8,12 @@ import BulkActions from './BulkActions';
 import TherapistCard from './TherapistCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumTable, PremiumButton, PremiumEmptyState } from '@/components/layout/PremiumLayout';
+import { CSVImportSection } from '@/components/admin/csv-import';
 
 const TherapistList: React.FC = () => {
   const navigate = useNavigate();
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  
   const { 
     therapists, 
     loading, 
@@ -41,6 +44,11 @@ const TherapistList: React.FC = () => {
     navigate(`/admin/therapists/${id}/edit`);
   };
 
+  const handleCSVImportComplete = () => {
+    setShowCSVImport(false);
+    loadTherapists(); // Refresh the therapist list
+  };
+
   // Calculate pagination
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -55,6 +63,37 @@ const TherapistList: React.FC = () => {
     );
   }
 
+  // Show CSV import view if active
+  if (showCSVImport) {
+    return (
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Import Therapists from CSV</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Upload a CSV file to bulk import therapist accounts
+            </p>
+          </div>
+          <PremiumButton
+            onClick={() => setShowCSVImport(false)}
+            variant="secondary"
+          >
+            ← Back to Therapist List
+          </PremiumButton>
+        </div>
+
+        {/* CSV Import Component */}
+        <CSVImportSection
+          type="therapists"
+          onImportComplete={handleCSVImportComplete}
+          onCancel={() => setShowCSVImport(false)}
+          isOpen={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -65,13 +104,22 @@ const TherapistList: React.FC = () => {
             Manage your therapy team, assignments, and availability
           </p>
         </div>
-        <PremiumButton
-          onClick={handleCreateNew}
-          variant="danger"
-          icon={PlusIcon}
-        >
-          Add Therapist
-        </PremiumButton>
+        <div className="flex gap-3">
+          <PremiumButton
+            onClick={() => setShowCSVImport(true)}
+            variant="secondary"
+            icon={DocumentArrowUpIcon}
+          >
+            Import from CSV
+          </PremiumButton>
+          <PremiumButton
+            onClick={handleCreateNew}
+            variant="danger"
+            icon={PlusIcon}
+          >
+            Add Therapist
+          </PremiumButton>
+        </div>
       </div>
 
       {/* Search and Stats Header */}

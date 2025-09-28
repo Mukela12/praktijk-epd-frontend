@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon, 
@@ -10,7 +10,8 @@ import {
   UserGroupIcon,
   ExclamationCircleIcon,
   ClockIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useClientContext } from '../shared/ClientContext';
 import ListHeader from './ListHeader';
@@ -19,9 +20,12 @@ import BulkActions from './BulkActions';
 import ClientCard from './ClientCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumButton, PremiumEmptyState, PremiumCard } from '@/components/layout/PremiumLayout';
+import { CSVImportSection } from '@/components/admin/csv-import';
 
 const ClientList: React.FC = () => {
   const navigate = useNavigate();
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  
   const { 
     clients, 
     loading, 
@@ -55,6 +59,11 @@ const ClientList: React.FC = () => {
     navigate(`/admin/clients/${id}/edit`);
   };
 
+  const handleCSVImportComplete = () => {
+    setShowCSVImport(false);
+    loadClients(); // Refresh the client list
+  };
+
   // Calculate pagination
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize + 1;
@@ -64,6 +73,37 @@ const ClientList: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // Show CSV import view if active
+  if (showCSVImport) {
+    return (
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Import Clients from CSV</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Upload a CSV file to bulk import client accounts
+            </p>
+          </div>
+          <PremiumButton
+            onClick={() => setShowCSVImport(false)}
+            variant="secondary"
+          >
+            ← Back to Client List
+          </PremiumButton>
+        </div>
+
+        {/* CSV Import Component */}
+        <CSVImportSection
+          type="clients"
+          onImportComplete={handleCSVImportComplete}
+          onCancel={() => setShowCSVImport(false)}
+          isOpen={true}
+        />
       </div>
     );
   }
@@ -78,13 +118,22 @@ const ClientList: React.FC = () => {
             Manage client profiles, assignments, and therapy progress
           </p>
         </div>
-        <PremiumButton
-          onClick={handleCreateNew}
-          variant="danger"
-          icon={PlusIcon}
-        >
-          Add Client
-        </PremiumButton>
+        <div className="flex gap-3">
+          <PremiumButton
+            onClick={() => setShowCSVImport(true)}
+            variant="secondary"
+            icon={DocumentArrowUpIcon}
+          >
+            Import from CSV
+          </PremiumButton>
+          <PremiumButton
+            onClick={handleCreateNew}
+            variant="danger"
+            icon={PlusIcon}
+          >
+            Add Client
+          </PremiumButton>
+        </div>
       </div>
 
       {/* Statistics Cards */}

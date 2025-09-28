@@ -311,6 +311,19 @@ export const adminApi = {
   deletePsychologicalProblem: async (id: string): Promise<ApiResponse> => {
     const response = await api.delete(`/admin/psychological-problems/${id}`);
     return response.data;
+  },
+
+  // CSV Import
+  importCSV: async (formData: FormData): Promise<ApiResponse<{ importId: string; message: string }>> => {
+    const response = await api.post('/api/csv-import/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  getImportProgress: async (importId: string): Promise<ApiResponse<any>> => {
+    const response = await api.get(`/api/csv-import/progress/${importId}`);
+    return response.data;
   }
 };
 
