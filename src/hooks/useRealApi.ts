@@ -407,6 +407,8 @@ export function useRealApi() {
     search?: string;
     sortBy?: string;
     sortOrder?: string;
+    intakeStatus?: string;
+    registrationPeriod?: string;
   }) => {
     try {
       const response = await realApiService.admin.getClients(params);
@@ -535,7 +537,13 @@ export function useRealApi() {
   const getClient = useCallback(async (clientId: string) => {
     try {
       const response = await realApiService.admin.getClient(clientId);
+      
       if (response.success && response.data) {
+        // Check if response.data contains a nested 'client' object
+        if (response.data.client) {
+          return response.data.client;
+        }
+        // Otherwise return the data directly (for backward compatibility)
         return response.data;
       }
       throw new Error(response.message || 'Failed to fetch client');

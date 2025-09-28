@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -91,13 +91,27 @@ const AllClients: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [intakeStatus, setIntakeStatus] = useState<string>('all');
+  const [registrationPeriod, setRegistrationPeriod] = useState<string>('all');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [searchInput, setSearchInput] = useState(''); // For immediate UI updates
+  const [debouncedSearch, setDebouncedSearch] = useState(''); // For API calls
   
   // View state management
   const [viewMode, setViewMode] = useState<'list' | 'detail' | 'edit' | 'create' | 'csv-import'>('list');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
+  // Debounce search input for performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Load clients and stats
   const loadClients = useCallback(async () => {
@@ -108,9 +122,11 @@ const AllClients: React.FC = () => {
       const clientsResponse = await getAdminClients({
         page: currentPage,
         limit: 20,
-        search: searchQuery,
+        search: debouncedSearch,
         status: selectedStatus !== 'all' ? selectedStatus : undefined,
         therapistId: selectedTherapist !== 'all' ? selectedTherapist : undefined,
+        intakeStatus: intakeStatus !== 'all' ? intakeStatus : undefined,
+        registrationPeriod: registrationPeriod !== 'all' ? registrationPeriod : undefined,
         sortBy,
         sortOrder
       });
@@ -140,7 +156,7 @@ const AllClients: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchQuery, selectedStatus, selectedTherapist, sortBy, sortOrder]);
+  }, [currentPage, debouncedSearch, selectedStatus, selectedTherapist, intakeStatus, registrationPeriod, sortBy, sortOrder]);
 
   useEffect(() => {
     loadClients();
@@ -465,10 +481,15 @@ const AllClients: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Search by name, email, phone number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
+                  {isLoading && debouncedSearch !== searchInput && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -524,8 +545,12 @@ const AllClients: React.FC = () => {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Intake Status
                     </label>
-                    <select className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500">
-                      <option value="">All</option>
+                    <select 
+                      value={intakeStatus}
+                      onChange={(e) => setIntakeStatus(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All</option>
                       <option value="completed">✅ Completed</option>
                       <option value="pending">⏳ Pending</option>
                     </select>
@@ -534,8 +559,12 @@ const AllClients: React.FC = () => {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Registration Period
                     </label>
-                    <select className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500">
-                      <option value="">All Time</option>
+                    <select 
+                      value={registrationPeriod}
+                      onChange={(e) => setRegistrationPeriod(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All Time</option>
                       <option value="today">Today</option>
                       <option value="week">This Week</option>
                       <option value="month">This Month</option>
@@ -575,9 +604,12 @@ const AllClients: React.FC = () => {
                 <div className="mt-4 flex justify-end gap-3">
                   <button
                     onClick={() => {
-                      setSearchQuery('');
+                      setSearchInput('');
+                      setDebouncedSearch('');
                       setSelectedStatus('all');
                       setSelectedTherapist('all');
+                      setIntakeStatus('all');
+                      setRegistrationPeriod('all');
                       setSortBy('created_at');
                       setSortOrder('DESC');
                     }}
@@ -678,11 +710,11 @@ const AllClients: React.FC = () => {
                         <UserGroupIcon className="w-12 h-12 text-gray-300 mb-4" />
                         <p className="text-lg font-medium text-gray-900 mb-2">No clients found</p>
                         <p className="text-sm text-gray-500 mb-6">
-                          {searchQuery || selectedStatus !== 'all' 
+                          {debouncedSearch || selectedStatus !== 'all' 
                             ? 'Try adjusting your search criteria' 
                             : 'Get started by adding your first client'}
                         </p>
-                        {(!searchQuery && selectedStatus === 'all') && (
+                        {(!debouncedSearch && selectedStatus === 'all') && (
                           <button
                             onClick={() => setViewMode('create')}
                             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -903,6 +935,35 @@ const AllClients: React.FC = () => {
                     >
                       <ChevronLeftIcon className="h-5 w-5" />
                     </button>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 7) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 4) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 3) {
+                        pageNum = totalPages - 6 + i;
+                      } else {
+                        pageNum = currentPage - 3 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}

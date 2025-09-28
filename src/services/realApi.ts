@@ -409,7 +409,12 @@ export const realApiService = {
       status?: string; 
       therapistId?: string; 
       page?: number; 
-      limit?: number 
+      limit?: number;
+      search?: string;
+      sortBy?: string;
+      sortOrder?: string;
+      intakeStatus?: string;
+      registrationPeriod?: string;
     }): Promise<ApiResponse<{ clients: Client[]; pagination: any }>> => {
       const response = await api.get('/admin/clients', { params });
       return response.data;
