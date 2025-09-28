@@ -26,8 +26,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DocumentArrowUpIcon,
-  EnvelopeIcon,
-  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useRealApi } from '@/hooks/useRealApi';
@@ -54,6 +52,7 @@ interface Client {
   created_at: string;
   updated_at: string;
   last_login?: string;
+  email_verified?: boolean;
   client_status?: 'new' | 'active' | 'inactive' | 'completed';
   assigned_therapist?: {
     id: string;
