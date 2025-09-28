@@ -103,13 +103,14 @@ export const useCSVImport = () => {
   }, [parseCSVFile, autoDetectMappings]);
 
   // Upload CSV file and start import process
-  const uploadCSV = useCallback(async (file: File, type: ImportType, customMapping?: ColumnMapping) => {
+  const uploadCSV = useCallback(async (file: File, type: ImportType, customMapping?: ColumnMapping, skipDuplicates: boolean = true) => {
     setImportStatus('uploading');
     setError(null);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
+    formData.append('skipDuplicates', skipDuplicates ? 'true' : 'false');
     
     // Include custom column mappings if provided
     if (customMapping && Object.keys(customMapping).length > 0) {
