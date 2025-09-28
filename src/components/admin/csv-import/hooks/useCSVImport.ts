@@ -32,9 +32,13 @@ export const useCSVImport = () => {
             return;
           }
 
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          // Detect separator (comma or semicolon)
+          const firstLine = lines[0];
+          const separator = firstLine.includes(';') ? ';' : ',';
+
+          const headers = firstLine.split(separator).map(h => h.trim().replace(/"/g, ''));
           const rows = lines.slice(1, Math.min(6, lines.length)) // Show first 5 rows
-            .map(line => line.split(',').map(cell => cell.trim().replace(/"/g, '')));
+            .map(line => line.split(separator).map(cell => cell.trim().replace(/"/g, '')));
 
           resolve({
             headers,
