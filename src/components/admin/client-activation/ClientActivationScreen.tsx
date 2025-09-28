@@ -51,18 +51,50 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
     total: number;
     isActive: boolean;
   }>({ current: 0, total: 0, isActive: false });
+  const [pagination, setPagination] = useState<{
+    currentPage: number;
+    totalPages: number;
+    totalClients: number;
+    clientsPerPage: number;
+  }>({ 
+    currentPage: 1, 
+    totalPages: 1, 
+    totalClients: 0, 
+    clientsPerPage: 50 
+  });
 
   // Load unverified clients and stats
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page: number = 1) => {
     try {
       setIsLoading(true);
+      const offset = (page - 1) * pagination.clientsPerPage;
+      
       const [clientsResponse, statsResponse] = await Promise.all([
-        getUnverifiedClients(),
+        getUnverifiedClients({ 
+          limit: pagination.clientsPerPage, 
+          offset: offset 
+        }),
         getActivationStats()
       ]);
       
-      if (clientsResponse.clients) {
-        setUnverifiedClients(clientsResponse.clients);
+      if (clientsResponse) {
+        setUnverifiedClients(clientsResponse.clients || []);
+        
+        // Clear selections when loading new page
+        if (page !== pagination.currentPage) {
+          setSelectedClients([]);
+        }
+        
+        // Update pagination info
+        if (clientsResponse.pagination) {
+          const totalPages = Math.ceil(clientsResponse.pagination.total / pagination.clientsPerPage);
+          setPagination(prev => ({
+            ...prev,
+            currentPage: page,
+            totalPages: totalPages,
+            totalClients: clientsResponse.pagination.total
+          }));
+        }
       }
       
       if (statsResponse) {
@@ -74,11 +106,30 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
     } finally {
       setIsLoading(false);
     }
-  }, [getUnverifiedClients, getActivationStats]);
+  }, [getUnverifiedClients, getActivationStats, pagination.clientsPerPage]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (pagination.currentPage < pagination.totalPages) {
+      loadData(pagination.currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.currentPage > 1) {
+      loadData(pagination.currentPage - 1);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= pagination.totalPages) {
+      loadData(page);
+    }
+  };
 
   // Handle client selection
   const handleSelectClient = (clientId: string) => {
@@ -265,10 +316,15 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium text-gray-900">
-              Unverified Clients ({unverifiedClients.length})
+              Unverified Clients ({pagination.totalClients})
             </h3>
             <p className="text-sm text-gray-500">
-              {selectedClients.length} of {unverifiedClients.length} clients selected
+              {selectedClients.length} of {unverifiedClients.length} clients selected on this page
+              {pagination.totalPages > 1 && (
+                <span className="ml-2">
+                  • Page {pagination.currentPage} of {pagination.totalPages}
+                </span>
+              )}
             </p>
           </div>
           
@@ -277,7 +333,7 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
               onClick={handleSelectAll}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors"
             >
-              {selectedClients.length === unverifiedClients.length ? 'Deselect All' : 'Select All'}
+              {selectedClients.length === unverifiedClients.length ? 'Deselect All' : 'Select All'} on this page
             </button>
             
             <button
@@ -397,6 +453,65 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls - Outside of client list conditional */}
+        {pagination.totalPages > 1 && unverifiedClients.length > 0 && (
+          <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4 bg-white rounded-lg p-4">
+            <div className="flex items-center text-sm text-gray-500">
+              Showing {((pagination.currentPage - 1) * pagination.clientsPerPage) + 1} to{' '}
+              {Math.min(pagination.currentPage * pagination.clientsPerPage, pagination.totalClients)} of{' '}
+              {pagination.totalClients} clients
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handlePreviousPage}
+                disabled={pagination.currentPage <= 1}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        pageNum === pagination.currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={handleNextPage}
+                disabled={pagination.currentPage >= pagination.totalPages}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

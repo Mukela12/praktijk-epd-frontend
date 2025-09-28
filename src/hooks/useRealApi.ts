@@ -588,9 +588,12 @@ export function useRealApi() {
     }
   }, []);
 
-  const getUnverifiedClients = useCallback(async () => {
+  const getUnverifiedClients = useCallback(async (params?: { 
+    limit?: number; 
+    offset?: number; 
+  }) => {
     try {
-      const response = await realApiService.admin.getUnverifiedClients();
+      const response = await realApiService.admin.getUnverifiedClients(params);
       if (response.success && response.data) {
         return response.data;
       }

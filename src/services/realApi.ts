@@ -461,8 +461,24 @@ export const realApiService = {
       return response.data;
     },
 
-    getUnverifiedClients: async (): Promise<ApiResponse<{ clients: Client[] }>> => {
-      const response = await api.get('/admin/clients/unverified');
+    getUnverifiedClients: async (params?: { 
+      limit?: number; 
+      offset?: number; 
+    }): Promise<ApiResponse<{ 
+      clients: Client[]; 
+      stats: any; 
+      pagination: { 
+        limit: number; 
+        offset: number; 
+        total: number; 
+      } 
+    }>> => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.offset) queryParams.append('offset', params.offset.toString());
+      
+      const url = `/admin/clients/unverified${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await api.get(url);
       return response.data;
     },
 
