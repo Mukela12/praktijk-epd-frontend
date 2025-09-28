@@ -1,4 +1,4 @@
-// Custom React hook for CSV import functionality
+/// Custom React hook for CSV import functionality
 // Integrates with verified backend API endpoints at Railway production URL
 
 import { useState, useCallback } from 'react';
@@ -41,9 +41,13 @@ export const useCSVImport = () => {
             return;
           }
 
-          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          // Detect delimiter (comma or semicolon)
+          const firstLine = lines[0];
+          const delimiter = firstLine.includes(';') ? ';' : ',';
+
+          const headers = lines[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
           const rows = lines.slice(1, Math.min(6, lines.length)) // Show first 5 rows
-            .map(line => line.split(',').map(cell => cell.trim().replace(/"/g, '')));
+            .map(line => line.split(delimiter).map(cell => cell.trim().replace(/"/g, '')));
 
           resolve({
             headers,
@@ -108,13 +112,14 @@ export const useCSVImport = () => {
   }, [parseCSVFile, autoDetectMappings]);
 
   // Upload CSV file and start import process
-  const uploadCSV = useCallback(async (file: File, type: ImportType, customMapping?: ColumnMapping) => {
+  const uploadCSV = useCallback(async (file: File, type: ImportType, customMapping?: ColumnMapping, skipDuplicates: boolean = true) => {
     setImportStatus('uploading');
     setError(null);
     
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
+    formData.append('skipDuplicates', skipDuplicates.toString());
     
     // Include custom column mappings if provided
     if (customMapping && Object.keys(customMapping).length > 0) {
@@ -122,13 +127,20 @@ export const useCSVImport = () => {
     }
 
     try {
+      // Create AbortController for 3-minute timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes
+
       const response = await fetch(`${API_BASE_URL}/admin/import/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
         },
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Upload failed: ${response.status}`);
@@ -144,7 +156,11 @@ export const useCSVImport = () => {
         setImportStatus('error');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Upload timed out after 3 minutes. Please try with a smaller file or contact support.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Upload failed');
+      }
       setImportStatus('error');
     }
   }, [getAuthToken]);

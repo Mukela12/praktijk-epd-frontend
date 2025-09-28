@@ -40,6 +40,7 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showImportSection, setShowImportSection] = useState(false);
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (file: File) => {
@@ -51,7 +52,7 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({
     if (!selectedFile || !canUpload) return;
     
     try {
-      await uploadCSV(selectedFile, type, columnMapping);
+      await uploadCSV(selectedFile, type, columnMapping, skipDuplicates);
     } catch (error) {
       console.error('Import failed:', error);
     }
@@ -162,37 +163,57 @@ export const CSVImportSection: React.FC<CSVImportSectionProps> = ({
             />
           )}
 
-          {/* Step 3: Import Actions */}
+          {/* Step 3: Import Options & Actions */}
           {csvPreview && (
-            <div className="flex justify-between items-center mt-6 pt-6 border-t">
-              <div className="text-sm text-gray-600">
-                Ready to import {csvPreview.totalRows} {type} with {Object.keys(columnMapping).length} mapped fields
+            <div className="mt-6 pt-6 border-t">
+              {/* Import Options */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Import Options</h4>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={skipDuplicates}
+                    onChange={(e) => setSkipDuplicates(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span>Skip duplicate emails (recommended)</span>
+                  <span className="text-gray-500">
+                    - Skip {type} with existing email addresses instead of failing the import
+                  </span>
+                </label>
               </div>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCancel}
-                  className="btn-secondary"
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleStartImport}
-                  disabled={!canUpload || isProcessing}
-                  className="btn-premium-primary flex items-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                      Starting Import...
-                    </>
-                  ) : (
-                    <>
-                      🚀 Start Import
-                    </>
-                  )}
-                </button>
+
+              {/* Summary & Actions */}
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Ready to import {csvPreview.totalRows} {type} with {Object.keys(columnMapping).length} mapped fields
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCancel}
+                    className="btn-secondary"
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleStartImport}
+                    disabled={!canUpload || isProcessing}
+                    className="btn-premium-primary flex items-center gap-2"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                        Starting Import...
+                      </>
+                    ) : (
+                      <>
+                         Start Import
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
