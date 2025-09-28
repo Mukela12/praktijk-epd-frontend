@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { realApiService } from '@/services/realApi';
 import { useAlert } from '@/components/ui/CustomAlert';
 import { handleApiError } from '@/utils/apiErrorHandler';
@@ -116,6 +116,10 @@ export const useClientContext = () => {
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { success, error: errorAlert } = useAlert();
   
+  // Memoize alert functions to prevent unnecessary re-renders
+  const stableErrorAlert = useCallback(errorAlert, [errorAlert]);
+  const stableSuccessAlert = useCallback(success, [success]);
+  
   // State
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -126,13 +130,16 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   
   // Filters and Pagination
-  const [filters, setFiltersState] = useState<ClientFilters>({
+  const [filtersState, setFiltersState] = useState<ClientFilters>({
     search: '',
     status: [],
     therapist: 'all',
     intakeCompleted: 'all',
     hasUpcomingAppointments: 'all'
   });
+
+  // Memoize filters object to prevent unnecessary loadClients calls
+  const filters = useMemo(() => filtersState, [filtersState.search, filtersState.status, filtersState.therapist, filtersState.intakeCompleted, filtersState.hasUpcomingAppointments]);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
@@ -185,11 +192,11 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (err) {
       const apiError = handleApiError(err);
       setError(apiError.message);
-      errorAlert(apiError.message);
+      stableErrorAlert(apiError.message);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, filters, errorAlert]);
+  }, [currentPage, pageSize, filters, stableErrorAlert]);
   
   // Load client details
   const loadClientDetails = useCallback(async (clientId: string) => {
@@ -203,11 +210,11 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } catch (err) {
       const apiError = handleApiError(err);
-      errorAlert(apiError.message);
+      stableErrorAlert(apiError.message);
     } finally {
       setLoading(false);
     }
-  }, [errorAlert]);
+  }, [stableErrorAlert]);
   
   // Load therapists
   const loadTherapists = useCallback(async () => {
@@ -229,7 +236,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const response = await realApiService.admin.createClient(data);
       
       if (response.success) {
-        success('Client created successfully');
+        stableSuccessAlert('Client created successfully');
         await loadClients();
         return true;
       }
@@ -250,7 +257,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const response = await realApiService.admin.updateClient(clientId, data);
       
       if (response.success) {
-        success('Client updated successfully');
+        stableSuccessAlert('Client updated successfully');
         await loadClients();
         if (selectedClient?.id === clientId) {
           await loadClientDetails(clientId);
@@ -274,7 +281,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const response = await realApiService.admin.deleteClient(clientId);
       
       if (response.success) {
-        success('Client deleted successfully');
+        stableSuccessAlert('Client deleted successfully');
         await loadClients();
         return true;
       }
@@ -299,7 +306,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
       
       if (response.success) {
-        success('Therapist assigned successfully');
+        stableSuccessAlert('Therapist assigned successfully');
         await loadClients();
         return true;
       }
@@ -318,7 +325,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       setLoading(true);
       // TODO: Implement bulk status update endpoint
-      success(`${clientIds.length} clients updated successfully`);
+      stableSuccessAlert(`${clientIds.length} clients updated successfully`);
       await loadClients();
       setSelectedIds(new Set());
       setSelectAll(false);
