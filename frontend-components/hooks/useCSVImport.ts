@@ -119,7 +119,7 @@ export const useCSVImport = () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
-    formData.append('skipDuplicates', skipDuplicates.toString());
+    formData.append('skipDuplicates', skipDuplicates ? 'true' : 'false');
     
     // Include custom column mappings if provided
     if (customMapping && Object.keys(customMapping).length > 0) {
