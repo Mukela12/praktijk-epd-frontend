@@ -437,6 +437,45 @@ export const realApiService = {
       return response.data;
     },
 
+    // Client activation management (✅ NEW)
+    sendActivationEmail: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/admin/activate-client/${clientId}`, {
+        sendEmail: true,
+        regeneratePassword: false
+      });
+      return response.data;
+    },
+
+    sendBulkActivationEmails: async (clientIds: string[], options?: {
+      batchSize?: number;
+      delayBetweenBatches?: number;
+      regeneratePasswords?: boolean;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.post('/admin/activate-clients/bulk', {
+        clientIds,
+        sendEmails: true,
+        batchSize: options?.batchSize || 10,
+        delayBetweenBatches: options?.delayBetweenBatches || 2000,
+        regeneratePasswords: options?.regeneratePasswords || false
+      });
+      return response.data;
+    },
+
+    getUnverifiedClients: async (): Promise<ApiResponse<{ clients: Client[] }>> => {
+      const response = await api.get('/admin/clients/unverified');
+      return response.data;
+    },
+
+    getActivationStats: async (): Promise<ApiResponse<any>> => {
+      const response = await api.get('/admin/activation-stats');
+      return response.data;
+    },
+
+    resendVerificationEmail: async (clientId: string): Promise<ApiResponse<any>> => {
+      const response = await api.post(`/admin/resend-verification/${clientId}`);
+      return response.data;
+    },
+
     // Therapist management (✅ WORKING)
     getTherapists: async (params?: any): Promise<ApiResponse<{ therapists: Therapist[]; pagination?: any }>> => {
       const response = await api.get('/admin/therapists', { params });

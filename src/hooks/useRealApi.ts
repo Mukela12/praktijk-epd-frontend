@@ -553,6 +553,82 @@ export function useRealApi() {
     }
   }, []);
 
+  // Client activation functions
+  const sendClientActivationEmail = useCallback(async (clientId: string) => {
+    try {
+      const response = await realApiService.admin.sendActivationEmail(clientId);
+      if (response.success) {
+        toast.success('Activation email sent successfully');
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to send activation email');
+    } catch (error) {
+      console.error('Failed to send activation email:', error);
+      toast.error('Failed to send activation email');
+      throw error;
+    }
+  }, []);
+
+  const sendBulkActivationEmails = useCallback(async (clientIds: string[], options?: {
+    batchSize?: number;
+    delayBetweenBatches?: number;
+    regeneratePasswords?: boolean;
+  }) => {
+    try {
+      const response = await realApiService.admin.sendBulkActivationEmails(clientIds, options);
+      if (response.success) {
+        toast.success(`Activation emails sent to ${clientIds.length} clients`);
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to send bulk activation emails');
+    } catch (error) {
+      console.error('Failed to send bulk activation emails:', error);
+      toast.error('Failed to send bulk activation emails');
+      throw error;
+    }
+  }, []);
+
+  const getUnverifiedClients = useCallback(async () => {
+    try {
+      const response = await realApiService.admin.getUnverifiedClients();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch unverified clients');
+    } catch (error) {
+      console.error('Failed to fetch unverified clients:', error);
+      throw error;
+    }
+  }, []);
+
+  const getActivationStats = useCallback(async () => {
+    try {
+      const response = await realApiService.admin.getActivationStats();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to fetch activation stats');
+    } catch (error) {
+      console.error('Failed to fetch activation stats:', error);
+      throw error;
+    }
+  }, []);
+
+  const resendVerificationEmail = useCallback(async (clientId: string) => {
+    try {
+      const response = await realApiService.admin.resendVerificationEmail(clientId);
+      if (response.success) {
+        toast.success('Verification email resent successfully');
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to resend verification email');
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      toast.error('Failed to resend verification email');
+      throw error;
+    }
+  }, []);
+
   return {
     // Admin functions
     getAdminClients,
@@ -595,6 +671,13 @@ export function useRealApi() {
     
     // Common hooks
     useMessages,
+    
+    // Client activation functions
+    sendClientActivationEmail,
+    sendBulkActivationEmails,
+    getUnverifiedClients,
+    getActivationStats,
+    resendVerificationEmail,
     
     // Utility hooks
     useApiCall,

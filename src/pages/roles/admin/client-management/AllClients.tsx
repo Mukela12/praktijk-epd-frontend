@@ -26,6 +26,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DocumentArrowUpIcon,
+  EnvelopeIcon,
+  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useRealApi } from '@/hooks/useRealApi';
@@ -40,6 +42,7 @@ import ClientDetail from './ClientDetail';
 import ClientEdit from './ClientEdit';
 import CreateClient from './CreateClient';
 import { CSVImportSection } from '@/components/admin/csv-import';
+import ClientActivationScreen from '@/components/admin/client-activation/ClientActivationScreen';
 
 interface Client {
   id: string;
@@ -71,18 +74,21 @@ interface ClientStats {
   activeClients: number;
   assignedClients: number;
   intakeCompletedClients: number;
+  unverifiedClients?: number;
   byStatus: Record<string, number>;
 }
 
 const AllClients: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { getAdminClients, getAdminClientStats, deleteUser, updateUser, getAdminDashboard } = useRealApi();
+  const { getAdminClients, getAdminClientStats, deleteUser, updateUser, getAdminDashboard, sendClientActivationEmail, getActivationStats } = useRealApi();
 
   // State
   const [clients, setClients] = useState<Client[]>([]);
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedTherapist, setSelectedTherapist] = useState<string>('all');
@@ -100,8 +106,9 @@ const AllClients: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState(''); // For API calls
   
   // View state management
-  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'edit' | 'create' | 'csv-import'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'detail' | 'edit' | 'create' | 'csv-import' | 'client-activation'>('list');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [sendingActivationEmail, setSendingActivationEmail] = useState<string | null>(null);
 
   // Debounce search input for performance
   useEffect(() => {
@@ -117,6 +124,7 @@ const AllClients: React.FC = () => {
   const loadClients = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
       // Load clients
       const clientsResponse = await getAdminClients({
@@ -140,19 +148,36 @@ const AllClients: React.FC = () => {
         setTotalPages(Math.ceil(total / 20));
       }
 
-      // Load stats from dashboard data
+      // Load stats from dashboard data and activation stats
       try {
-        const dashboardResponse = await getAdminDashboard();
+        setIsLoadingStats(true);
+        const [dashboardResponse, activationStatsResponse] = await Promise.all([
+          getAdminDashboard(),
+          getActivationStats()
+        ]);
+        
         console.log('Dashboard response:', dashboardResponse);
+        console.log('Activation stats response:', activationStatsResponse);
+        
         if (dashboardResponse && dashboardResponse.clientStats) {
-          setStats(dashboardResponse.clientStats);
+          const combinedStats = {
+            ...dashboardResponse.clientStats,
+            unverifiedClients: activationStatsResponse?.unverifiedClients || 0
+          };
+          setStats(combinedStats);
         }
-      } catch (error) {
-        console.error('Failed to load stats:', error);
-        // Continue without stats
+      } catch (statsError) {
+        console.error('Failed to load stats:', statsError);
+        // Show a non-blocking error message for stats
+        toast.error('Some statistics could not be loaded', { duration: 2000 });
+      } finally {
+        setIsLoadingStats(false);
       }
-    } catch (error) {
-      toast.error('Failed to load clients');
+    } catch (error: any) {
+      console.error('Failed to load clients:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load clients';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -304,6 +329,19 @@ const AllClients: React.FC = () => {
     loadClients(); // Refresh list after CSV import
   };
 
+  const handleSendActivationEmail = async (client: Client) => {
+    try {
+      setSendingActivationEmail(client.id);
+      await sendClientActivationEmail(client.id);
+      // Optionally refresh client data to update email_verified status
+      loadClients();
+    } catch (error) {
+      console.error('Failed to send activation email:', error);
+    } finally {
+      setSendingActivationEmail(null);
+    }
+  };
+
   // Render detail view
   if (viewMode === 'detail' && selectedClient) {
     return (
@@ -375,6 +413,37 @@ const AllClients: React.FC = () => {
     );
   }
 
+  // Render client activation view
+  if (viewMode === 'client-activation') {
+    return (
+      <PageTransition>
+        <ClientActivationScreen onBack={handleBackToList} />
+      </PageTransition>
+    );
+  }
+
+  // Show error state if clients failed to load
+  if (error && !isLoading) {
+    return (
+      <PageTransition>
+        <div className="flex flex-col items-center justify-center h-96 space-y-4">
+          <ExclamationCircleIcon className="w-16 h-16 text-red-500" />
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Clients</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => loadClients()}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ArrowPathIcon className="w-4 h-4 mr-2" />
+              Try Again
+            </button>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
   // Render list view
   return (
     <PageTransition>
@@ -401,6 +470,13 @@ const AllClients: React.FC = () => {
                   Import from CSV
                 </button>
                 <button
+                  onClick={() => setViewMode('client-activation')}
+                  className="inline-flex items-center px-5 py-3 bg-white/10 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-white/20 transition-all transform hover:scale-105 border border-white/20"
+                >
+                  <EnvelopeIcon className="w-5 h-5 mr-2" />
+                  Client Activation
+                </button>
+                <button
                   onClick={() => setViewMode('create')}
                   className="inline-flex items-center px-5 py-3 bg-white text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-all transform hover:scale-105 shadow-md"
                 >
@@ -412,57 +488,92 @@ const AllClients: React.FC = () => {
           </div>
 
           {/* Statistics */}
-          {stats && (
-            <div className="px-6 pb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white/80">Total Clients</p>
-                    <p className="text-3xl font-bold text-white">{stats.totalClients}</p>
-                  </div>
-                  <div className="bg-white/20 p-3 rounded-lg">
-                    <UserIcon className="w-6 h-6 text-white" />
+          <div className="px-6 pb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+            {isLoadingStats ? (
+              // Loading skeletons for statistics
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="h-4 bg-white/20 rounded w-20 mb-2 animate-pulse"></div>
+                      <div className="h-8 bg-white/20 rounded w-12 animate-pulse"></div>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <div className="w-6 h-6 bg-white/20 rounded animate-pulse"></div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))
+            ) : stats ? (
+              // Actual statistics
+              <>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/80">Total Clients</p>
+                      <p className="text-3xl font-bold text-white">{stats.totalClients}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <UserIcon className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white/80">Active Clients</p>
-                    <p className="text-3xl font-bold text-white">{stats.activeClients}</p>
-                  </div>
-                  <div className="bg-white/20 p-3 rounded-lg">
-                    <CheckCircleIcon className="w-6 h-6 text-white" />
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/80">Active Clients</p>
+                      <p className="text-3xl font-bold text-white">{stats.activeClients}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <CheckCircleIcon className="w-6 h-6 text-white" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white/80">Assigned</p>
-                    <p className="text-3xl font-bold text-white">{stats.assignedClients}</p>
-                  </div>
-                  <div className="bg-white/20 p-3 rounded-lg">
-                    <UserIcon className="w-6 h-6 text-white" />
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/80">Assigned</p>
+                      <p className="text-3xl font-bold text-white">{stats.assignedClients}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <UserIcon className="w-6 h-6 text-white" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white/80">Intake Done</p>
-                    <p className="text-3xl font-bold text-white">{stats.intakeCompletedClients}</p>
-                  </div>
-                  <div className="bg-white/20 p-3 rounded-lg">
-                    <DocumentTextIcon className="w-6 h-6 text-white" />
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/80">Intake Done</p>
+                      <p className="text-3xl font-bold text-white">{stats.intakeCompletedClients}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <DocumentTextIcon className="w-6 h-6 text-white" />
+                    </div>
                   </div>
                 </div>
+
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/80">Unverified</p>
+                      <p className="text-3xl font-bold text-white">{stats.unverifiedClients || 0}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-lg">
+                      <ExclamationCircleIcon className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Fallback when stats fail to load
+              <div className="col-span-full text-center py-8">
+                <p className="text-white/60 text-sm">Statistics unavailable</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Filters and Search */}
@@ -750,7 +861,22 @@ const AllClients: React.FC = () => {
                           <p className="text-sm font-semibold text-gray-900 hover:text-blue-600 cursor-pointer">
                             {client.first_name} {client.last_name}
                           </p>
-                          <p className="text-sm text-gray-500 mt-0.5">{client.email}</p>
+                          <div className="flex items-center mt-0.5">
+                            <p className="text-sm text-gray-500">{client.email}</p>
+                            <div className="ml-2">
+                              {client.email_verified ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                  <CheckCircleIcon className="w-3 h-3 mr-1" />
+                                  Verified
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                  <ExclamationCircleIcon className="w-3 h-3 mr-1" />
+                                  Unverified
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -873,6 +999,31 @@ const AllClients: React.FC = () => {
                                     </button>
                                   )}
                                 </Menu.Item>
+                              )}
+                              
+                              {/* Send Activation Email option for unverified clients */}
+                              {!client.email_verified && (
+                                <>
+                                  <div className="h-px bg-gray-200 my-1" />
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handleSendActivationEmail(client)}
+                                        disabled={sendingActivationEmail === client.id}
+                                        className={`${active ? 'bg-gray-100' : ''} flex items-center px-4 py-2 text-sm text-gray-700 w-full ${
+                                          sendingActivationEmail === client.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
+                                      >
+                                        {sendingActivationEmail === client.id ? (
+                                          <div className="w-4 h-4 mr-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <EnvelopeIcon className="w-4 h-4 mr-3" />
+                                        )}
+                                        Send Activation Email
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                </>
                               )}
                               
                               <div className="h-px bg-gray-200 my-1" />
