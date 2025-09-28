@@ -122,7 +122,7 @@ export const useCSVImport = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/csv-import/upload`, {
+      const response = await fetch(`${API_BASE_URL}/admin/import/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${getAuthToken()}`,
@@ -153,7 +153,7 @@ export const useCSVImport = () => {
   const pollProgress = useCallback(async (importId: string) => {
     const poll = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/csv-import/progress/${importId}`, {
+        const response = await fetch(`${API_BASE_URL}/admin/import/progress/${importId}`, {
           headers: { 
             'Authorization': `Bearer ${getAuthToken()}`,
             'Content-Type': 'application/json'

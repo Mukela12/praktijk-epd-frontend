@@ -315,14 +315,14 @@ export const adminApi = {
 
   // CSV Import
   importCSV: async (formData: FormData): Promise<ApiResponse<{ importId: string; message: string }>> => {
-    const response = await api.post('/api/csv-import/upload', formData, {
+    const response = await api.post('/admin/import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   },
 
   getImportProgress: async (importId: string): Promise<ApiResponse<any>> => {
-    const response = await api.get(`/api/csv-import/progress/${importId}`);
+    const response = await api.get(`/admin/import/progress/${importId}`);
     return response.data;
   }
 };
