@@ -561,6 +561,77 @@ export const realApiService = {
       return response.data;
     },
 
+    // Get therapist hulpvragen expertise (Admin)
+    getTherapistHulpvragen: async (therapistId: string): Promise<ApiResponse<{
+      therapist: { id: string; name: string };
+      expertise: Array<{
+        problem_category: string;
+        expertise_level: number;
+        years_experience: number;
+        success_rate?: number;
+        problem_name: string;
+        problem_description: string;
+        problem_name_en?: string;
+        problem_description_en?: string;
+      }>;
+      availableHulpvragen: Array<{
+        name: string;
+        name_en?: string;
+        description: string;
+        description_en?: string;
+        category: string;
+        is_active: boolean;
+      }>;
+    }>> => {
+      const response = await api.get(`/admin/therapists/${therapistId}/hulpvragen`);
+      return response.data;
+    },
+
+    // Update therapist hulpvragen expertise (Admin)
+    updateTherapistHulpvragen: async (therapistId: string, hulpvragenExpertise: Array<{
+      problem_category: string;
+      expertise_level: number;
+      years_experience?: number;
+      success_rate?: number;
+    }>): Promise<ApiResponse<{ therapistId: string; updatedExpertise: number }>> => {
+      const response = await api.put(`/admin/therapists/${therapistId}/hulpvragen`, { hulpvragenExpertise });
+      return response.data;
+    },
+
+    // Auto-matching system management (Admin)
+    getAutoMatchingStatus: async (): Promise<ApiResponse<{
+      autoMatchingEnabled: boolean;
+      statistics: {
+        pendingRequests: number;
+        totalAssignments: number;
+        recentAssignments: number;
+      };
+    }>> => {
+      const response = await api.get('/admin/auto-matching-status');
+      return response.data;
+    },
+
+    toggleAutoMatching: async (enabled: boolean): Promise<ApiResponse<{ autoMatchingEnabled: boolean }>> => {
+      const response = await api.post('/admin/toggle-auto-matching', { enabled });
+      return response.data;
+    },
+
+    processAutoAssignments: async (): Promise<ApiResponse<{
+      processed: number;
+      assigned: number;
+      minThreshold: number;
+      assignments: Array<{
+        requestId: string;
+        clientName: string;
+        therapistName: string;
+        score: number;
+        hulpvragen: string[];
+      }>;
+    }>> => {
+      const response = await api.post('/admin/process-auto-assignments');
+      return response.data;
+    },
+
     // Waiting list (✅ WORKING)
     getWaitingList: async (params?: any): Promise<ApiResponse<{ waitingList: any[]; total: number }>> => {
       const response = await api.get('/admin/waiting-list', { params });

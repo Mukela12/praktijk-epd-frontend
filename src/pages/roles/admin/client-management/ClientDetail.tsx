@@ -59,10 +59,12 @@ const ClientDetail: React.FC<ClientDetailProps> = ({ clientId, onBack, onEdit })
     try {
       setSendingActivationEmail(true);
       await sendClientActivationEmail(clientId);
+      toast.success(`Activation email sent to ${client.first_name} ${client.last_name}`);
       // Refresh client data to update email_verified status
       await loadClientDetails();
     } catch (error) {
       console.error('Failed to send activation email:', error);
+      toast.error(`Failed to send activation email to ${client.first_name} ${client.last_name}`);
     } finally {
       setSendingActivationEmail(false);
     }

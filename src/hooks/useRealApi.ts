@@ -558,13 +558,11 @@ export function useRealApi() {
     try {
       const response = await realApiService.admin.sendActivationEmail(clientId);
       if (response.success) {
-        toast.success('Activation email sent successfully');
         return response.data;
       }
       throw new Error(response.message || 'Failed to send activation email');
     } catch (error) {
       console.error('Failed to send activation email:', error);
-      toast.error('Failed to send activation email');
       throw error;
     }
   }, []);

@@ -7,6 +7,7 @@ import OverviewTab from './OverviewTab';
 import ClientsTab from './ClientsTab';
 import ScheduleTab from './ScheduleTab';
 import ActivityTab from './ActivityTab';
+import HulpvragenTab from './HulpvragenTab';
 import { realApiService } from '@/services/realApi';
 import { useNotifications } from '@/components/ui/NotificationProvider';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -150,6 +151,7 @@ const TherapistProfile: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && <OverviewTab therapist={therapist} />}
         {activeTab === 'clients' && <ClientsTab therapistId={therapist.id} />}
+        {activeTab === 'hulpvragen' && <HulpvragenTab therapistId={therapist.id} therapistName={`${therapist.first_name} ${therapist.last_name}`} />}
         {activeTab === 'schedule' && <ScheduleTab therapistId={therapist.id} />}
         {activeTab === 'activity' && <ActivityTab therapistId={therapist.id} />}
       </div>

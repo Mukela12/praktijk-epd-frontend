@@ -17,6 +17,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
+import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
 
 interface Therapist {
   id: string;
@@ -46,6 +47,7 @@ const BookAppointment: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
+  const [selectedHulpvragen, setSelectedHulpvragen] = useState<string[]>([]);
   const [urgency, setUrgency] = useState<'normal' | 'urgent'>('normal');
   const [preferredTherapist, setPreferredTherapist] = useState<string>('');
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -162,7 +164,7 @@ const BookAppointment: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime || !problemDescription) {
+    if (!selectedDate || !selectedTime || selectedHulpvragen.length === 0) {
       errorAlert(t('validation.fillRequiredFields'));
       return;
     }
@@ -174,7 +176,9 @@ const BookAppointment: React.FC = () => {
         preferredTime: selectedTime,
         therapyType: urgency === 'urgent' ? 'emergency' : 'regular', // Map urgency to therapy type
         urgencyLevel: urgency,
-        reason: problemDescription
+        hulpvragen: selectedHulpvragen,
+        reason: problemDescription || '', // Optional additional description
+        problemDescription: problemDescription || '' // Backward compatibility
       };
 
       const response = await realApiService.client.requestAppointment(requestData);
@@ -438,20 +442,30 @@ const BookAppointment: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.describeYourNeeds')}</h3>
               
+              {/* Hulpvragen Selector */}
+              <div className="mb-6">
+                <HulpvragenSelector
+                  value={selectedHulpvragen}
+                  onChange={setSelectedHulpvragen}
+                  maxSelection={5}
+                  required={true}
+                />
+              </div>
+
+              {/* Optional additional description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('appointments.whatToDiscuss')} *
+                  {t('appointments.additionalInfo')} (optioneel)
                 </label>
                 <textarea
                   value={problemDescription}
                   onChange={(e) => setProblemDescription(e.target.value)}
-                  rows={6}
-                  placeholder={t('appointments.descriptionPlaceholder')}
+                  rows={4}
+                  placeholder={t('appointments.additionalDetailsPlaceholder')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  {t('appointments.helpsTherapistPrepare')}
+                  {t('appointments.optionalAdditionalInfo')}
                 </p>
               </div>
 
@@ -508,8 +522,20 @@ const BookAppointment: React.FC = () => {
                 )}
                 
                 <div className="py-3">
-                  <span className="text-sm text-gray-600 block mb-2">{t('appointments.description')}</span>
-                  <p className="text-gray-900">{problemDescription}</p>
+                  <span className="text-sm text-gray-600 block mb-2">{t('appointments.selectedConcerns')}</span>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedHulpvragen.map((hulpvraag, index) => (
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200">
+                        {hulpvraag}
+                      </span>
+                    ))}
+                  </div>
+                  {problemDescription && (
+                    <>
+                      <span className="text-sm text-gray-600 block mb-2">{t('appointments.additionalInfo')}</span>
+                      <p className="text-gray-900">{problemDescription}</p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -662,8 +688,8 @@ const BookAppointment: React.FC = () => {
                     errorAlert(t('appointments.selectDateTimeError'));
                     return;
                   }
-                  if (step === 2 && !problemDescription) {
-                    errorAlert(t('appointments.describeNeeds'));
+                  if (step === 2 && selectedHulpvragen.length === 0) {
+                    errorAlert(t('appointments.selectConcerns'));
                     return;
                   }
                   setStep(step + 1);

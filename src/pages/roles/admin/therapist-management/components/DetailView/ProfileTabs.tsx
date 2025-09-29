@@ -3,7 +3,8 @@ import {
   InformationCircleIcon,
   UserGroupIcon,
   CalendarDaysIcon,
-  ClockIcon
+  ClockIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 
 interface ProfileTabsProps {
@@ -16,6 +17,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({ activeTab, onTabChange, thera
   const tabs = [
     { id: 'overview', name: 'Overview', icon: InformationCircleIcon },
     { id: 'clients', name: 'Clients', icon: UserGroupIcon },
+    { id: 'hulpvragen', name: 'Hulpvragen', icon: AcademicCapIcon },
     { id: 'schedule', name: 'Schedule', icon: CalendarDaysIcon },
     { id: 'activity', name: 'Activity', icon: ClockIcon },
   ];

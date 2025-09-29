@@ -332,10 +332,12 @@ const AllClients: React.FC = () => {
     try {
       setSendingActivationEmail(client.id);
       await sendClientActivationEmail(client.id);
+      toast.success(`Activation email sent to ${client.first_name} ${client.last_name}`);
       // Optionally refresh client data to update email_verified status
       loadClients();
     } catch (error) {
       console.error('Failed to send activation email:', error);
+      toast.error(`Failed to send activation email to ${client.first_name} ${client.last_name}`);
     } finally {
       setSendingActivationEmail(null);
     }
