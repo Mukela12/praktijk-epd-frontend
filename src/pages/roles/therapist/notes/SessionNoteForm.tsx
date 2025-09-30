@@ -34,6 +34,11 @@ interface SessionNoteFormData {
   private_notes: string;
   tags: string[];
   is_important: boolean;
+  hulpvragen_progress?: Record<string, {
+    discussed: boolean;
+    progress: number;
+    notes: string;
+  }>;
 }
 
 const SessionNoteForm: React.FC = () => {
@@ -62,7 +67,8 @@ const SessionNoteForm: React.FC = () => {
     progress_notes: '',
     private_notes: '',
     tags: [],
-    is_important: false
+    is_important: false,
+    hulpvragen_progress: {}
   });
 
   const [newTag, setNewTag] = useState('');
@@ -91,7 +97,14 @@ const SessionNoteForm: React.FC = () => {
       if (isEditMode) {
         const noteResponse = await therapistApi.getSessionNote(noteId);
         if (noteResponse.success && noteResponse.data) {
-          setFormData(noteResponse.data);
+          const noteData = noteResponse.data;
+          
+          // Map progressIndicators back to hulpvragen_progress for frontend
+          if (noteData.progressIndicators?.hulpvragen_progress) {
+            noteData.hulpvragen_progress = noteData.progressIndicators.hulpvragen_progress;
+          }
+          
+          setFormData(noteData);
         }
       }
     } catch (error) {
@@ -118,13 +131,20 @@ const SessionNoteForm: React.FC = () => {
     try {
       setIsSaving(true);
       
-      // Clean up empty array items
+      // Clean up empty array items and map hulpvragen_progress to progressIndicators
       const cleanedData = {
         ...formData,
         key_points: formData.key_points.filter(p => p.trim()),
         interventions: formData.interventions.filter(i => i.trim()),
-        homework: formData.homework.filter(h => h.trim())
+        homework: formData.homework.filter(h => h.trim()),
+        // Map hulpvragen_progress to progressIndicators for backend compatibility
+        progressIndicators: formData.hulpvragen_progress ? {
+          hulpvragen_progress: formData.hulpvragen_progress
+        } : {}
       };
+      
+      // Remove hulpvragen_progress from data sent to backend
+      delete cleanedData.hulpvragen_progress;
 
       let response;
       if (isEditMode) {
@@ -229,7 +249,29 @@ const SessionNoteForm: React.FC = () => {
                 </label>
                 <select
                   value={formData.client_id}
-                  onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                  onChange={(e) => {
+                    const clientId = e.target.value;
+                    const selectedClient = clients.find(c => c.id === clientId);
+                    
+                    // Initialize hulpvragen progress tracking
+                    let hulpvragenProgress = {};
+                    if (selectedClient?.hulpvragen) {
+                      hulpvragenProgress = selectedClient.hulpvragen.reduce((acc: any, hulpvraag: string) => {
+                        acc[hulpvraag] = {
+                          discussed: false,
+                          progress: 0,
+                          notes: ''
+                        };
+                        return acc;
+                      }, {});
+                    }
+                    
+                    setFormData({ 
+                      ...formData, 
+                      client_id: clientId,
+                      hulpvragen_progress: hulpvragenProgress
+                    });
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-600"
                   required
                 >
@@ -307,6 +349,183 @@ const SessionNoteForm: React.FC = () => {
               </label>
             </div>
           </div>
+
+          {/* Client Treatment Context */}
+          {formData.client_id && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-blue-900 mb-4">Client Treatment Context</h2>
+              {(() => {
+                const selectedClient = clients.find(c => c.id === formData.client_id);
+                if (!selectedClient) return null;
+                
+                return (
+                  <div className="space-y-4">
+                    {selectedClient.hulpvragen && selectedClient.hulpvragen.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-blue-700 mb-2">
+                          Client's Selected Concerns (Hulpvragen):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedClient.hulpvragen.map((hulpvraag: string, index: number) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-200 text-blue-900"
+                            >
+                              {hulpvraag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedClient.problem_description && (
+                      <div>
+                        <p className="text-sm font-medium text-blue-700 mb-2">
+                          Initial Problem Description:
+                        </p>
+                        <p className="text-sm text-blue-800 bg-blue-100 rounded-lg p-3">
+                          {selectedClient.problem_description}
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedClient.urgency_level && (
+                        <div>
+                          <p className="text-sm font-medium text-blue-700">Urgency Level:</p>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            selectedClient.urgency_level === 'emergency' 
+                              ? 'bg-red-100 text-red-800' 
+                              : selectedClient.urgency_level === 'urgent'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {selectedClient.urgency_level.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {selectedClient.requested_therapy_type && (
+                        <div>
+                          <p className="text-sm font-medium text-blue-700">Requested Therapy Type:</p>
+                          <p className="text-sm text-blue-800 capitalize">
+                            {selectedClient.requested_therapy_type.replace('_', ' ')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Hulpvragen Progress Tracking */}
+          {formData.client_id && formData.hulpvragen_progress && Object.keys(formData.hulpvragen_progress).length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-green-900 mb-4">Hulpvragen Progress Tracking</h2>
+              <p className="text-sm text-green-700 mb-4">
+                Track progress on each of the client's specific areas of concern
+              </p>
+              
+              <div className="space-y-4">
+                {Object.entries(formData.hulpvragen_progress).map(([hulpvraag, progress]) => (
+                  <div key={hulpvraag} className="bg-white rounded-lg p-4 border border-green-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-medium text-green-900">{hulpvraag}</h3>
+                      <label className="flex items-center text-sm">
+                        <input
+                          type="checkbox"
+                          checked={progress.discussed}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              hulpvragen_progress: {
+                                ...formData.hulpvragen_progress,
+                                [hulpvraag]: {
+                                  ...progress,
+                                  discussed: e.target.checked
+                                }
+                              }
+                            });
+                          }}
+                          className="w-4 h-4 text-green-600 rounded focus:ring-green-600 mr-2"
+                        />
+                        <span className="text-green-700">Discussed in session</span>
+                      </label>
+                    </div>
+                    
+                    {progress.discussed && (
+                      <>
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-green-700 mb-2">
+                            Progress Level
+                          </label>
+                          <div className="flex items-center space-x-4">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="10"
+                              value={progress.progress}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  hulpvragen_progress: {
+                                    ...formData.hulpvragen_progress,
+                                    [hulpvraag]: {
+                                      ...progress,
+                                      progress: parseInt(e.target.value)
+                                    }
+                                  }
+                                });
+                              }}
+                              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                              style={{
+                                background: `linear-gradient(to right, #10b981 0%, #10b981 ${progress.progress}%, #e5e7eb ${progress.progress}%, #e5e7eb 100%)`
+                              }}
+                            />
+                            <span className="text-sm font-medium text-green-700 w-12 text-right">
+                              {progress.progress}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs text-green-600 mt-1">
+                            <span>No Progress</span>
+                            <span>Moderate</span>
+                            <span>Significant</span>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-green-700 mb-1">
+                            Progress Notes
+                          </label>
+                          <textarea
+                            value={progress.notes}
+                            onChange={(e) => {
+                              setFormData({
+                                ...formData,
+                                hulpvragen_progress: {
+                                  ...formData.hulpvragen_progress,
+                                  [hulpvraag]: {
+                                    ...progress,
+                                    notes: e.target.value
+                                  }
+                                }
+                              });
+                            }}
+                            rows={2}
+                            placeholder="Describe specific progress, setbacks, or observations..."
+                            className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm focus:ring-2 focus:ring-green-600/20 focus:border-green-600"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Mood Assessment */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">

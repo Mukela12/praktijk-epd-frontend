@@ -21,6 +21,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/contexts/LanguageContext';
 import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useAlert } from '@/components/ui/CustomAlert';
 import PageTransition from '@/components/ui/PageTransition';
 import { Client } from '@/types/entities';
 import { formatDate } from '@/utils/dateFormatters';
@@ -117,12 +118,42 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onSelect }) => {
             <p className="text-sm text-gray-600">{client.email}</p>
           </div>
         </div>
-        <ClientStatusBadge status={client.status} />
+        <div className="flex items-center space-x-2">
+          <ClientStatusBadge status={client.status} />
+          {client.urgency_level && client.urgency_level !== 'normal' && (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              client.urgency_level === 'emergency' 
+                ? 'bg-red-100 text-red-800' 
+                : 'bg-orange-100 text-orange-800'
+            }`}>
+              {client.urgency_level.toUpperCase()}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-3">
-        {/* Therapy Goals */}
-        {/* TODO: Add therapy goals when available in API */}
+        {/* Hulpvragen (Client Concerns) */}
+        {client.hulpvragen && client.hulpvragen.length > 0 && (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Treatment Focus Areas:</p>
+            <div className="flex flex-wrap gap-1">
+              {client.hulpvragen.slice(0, 3).map((hulpvraag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
+                  {hulpvraag}
+                </span>
+              ))}
+              {client.hulpvragen.length > 3 && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                  +{client.hulpvragen.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Session Info */}
         <div className="grid grid-cols-2 gap-4">
@@ -215,6 +246,7 @@ const StatsOverview: React.FC<{ clients: Client[] }> = ({ clients }) => {
 const ProfessionalTherapistClients: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { success, error: errorAlert, info } = useAlert();
   
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
@@ -239,26 +271,52 @@ const ProfessionalTherapistClients: React.FC = () => {
       const response = await realApiService.therapist.getClients();
       
       if (response.success) {
-        setClients((response.data || []) as unknown as Client[]);
+        const clientData = (response.data || []) as unknown as Client[];
+        setClients(clientData);
+        
+        // SUCCESS NOTIFICATION: Client data loaded with treatment context
+        if (clientData.length > 0) {
+          info(`Loaded ${clientData.length} clients with treatment context`, {
+            title: 'Client Data Updated',
+            duration: 3000
+          });
+        } else {
+          info('No clients assigned yet', {
+            title: 'Client List Empty',
+            duration: 2000
+          });
+        }
       } else {
         throw new Error('Failed to load clients');
       }
     } catch (error: any) {
       console.error('Error loading clients:', error);
       
-      // Handle specific error cases
+      // Enhanced error handling with notifications
       if (error?.response?.status === 500) {
         // Backend routing issue
         setError('Server error. Please try again later.');
         setClients([]);
+        errorAlert('The server encountered an issue. Please try again later.', {
+          title: 'Server Error Occurred',
+          duration: 6000
+        });
       } else if (error?.response?.status === 404) {
         // No clients found
         setClients([]);
         setError(null);
       } else if (error?.response?.status === 403) {
         setError('You do not have permission to view clients.');
+        errorAlert('You do not have permission to view client data.', {
+          title: 'Access Denied',
+          duration: 5000
+        });
       } else {
         setError('Failed to load clients. Please try again.');
+        errorAlert('Check your connection and try again, or contact support if the issue persists.', {
+          title: 'Failed to Load Client Data',
+          duration: 5000
+        });
       }
     } finally {
       setIsLoading(false);

@@ -38,6 +38,7 @@ interface AppointmentRequest {
   therapy_type: string;
   urgency_level: string;
   reason_for_therapy: string;
+  hulpvragen?: string[]; // Selected help questions/concerns
   preferred_therapist_id?: string;
   status: string;
   created_at: string;
@@ -58,6 +59,25 @@ interface SmartPairingRecommendation {
   match_score: number;
   reasons: string[];
   availability: boolean;
+  factors?: {
+    availability: number;
+    hulpvragen: number;
+    specialization: number;
+    experience: number;
+    successRate: number;
+    distance: number;
+    language: number;
+    gender: number;
+  };
+  details?: {
+    specializations: string[];
+    hulpvragenExpertise: any[];
+    availableSlots: any[];
+    languages: string[];
+    yearsExperience: number;
+    totalClients: number;
+    successRate: number;
+  };
 }
 
 // ViewMode is imported from InlineCrudLayout above
@@ -123,8 +143,22 @@ const AppointmentRequests: React.FC = () => {
       });
 
       if (response.success && response.data) {
-        setSmartRecommendations(response.data.recommendations || []);
+        const recommendations = response.data.recommendations || [];
+        setSmartRecommendations(recommendations);
         setShowSmartPairing(true);
+        
+        // SUCCESS NOTIFICATION: Smart pairing analysis completed
+        if (recommendations.length > 0) {
+          info(`Best match: ${recommendations[0]?.therapist_name} (${Math.round(recommendations[0]?.score || 0)}% compatibility)`, {
+            title: `Found ${recommendations.length} Therapist Matches`,
+            duration: 5000
+          });
+        } else {
+          warning('Consider manual assignment or adjusting criteria', {
+            title: 'No Optimal Matches Found',
+            duration: 4000
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load smart recommendations:', error);
@@ -242,6 +276,24 @@ const AppointmentRequests: React.FC = () => {
                         <span className="font-medium">Reason:</span> {request.reason_for_therapy}
                       </p>
                     </div>
+                    {/* Hulpvragen Display */}
+                    {request.hulpvragen && request.hulpvragen.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Selected Concerns:</span>
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {request.hulpvragen.map((hulpvraag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {hulpvraag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-500">Preferred Date & Time</p>
@@ -325,6 +377,22 @@ const AppointmentRequests: React.FC = () => {
               <p className="text-sm text-blue-700">Reason for Therapy</p>
               <p className="font-medium text-blue-900">{selectedRequest.reason_for_therapy}</p>
             </div>
+            {/* Hulpvragen Display in Detail View */}
+            {selectedRequest.hulpvragen && selectedRequest.hulpvragen.length > 0 && (
+              <div className="md:col-span-2">
+                <p className="text-sm text-blue-700">Selected Concerns (Hulpvragen)</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {selectedRequest.hulpvragen.map((hulpvraag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-200 text-blue-900"
+                    >
+                      {hulpvraag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -366,6 +434,68 @@ const AppointmentRequests: React.FC = () => {
                             <li key={idx}>{reason}</li>
                           ))}
                         </ul>
+                        
+                        {/* Detailed Matching Scores */}
+                        {rec.factors && (
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                            {rec.factors.hulpvragen > 0 && (
+                              <div className="flex justify-between">
+                                <span>Hulpvragen Match:</span>
+                                <span className="font-medium text-blue-600">{Math.round(rec.factors.hulpvragen * 100)}%</span>
+                              </div>
+                            )}
+                            {rec.factors.specialization > 0 && (
+                              <div className="flex justify-between">
+                                <span>Specialization:</span>
+                                <span className="font-medium text-green-600">{Math.round(rec.factors.specialization * 100)}%</span>
+                              </div>
+                            )}
+                            {rec.factors.availability > 0 && (
+                              <div className="flex justify-between">
+                                <span>Availability:</span>
+                                <span className="font-medium text-purple-600">{Math.round(rec.factors.availability * 100)}%</span>
+                              </div>
+                            )}
+                            {rec.factors.language > 0 && (
+                              <div className="flex justify-between">
+                                <span>Language:</span>
+                                <span className="font-medium text-orange-600">{Math.round(rec.factors.language * 100)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Hulpvragen Expertise Details */}
+                        {rec.details?.hulpvragenExpertise && rec.details.hulpvragenExpertise.length > 0 && selectedRequest?.hulpvragen && (
+                          <div className="mt-3 p-2 bg-gray-50 rounded">
+                            <p className="text-xs font-medium text-gray-700 mb-1">Hulpvragen Expertise:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedRequest.hulpvragen.map((clientHulpvraag) => {
+                                const expertise = rec.details!.hulpvragenExpertise.find(
+                                  (exp: any) => exp.problem_category === clientHulpvraag
+                                );
+                                return (
+                                  <span
+                                    key={clientHulpvraag}
+                                    className={`text-xs px-2 py-0.5 rounded-full ${
+                                      expertise
+                                        ? expertise.expertise_level >= 4
+                                          ? 'bg-green-100 text-green-800'
+                                          : expertise.expertise_level >= 3
+                                          ? 'bg-yellow-100 text-yellow-800'
+                                          : 'bg-gray-100 text-gray-700'
+                                        : 'bg-red-100 text-red-700'
+                                    }`}
+                                  >
+                                    {clientHulpvraag}
+                                    {expertise && ` (${expertise.expertise_level}/5)`}
+                                    {!expertise && ' (No expertise)'}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="ml-4">

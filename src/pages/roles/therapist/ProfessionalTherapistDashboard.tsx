@@ -499,7 +499,7 @@ const ProfessionalTherapistDashboard: React.FC = () => {
               </div>
               
               {/* Monthly Progress */}
-              <div>
+              <div className="border-b pb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Completed This Month</span>
                   <span className="text-lg font-bold text-orange-600">{stats.completedSessions}</span>
@@ -510,6 +510,61 @@ const ProfessionalTherapistDashboard: React.FC = () => {
                 >
                   View session history →
                 </Link>
+              </div>
+
+              {/* Hulpvragen Insights */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Treatment Focus Areas</span>
+                  <span className="text-xs text-blue-600">Based on client concerns</span>
+                </div>
+                {(() => {
+                  const allHulpvragen = activeClients
+                    .filter(client => client.hulpvragen && client.hulpvragen.length > 0)
+                    .flatMap(client => client.hulpvragen || []);
+                  
+                  const hulpvragenCounts = allHulpvragen.reduce((acc, hulpvraag) => {
+                    acc[hulpvraag] = (acc[hulpvraag] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  
+                  const topHulpvragen = Object.entries(hulpvragenCounts)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 3);
+
+                  if (topHulpvragen.length === 0) {
+                    return (
+                      <p className="text-xs text-gray-500">No treatment focus areas yet</p>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {topHulpvragen.map(([hulpvraag, count], index) => (
+                        <div key={hulpvraag} className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600 truncate pr-2" title={hulpvraag}>
+                            {hulpvraag.length > 20 ? `${hulpvraag.substring(0, 20)}...` : hulpvraag}
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-medium text-blue-600">{count}</span>
+                            <div className="w-8 h-1 bg-gray-200 rounded-full">
+                              <div 
+                                className="h-1 bg-blue-600 rounded-full"
+                                style={{ width: `${(count / Math.max(...Object.values(hulpvragenCounts))) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <Link
+                        to="/therapist/clients"
+                        className="text-xs text-green-600 hover:text-emerald-600 transition-colors block mt-2"
+                      >
+                        View client details →
+                      </Link>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

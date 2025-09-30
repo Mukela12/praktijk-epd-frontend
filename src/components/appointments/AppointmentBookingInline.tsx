@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   CalendarIcon,
   ClockIcon,
@@ -15,6 +16,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import { useAuth } from '@/store/authStore';
 import { PremiumCard, PremiumButton, StatusBadge } from '@/components/layout/PremiumLayout';
 import { TextField, TextareaField, SelectField } from '@/components/forms/FormFields';
+import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
 import { motion } from 'framer-motion';
@@ -31,7 +33,7 @@ interface TherapistInfo {
   availability: boolean;
 }
 
-type BookingStep = 'therapist' | 'datetime' | 'details' | 'confirm' | 'success';
+type BookingStep = 'therapist' | 'datetime' | 'details' | 'hulpvragen' | 'confirm' | 'success';
 
 interface BookingData {
   therapistId?: string;
@@ -44,24 +46,46 @@ interface BookingData {
   urgencyLevel: string;
   reasonForTherapy: string;
   additionalNotes?: string;
+  hulpvragen: string[];
 }
 
 const AppointmentBookingInline: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { success, error, warning, info } = useAlert();
+  const location = useLocation();
 
   // State
   const [currentStep, setCurrentStep] = useState<BookingStep>('therapist');
   const [bookingData, setBookingData] = useState<BookingData>({
     therapyType: 'individual',
     urgencyLevel: 'normal',
-    reasonForTherapy: ''
+    reasonForTherapy: '',
+    hulpvragen: []
   });
   const [assignedTherapist, setAssignedTherapist] = useState<TherapistInfo | null>(null);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+  // Handle data from intake form
+  useEffect(() => {
+    const intakeData = location.state as any;
+    if (intakeData?.fromIntake) {
+      setBookingData(prev => ({
+        ...prev,
+        hulpvragen: intakeData.hulpvragen || [],
+        reasonForTherapy: intakeData.reasonForTherapy || '',
+        urgencyLevel: intakeData.urgencyLevel || 'normal'
+      }));
+      
+      // Show a helpful message
+      info('Your intake information has been pre-filled. Please select your preferred appointment date and time.', {
+        title: 'Ready to Book',
+        duration: 4000
+      });
+    }
+  }, [location.state]);
 
   // Check if client has assigned therapist
   useEffect(() => {
@@ -128,13 +152,21 @@ const AppointmentBookingInline: React.FC = () => {
         preferredTime: bookingData.preferredTime!,
         therapyType: bookingData.therapyType,
         urgencyLevel: bookingData.urgencyLevel,
-        reason: bookingData.reasonForTherapy
+        reason: bookingData.reasonForTherapy,
+        hulpvragen: bookingData.hulpvragen
       };
 
       const response = await realApiService.client.requestAppointment(requestData);
       
       if (response.success) {
-        success('Appointment request submitted successfully!');
+        success('Your concerns have been noted. Admin will assign optimal therapist based on your needs and preferences.', {
+          title: 'Request Submitted Successfully',
+          duration: 8000,
+          action: {
+            label: 'View Status',
+            onClick: () => window.location.href = '/client/appointments'
+          }
+        });
         setCurrentStep('success');
       }
     } catch (err) {
@@ -410,8 +442,42 @@ const AppointmentBookingInline: React.FC = () => {
               </PremiumButton>
               <PremiumButton
                 variant="primary"
-                onClick={() => setCurrentStep('confirm')}
+                onClick={() => setCurrentStep('hulpvragen')}
                 disabled={!bookingData.reasonForTherapy}
+              >
+                Select Concerns
+              </PremiumButton>
+            </div>
+          </div>
+        );
+
+      case 'hulpvragen':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-900">Select Your Areas of Concern</h3>
+            <p className="text-gray-600">
+              Choose the areas you'd like to focus on in therapy. This helps us match you with the most suitable therapist for your needs.
+            </p>
+
+            <HulpvragenSelector
+              value={bookingData.hulpvragen}
+              onChange={(hulpvragen) => setBookingData(prev => ({ ...prev, hulpvragen }))}
+              maxSelection={5}
+              required={true}
+              placeholder="Select the areas you'd like to work on..."
+            />
+
+            <div className="flex justify-between">
+              <PremiumButton
+                variant="outline"
+                onClick={() => setCurrentStep('details')}
+              >
+                Back
+              </PremiumButton>
+              <PremiumButton
+                variant="primary"
+                onClick={() => setCurrentStep('confirm')}
+                disabled={bookingData.hulpvragen.length === 0}
               >
                 Review Appointment
               </PremiumButton>
@@ -470,6 +536,22 @@ const AppointmentBookingInline: React.FC = () => {
                   <p className="font-medium">{bookingData.additionalNotes}</p>
                 </div>
               )}
+
+              {bookingData.hulpvragen.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600">Areas of Concern</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {bookingData.hulpvragen.map((hulpvraag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                      >
+                        {hulpvraag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -484,7 +566,7 @@ const AppointmentBookingInline: React.FC = () => {
             <div className="flex justify-between">
               <PremiumButton
                 variant="outline"
-                onClick={() => setCurrentStep('details')}
+                onClick={() => setCurrentStep('hulpvragen')}
               >
                 Back
               </PremiumButton>
@@ -538,9 +620,9 @@ const AppointmentBookingInline: React.FC = () => {
       <div className="mb-8">
         {/* Progress indicator */}
         <div className="flex items-center justify-center space-x-2">
-          {['therapist', 'datetime', 'details', 'confirm', 'success'].map((step, index) => {
+          {['therapist', 'datetime', 'details', 'hulpvragen', 'confirm', 'success'].map((step, index) => {
             const isActive = currentStep === step;
-            const isPast = ['therapist', 'datetime', 'details', 'confirm', 'success'].indexOf(currentStep) > index;
+            const isPast = ['therapist', 'datetime', 'details', 'hulpvragen', 'confirm', 'success'].indexOf(currentStep) > index;
             
             return (
               <React.Fragment key={step}>

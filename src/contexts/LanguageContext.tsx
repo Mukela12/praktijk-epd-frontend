@@ -452,6 +452,9 @@ const translations = {
   'appointments.requestSubmitError': { en: 'Failed to submit appointment request. Please try again.', nl: 'Kan afspraakverzoek niet indienen. Probeer het opnieuw.' },
   'appointments.selectDateTimeError': { en: 'Please select both date and time', nl: 'Selecteer zowel datum als tijd' },
   'appointments.describeNeeds': { en: 'Please describe what you would like to discuss', nl: 'Beschrijf wat u wilt bespreken' },
+  'appointments.additionalInfo': { en: 'Additional Information', nl: 'Aanvullende Informatie' },
+  'appointments.additionalDetailsPlaceholder': { en: 'Add any additional details that might help your therapist prepare for the session...', nl: 'Voeg eventuele aanvullende details toe die uw therapeut kunnen helpen bij de voorbereiding van de sessie...' },
+  'appointments.optionalAdditionalInfo': { en: 'This is optional but can help provide additional context beyond your selected concerns.', nl: 'Dit is optioneel maar kan helpen om extra context te geven naast uw geselecteerde hulpvragen.' },
   
   // Therapist
   'therapist.browseOtherTherapists': { en: 'Browse Other Therapists', nl: 'Bekijk Andere Therapeuten' },
@@ -613,6 +616,9 @@ const translations = {
   'invoices.outstandingBalance': { en: 'Outstanding balance:', nl: 'Openstaand saldo:' },
   'invoices.payToontinue': { en: 'Please pay your outstanding invoices to continue booking appointments.', nl: 'Betaal uw openstaande facturen om door te gaan met het boeken van afspraken.' },
   'invoices.makePayment': { en: 'Make Payment', nl: 'Betaling Uitvoeren' },
+  
+  // Error messages
+  'errors.failedToLoadHulpvragen': { en: 'Failed to load help questions', nl: 'Kan hulpvragen niet laden' },
   
   // Common UI elements
   'ui.search': { en: 'Search', nl: 'Zoeken' },

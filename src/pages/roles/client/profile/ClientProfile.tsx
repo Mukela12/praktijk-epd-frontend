@@ -22,12 +22,15 @@ import {
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useClientDashboard } from '@/hooks/useApi';
+import { useAlert } from '@/components/ui/CustomAlert';
+import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const ClientProfile: React.FC = () => {
   const { user, getDisplayName } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { success, error: errorAlert, info } = useAlert();
   
   // API hooks
   const { getDashboard, getPreferences, updatePreferences, isLoading } = useClientDashboard();
@@ -154,29 +157,66 @@ const ClientProfile: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      // Save preferences using real API
+      // Save both profile data and preferences
+      let profileUpdateSuccess = true;
+      let preferencesUpdateSuccess = true;
+
+      // Save full profile data if there are profile changes
+      if (editedProfile.phone || editedProfile.emergencyContactName || editedProfile.emergencyContactPhone) {
+        const profileData = {
+          phone: editedProfile.phone,
+          emergencyContactName: editedProfile.emergencyContactName,
+          emergencyContactPhone: editedProfile.emergencyContactPhone,
+          // Add other profile fields as needed
+        };
+
+        const profileResponse = await realApiService.client.updateProfile(profileData);
+        if (!profileResponse.success) {
+          profileUpdateSuccess = false;
+        }
+      }
+
+      // Save preferences using existing API
       if (editedProfile.preferences) {
         const preferencesUpdate = await updatePreferences(editedProfile.preferences);
-        
-        if (preferencesUpdate) {
-          setProfile(editedProfile);
-          setIsEditing(false);
-        } else {
-          console.error('Failed to save preferences');
-          // Still update local state for better UX
-          setProfile(editedProfile);
-          setIsEditing(false);
+        if (!preferencesUpdate) {
+          preferencesUpdateSuccess = false;
         }
-      } else {
-        // Update local state if no preferences to save
+      }
+
+      // Handle success/error notifications
+      if (profileUpdateSuccess && preferencesUpdateSuccess) {
         setProfile(editedProfile);
         setIsEditing(false);
+        
+        // SUCCESS NOTIFICATION: Profile updated successfully
+        success('Your information has been updated and saved securely', {
+          title: 'Profile Updated Successfully',
+          duration: 4000
+        });
+      } else {
+        // Partial success - update local state but show warning
+        setProfile(editedProfile);
+        setIsEditing(false);
+        
+        // WARNING NOTIFICATION: Some changes may not have been saved
+        errorAlert('Please try saving again or contact support if the issue persists.', {
+          title: 'Some Changes May Not Have Been Saved',
+          duration: 6000
+        });
       }
     } catch (error) {
       console.error('Error saving profile:', error);
+      
       // Still update local state for better UX
       setProfile(editedProfile);
       setIsEditing(false);
+      
+      // ERROR NOTIFICATION: Exception occurred during save
+      errorAlert('Please check your connection and try again, or contact support if the issue persists.', {
+        title: 'Error Saving Profile',
+        duration: 6000
+      });
     }
   };
 

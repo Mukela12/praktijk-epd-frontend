@@ -57,6 +57,12 @@ export interface Client extends BaseEntity {
   };
   notes?: string;
   tags?: string[];
+  // Hulpvragen integration - from appointment request
+  hulpvragen?: string[];
+  urgency_level?: 'normal' | 'urgent' | 'emergency';
+  requested_therapy_type?: string;
+  problem_description?: string;
+  request_date?: string;
 }
 
 // Therapist entity

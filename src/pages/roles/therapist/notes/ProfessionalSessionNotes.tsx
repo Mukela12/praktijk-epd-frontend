@@ -48,6 +48,11 @@ interface SessionNote {
   updated_at: string;
   tags: string[];
   is_important: boolean;
+  hulpvragen_progress?: Record<string, {
+    discussed: boolean;
+    progress: number;
+    notes: string;
+  }>;
 }
 
 // Note card component
@@ -136,6 +141,36 @@ const NoteCard: React.FC<{
               <li className="text-green-600">+{note.key_points.length - 3} more</li>
             )}
           </ul>
+        </div>
+      )}
+
+      {/* Hulpvragen Progress Summary */}
+      {note.hulpvragen_progress && Object.keys(note.hulpvragen_progress).length > 0 && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Hulpvragen Progress:</h4>
+          <div className="space-y-1">
+            {Object.entries(note.hulpvragen_progress)
+              .filter(([_, progress]) => progress.discussed)
+              .slice(0, 2)
+              .map(([hulpvraag, progress]) => (
+                <div key={hulpvraag} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 truncate flex-1">{hulpvraag}</span>
+                  <span className={`text-xs font-medium px-2 py-1 rounded ${
+                    progress.progress >= 70 ? 'bg-green-100 text-green-700' :
+                    progress.progress >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {progress.progress}%
+                  </span>
+                </div>
+              ))
+            }
+            {Object.entries(note.hulpvragen_progress).filter(([_, p]) => p.discussed).length > 2 && (
+              <p className="text-xs text-green-600">
+                +{Object.entries(note.hulpvragen_progress).filter(([_, p]) => p.discussed).length - 2} more areas tracked
+              </p>
+            )}
+          </div>
         </div>
       )}
 

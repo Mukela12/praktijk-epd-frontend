@@ -15,10 +15,12 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { clientApi } from '@/services/endpoints';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
 
 interface IntakeFormData {
   reasonForTherapy: string;
   therapyGoals: string[];
+  hulpvragen: string[];
   medicalHistory: string;
   medications: string;
   previousTherapy: boolean;
@@ -39,6 +41,7 @@ const IntakeForm: React.FC = () => {
   const [formData, setFormData] = useState<IntakeFormData>({
     reasonForTherapy: '',
     therapyGoals: [''],
+    hulpvragen: [],
     medicalHistory: '',
     medications: '',
     previousTherapy: false,
@@ -51,9 +54,10 @@ const IntakeForm: React.FC = () => {
 
   const steps = [
     { number: 1, title: 'Therapy Information', icon: HeartIcon },
-    { number: 2, title: 'Medical History', icon: ClipboardDocumentCheckIcon },
-    { number: 3, title: 'Emergency Contact', icon: PhoneIcon },
-    { number: 4, title: 'Review & Submit', icon: CheckCircleIcon }
+    { number: 2, title: 'Areas of Concern', icon: DocumentTextIcon },
+    { number: 3, title: 'Medical History', icon: ClipboardDocumentCheckIcon },
+    { number: 4, title: 'Emergency Contact', icon: PhoneIcon },
+    { number: 5, title: 'Review & Submit', icon: CheckCircleIcon }
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -117,6 +121,18 @@ const IntakeForm: React.FC = () => {
         return true;
       
       case 2:
+        // Validate hulpvragen
+        if (formData.hulpvragen.length === 0) {
+          warning('Please select at least one area of concern');
+          return false;
+        }
+        if (formData.hulpvragen.length > 5) {
+          warning('Please select no more than 5 areas of concern');
+          return false;
+        }
+        return true;
+      
+      case 3:
         // Validate medical history
         if (!formData.medicalHistory || formData.medicalHistory.trim().length < 10) {
           warning('Please provide your medical history (minimum 10 characters)');
@@ -146,7 +162,7 @@ const IntakeForm: React.FC = () => {
         }
         return true;
       
-      case 3:
+      case 4:
         // Validate emergency contact name
         if (!formData.emergencyContactName || formData.emergencyContactName.trim().length < 2) {
           warning('Please provide emergency contact name');
@@ -193,7 +209,7 @@ const IntakeForm: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(3)) return;
+    if (!validateStep(4)) return;
 
     try {
       setIsSubmitting(true);
@@ -209,8 +225,19 @@ const IntakeForm: React.FC = () => {
       const response = await clientApi.submitIntakeForm(submitData);
       
       if (response.success) {
-        success('Intake form submitted successfully. Your therapist will review your information.');
-        navigate('/client/dashboard');
+        success('Intake form completed successfully. Now let\'s schedule your first appointment.', {
+          title: 'Intake Complete',
+          duration: 5000
+        });
+        // Navigate to appointment booking with intake data
+        navigate('/client/book-appointment', { 
+          state: { 
+            fromIntake: true,
+            hulpvragen: formData.hulpvragen,
+            reasonForTherapy: formData.reasonForTherapy,
+            urgencyLevel: 'normal' // Default urgency
+          }
+        });
       }
     } catch (err: any) {
       error(err.response?.data?.message || 'Failed to submit intake form');
@@ -300,6 +327,24 @@ const IntakeForm: React.FC = () => {
       case 2:
         return (
           <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-900">Select Your Areas of Concern</h3>
+            <p className="text-gray-600">
+              Choose the areas you'd like to focus on in therapy. This helps us match you with the most suitable therapist for your needs.
+            </p>
+
+            <HulpvragenSelector
+              value={formData.hulpvragen}
+              onChange={(hulpvragen) => setFormData(prev => ({ ...prev, hulpvragen }))}
+              maxSelection={5}
+              required={true}
+              placeholder="Select the areas you'd like to work on..."
+            />
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
             <div>
               <label htmlFor="medicalHistory" className="label-premium label-premium-required">
                 Medical History
@@ -367,7 +412,7 @@ const IntakeForm: React.FC = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="card-premium bg-amber-50 border-amber-200 p-4">
@@ -429,7 +474,7 @@ const IntakeForm: React.FC = () => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-6">
             <div className="card-premium bg-green-50 border-green-200 p-4">
@@ -459,6 +504,21 @@ const IntakeForm: React.FC = () => {
                       ))}
                     </ul>
                   </div>
+                  {formData.hulpvragen.length > 0 && (
+                    <div>
+                      <span className="text-gray-600">Areas of Concern:</span>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {formData.hulpvragen.map((hulpvraag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                          >
+                            {hulpvraag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <span className="text-gray-600">Preferred Language:</span> {formData.preferredLanguage?.toUpperCase()}
                   </div>

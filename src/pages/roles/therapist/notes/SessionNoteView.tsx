@@ -43,6 +43,11 @@ interface SessionNote {
   updated_at: string;
   tags: string[];
   is_important: boolean;
+  hulpvragen_progress?: Record<string, {
+    discussed: boolean;
+    progress: number;
+    notes: string;
+  }>;
 }
 
 const SessionNoteView: React.FC = () => {
@@ -292,6 +297,69 @@ const SessionNoteView: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Hulpvragen Progress */}
+          {note.hulpvragen_progress && Object.keys(note.hulpvragen_progress).length > 0 && (
+            <div className="bg-green-50 rounded-xl border border-green-200 p-6 print:border-0 print:shadow-none">
+              <h2 className="text-lg font-semibold text-green-900 mb-4">Hulpvragen Progress Tracking</h2>
+              <div className="space-y-4">
+                {Object.entries(note.hulpvragen_progress)
+                  .filter(([_, progress]) => progress.discussed)
+                  .map(([hulpvraag, progress]) => (
+                    <div key={hulpvraag} className="bg-white rounded-lg p-4 border border-green-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-medium text-green-900">{hulpvraag}</h3>
+                        <span className="text-sm font-medium text-green-700">
+                          {progress.progress}% Progress
+                        </span>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${progress.progress}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-green-600 mt-1">
+                          <span>No Progress</span>
+                          <span>Moderate</span>
+                          <span>Significant</span>
+                        </div>
+                      </div>
+                      
+                      {progress.notes && (
+                        <p className="text-sm text-gray-700 bg-gray-50 rounded p-3">
+                          {progress.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                }
+                
+                {Object.entries(note.hulpvragen_progress).filter(([_, progress]) => !progress.discussed).length > 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Not discussed in this session:</strong>
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {Object.entries(note.hulpvragen_progress)
+                        .filter(([_, progress]) => !progress.discussed)
+                        .map(([hulpvraag]) => (
+                          <span
+                            key={hulpvraag}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+                          >
+                            {hulpvraag}
+                          </span>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Key Points */}
           <div className="bg-white rounded-xl border border-gray-100 p-6 print:border-0 print:shadow-none">
