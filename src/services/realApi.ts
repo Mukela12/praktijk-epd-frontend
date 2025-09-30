@@ -1233,6 +1233,12 @@ export const realApiService = {
       return response.data;
     },
 
+    // Psychological problems (for hulpvragen selection) (✅ WORKING)
+    getPsychologicalProblems: async (): Promise<ApiResponse<any[]>> => {
+      const response = await api.get('/client/psychological-problems');
+      return response.data;
+    },
+
     // Preferences (✅ WORKING)
     getPreferences: async (): Promise<ApiResponse<{
       communicationMethod: string;

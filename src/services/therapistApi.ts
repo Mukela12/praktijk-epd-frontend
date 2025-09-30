@@ -327,6 +327,12 @@ export const therapistApi = {
     return response.data;
   },
 
+  // Psychological problems for therapist profile management
+  getPsychologicalProblems: async (): Promise<ApiResponse<any[]>> => {
+    const response = await api.get('/therapist/psychological-problems');
+    return response.data;
+  },
+
   // Single appointment
   getAppointment: async (appointmentId: string): Promise<ApiResponse<Appointment>> => {
     const response = await api.get(`/appointments/${appointmentId}`);

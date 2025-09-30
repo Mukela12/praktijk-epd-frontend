@@ -46,7 +46,7 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      const response = await realApiService.admin.getPsychologicalProblems();
+      const response = await realApiService.client.getPsychologicalProblems();
       
       if (response.data) {
         // Filter only active problems and sort alphabetically

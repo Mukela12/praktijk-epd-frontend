@@ -149,9 +149,9 @@ const TherapistProfile: React.FC = () => {
         }
         
         // Load psychological problems
-        const problemsResponse = await realApiService.admin.getPsychologicalProblems();
+        const problemsResponse = await realApiService.therapist.getPsychologicalProblems();
         if (problemsResponse.success && problemsResponse.data) {
-          setAvailableProblems(problemsResponse.data.filter((p: any) => p.isActive));
+          setAvailableProblems(problemsResponse.data.filter((p: any) => p.is_active));
         }
       } catch (err) {
         console.error('Failed to load admin lists:', err);
