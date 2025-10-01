@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MagnifyingGlassIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import { useLanguage } from '@/contexts/LanguageContext';
+import notifications from '@/utils/notifications';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface PsychologicalProblem {
   id: string;
@@ -46,9 +48,10 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
     try {
       setIsLoading(true);
       setError(null);
+      // Using client API which points to /public/psychological-problems endpoint
       const response = await realApiService.client.getPsychologicalProblems();
       
-      if (response.data) {
+      if (response.success && response.data) {
         // Filter only active problems and sort alphabetically
         const activeProblems = response.data
           .filter((problem: PsychologicalProblem) => problem.is_active)
@@ -59,10 +62,27 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
           });
         
         setHulpvragen(activeProblems);
+        
+        if (activeProblems.length === 0) {
+          notifications.warning('No psychological problems available at the moment.', {
+            title: 'No Data',
+            duration: 4000
+          });
+        }
+      } else {
+        throw new Error('Failed to load psychological problems');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load hulpvragen:', error);
-      setError(t('errors.failedToLoadHulpvragen') || 'Failed to load help questions');
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message ||
+                          t('errors.failedToLoadHulpvragen') || 
+                          'Failed to load help questions. Please try again.';
+      setError(errorMessage);
+      notifications.error(errorMessage, {
+        title: 'Loading Error',
+        duration: 5000
+      });
     } finally {
       setIsLoading(false);
     }
@@ -164,11 +184,13 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
             {language === 'en' ? 'Select your concerns' : 'Selecteer uw hulpvragen'} {required && '*'}
           </label>
         </div>
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">
-            {language === 'en' ? 'Loading...' : 'Laden...'}
-          </span>
+        <div className="bg-white border border-gray-200 rounded-xl p-8">
+          <div className="flex flex-col items-center justify-center">
+            <LoadingSpinner size="md" />
+            <p className="mt-4 text-gray-600 text-sm">
+              {language === 'en' ? 'Loading available help topics...' : 'Beschikbare hulponderwerpen laden...'}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -182,14 +204,19 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
             {language === 'en' ? 'Select your concerns' : 'Selecteer uw hulpvragen'} {required && '*'}
           </label>
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-700">{error}</p>
-          <button 
-            onClick={loadHulpvragen}
-            className="mt-2 text-red-800 underline hover:no-underline"
-          >
-            {language === 'en' ? 'Try again' : 'Probeer opnieuw'}
-          </button>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="flex items-start">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mt-0.5" />
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+              <button 
+                onClick={loadHulpvragen}
+                className="mt-3 inline-flex items-center px-3 py-1.5 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                {language === 'en' ? 'Try again' : 'Probeer opnieuw'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
