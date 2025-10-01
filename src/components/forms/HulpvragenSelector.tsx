@@ -186,7 +186,7 @@ export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-8">
           <div className="flex flex-col items-center justify-center">
-            <LoadingSpinner size="md" />
+            <LoadingSpinner size="medium" />
             <p className="mt-4 text-gray-600 text-sm">
               {language === 'en' ? 'Loading available help topics...' : 'Beschikbare hulponderwerpen laden...'}
             </p>
