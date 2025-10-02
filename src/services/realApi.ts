@@ -1931,8 +1931,8 @@ export const realApiService = {
   // Therapists endpoints (redirected to admin endpoints)
   therapists: {
     getAll: async (params?: { status?: string; page?: number; limit?: number }): Promise<ApiResponse<any>> => {
-      // Use admin endpoint instead
-      return realApiService.admin.getTherapists(params);
+      // Use client endpoint that doesn't require admin privileges
+      return realApiService.client.getTherapists(params);
     },
 
     getById: async (id: string): Promise<ApiResponse<any>> => {
