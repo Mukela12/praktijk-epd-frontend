@@ -12,6 +12,7 @@ import {
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
+import { clientApi } from '@/services/unifiedApi';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -60,6 +61,7 @@ const BookAppointment: React.FC = () => {
   const [allTherapists, setAllTherapists] = useState<Therapist[]>([]);
   const [therapistSearchTerm, setTherapistSearchTerm] = useState('');
   const [showTherapistSelection, setShowTherapistSelection] = useState(false);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
 
   // Get tomorrow's date as minimum
   const tomorrow = new Date();
@@ -88,10 +90,13 @@ const BookAppointment: React.FC = () => {
   }, [location.state, allTherapists]);
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && selectedTherapist) {
+      loadTherapistAvailability();
+    } else if (selectedDate) {
+      // Fallback to hardcoded slots if no therapist selected
       generateTimeSlots();
     }
-  }, [selectedDate]);
+  }, [selectedDate, selectedTherapist?.id]);
 
   const checkUnpaidInvoices = async () => {
     try {
@@ -150,6 +155,58 @@ const BookAppointment: React.FC = () => {
   };
 
 
+  // FIXED: Load real therapist availability instead of hardcoded slots
+  const loadTherapistAvailability = async () => {
+    if (!selectedTherapist || !selectedDate) return;
+    
+    try {
+      setIsLoadingAvailability(true);
+      const response = await clientApi.getTherapistAvailability(selectedTherapist.id, {
+        date: selectedDate
+      });
+      
+      if (response.success && response.data) {
+        // Process availability data into time slots
+        const availabilityData = response.data;
+        const slots: string[] = [];
+        
+        if (Array.isArray(availabilityData)) {
+          availabilityData.forEach((availability: any) => {
+            if (availability.available_times && Array.isArray(availability.available_times)) {
+              availability.available_times.forEach((time: string) => {
+                // Format time to HH:MM format
+                const formattedTime = time.substring(0, 5); // Extract HH:MM from HH:MM:SS
+                if (!slots.includes(formattedTime)) {
+                  slots.push(formattedTime);
+                }
+              });
+            }
+          });
+        }
+        
+        // Sort slots by time
+        slots.sort((a, b) => a.localeCompare(b));
+        setAvailableSlots(slots);
+        
+        if (slots.length === 0) {
+          errorAlert(`No available time slots for ${selectedTherapist.first_name} ${selectedTherapist.last_name} on ${formatDate(selectedDate)}`);
+        }
+      } else {
+        // Fallback to hardcoded slots if API fails
+        generateTimeSlots();
+        errorAlert('Could not load therapist availability. Showing general time slots.');
+      }
+    } catch (error) {
+      console.error('Error loading therapist availability:', error);
+      // Fallback to hardcoded slots
+      generateTimeSlots();
+      errorAlert('Could not load therapist availability. Showing general time slots.');
+    } finally {
+      setIsLoadingAvailability(false);
+    }
+  };
+
+  // Fallback method for when no therapist is selected
   const generateTimeSlots = () => {
     const slots = [];
     const startHour = 9; // 9 AM
@@ -224,24 +281,45 @@ const BookAppointment: React.FC = () => {
               {/* Time Selection */}
               {selectedDate && (
                 <div className="animate-fadeIn">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('appointments.preferredTime')} *
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot}
-                        onClick={() => setSelectedTime(slot)}
-                        className={`py-2 px-4 rounded-lg border-2 transition-all ${
-                          selectedTime === slot
-                            ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {t('appointments.preferredTime')} *
+                    </label>
+                    {selectedTherapist && (
+                      <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                        Real availability for {selectedTherapist.first_name} {selectedTherapist.last_name}
+                      </span>
+                    )}
                   </div>
+                  
+                  {isLoadingAvailability ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingSpinner size="medium" />
+                      <span className="ml-2 text-gray-600">Loading availability...</span>
+                    </div>
+                  ) : availableSlots.length > 0 ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      {availableSlots.map((slot) => (
+                        <button
+                          key={slot}
+                          onClick={() => setSelectedTime(slot)}
+                          className={`py-2 px-4 rounded-lg border-2 transition-all ${
+                            selectedTime === slot
+                              ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                          }`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <ClockIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600">No available time slots for this date</p>
+                      <p className="text-sm text-gray-500 mt-1">Please select a different date or therapist</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -377,6 +455,8 @@ const BookAppointment: React.FC = () => {
                             setSelectedTherapist(therapist);
                             setPreferredTherapist(therapist.id);
                             setShowTherapistSelection(false);
+                            // Reset selected time when changing therapist
+                            setSelectedTime('');
                           }}
                           className={`p-3 rounded-lg cursor-pointer transition-all ${
                             selectedTherapist?.id === therapist.id
@@ -424,6 +504,8 @@ const BookAppointment: React.FC = () => {
                         setSelectedTherapist(therapists[0]);
                         setPreferredTherapist(therapists[0].id);
                         setShowTherapistSelection(false);
+                        // Reset selected time when changing therapist
+                        setSelectedTime('');
                       }}
                       className="text-sm text-gray-600 hover:text-gray-700"
                     >

@@ -108,6 +108,20 @@ export const adminApi = {
     return response.data;
   },
 
+  // Smart Pairing
+  getSmartPairingRecommendations: async (params: {
+    clientId: string;
+    appointmentDate?: string;
+    appointmentTime?: string;
+    problemCategory?: string;
+    preferredGender?: string;
+    preferredLanguage?: string;
+    maxDistance?: number;
+  }): Promise<ApiResponse<any>> => {
+    const response = await api.get('/admin/smart-pairing-recommendations', { params });
+    return response.data;
+  },
+
   approveAddressChange: async (id: string): Promise<ApiResponse> => {
     const response = await api.put(`/admin/address-change-requests/${id}/approve`);
     return response.data;

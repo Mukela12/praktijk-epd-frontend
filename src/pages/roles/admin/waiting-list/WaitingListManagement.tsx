@@ -20,6 +20,7 @@ import { useAdminWaitingList } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumListItem, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import SmartPairingResults from '@/components/admin/SmartPairingResults';
 
 // Types
 interface WaitingListItem {
@@ -38,12 +39,16 @@ interface WaitingListItem {
   notes?: string;
   insurance_type?: string;
   location_preference?: string;
+  hulpvragen?: string[];
+  assignedTherapistId?: string;
+  assignedTherapistName?: string;
+  intakeCompleted?: boolean;
 }
 
 const WaitingListManagement: React.FC = () => {
   const { t } = useTranslation();
   const { getWaitingList, waitingList: apiWaitingList, updateEntry, isLoading } = useAdminWaitingList();
-  const { success, error, info } = useAlert();
+  const { success, error, info, warning } = useAlert();
 
   // State
   const [waitingList, setWaitingList] = useState<WaitingListItem[]>([]);
@@ -56,34 +61,77 @@ const WaitingListManagement: React.FC = () => {
     searchTerm: ''
   });
   const [sortBy, setSortBy] = useState<'date' | 'urgency' | 'status'>('urgency');
+  
+  // Smart pairing state
+  const [smartPairingResults, setSmartPairingResults] = useState<any[]>([]);
+  const [showPairingResults, setShowPairingResults] = useState(false);
 
   // Load data
   useEffect(() => {
     getWaitingList();
   }, []);
 
-  // Update local state when API data changes
+  // Update local state when API data changes - using centralized data transformation
   useEffect(() => {
     if (apiWaitingList && apiWaitingList.length > 0) {
-      const formattedData = apiWaitingList.map(item => ({
-        id: item.id,
-        client_name: `${item.first_name} ${item.last_name}`,
-        email: item.email,
-        phone: item.phone,
-        age: item.age,
-        gender: item.gender,
-        registration_date: item.created_at,
-        therapy_type: item.therapy_type || 'General',
-        urgency: item.urgency_level || 'medium',
-        status: item.status || 'new',
-        preferred_therapist_gender: item.preferred_therapist_gender,
-        preferred_language: item.preferred_language,
-        notes: item.notes,
-        insurance_type: item.insurance_type,
-        location_preference: item.location_preference
-      }));
-      setWaitingList(formattedData);
-      setFilteredList(formattedData);
+      // Use centralized data transformation
+      const { normalizeClientList, withSmartDefaults } = require('../../../utils/dataMappers');
+      
+      try {
+        const normalizedClients = normalizeClientList(apiWaitingList);
+        
+        // Map to waiting list format expected by component
+        const formattedData = normalizedClients.map((normalized: any) => {
+          const client = withSmartDefaults(normalized, 'client');
+          
+          return {
+            id: client.id,
+            client_name: client.name,
+            email: client.email,
+            phone: client.phone,
+            age: client.age || 'N/A', // Calculate from dateOfBirth if available
+            gender: client.gender,
+            registration_date: client.createdAt,
+            therapy_type: client.therapy_type || 'General',
+            urgency: client.urgencyLevel || 'medium',
+            status: client.status || 'viewed',
+            preferred_therapist_gender: client.preferred_therapist_gender,
+            preferred_language: client.preferredLanguage,
+            notes: client.notes,
+            insurance_type: client.insurance_type,
+            location_preference: client.location_preference,
+            // Additional fields from appointment request context
+            hulpvragen: client.hulpvragen || [],
+            assignedTherapistName: client.assignedTherapistName,
+            intakeCompleted: client.intakeCompleted
+          };
+        });
+        
+        setWaitingList(formattedData);
+        setFilteredList(formattedData);
+      } catch (error) {
+        console.error('Error normalizing waiting list data:', error);
+        // Fallback to existing logic if normalization fails
+        const fallbackData = apiWaitingList.map(item => ({
+          id: item.id,
+          client_name: `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Client',
+          email: item.email,
+          phone: item.phone,
+          age: item.age,
+          gender: item.gender,
+          registration_date: item.created_at,
+          therapy_type: item.therapy_type || 'General',
+          urgency: item.urgency_level || 'medium',
+          status: item.status || 'new',
+          preferred_therapist_gender: item.preferred_therapist_gender,
+          preferred_language: item.preferred_language,
+          notes: item.notes,
+          insurance_type: item.insurance_type,
+          location_preference: item.location_preference
+        }));
+        setWaitingList(fallbackData);
+        setFilteredList(fallbackData);
+      }
     }
   }, [apiWaitingList]);
 
@@ -131,18 +179,106 @@ const WaitingListManagement: React.FC = () => {
     setFilteredList(filtered);
   }, [waitingList, filters, sortBy]);
 
-  // Smart pairing function
-  const performSmartPairing = async () => {
-    info('Analyzing client preferences and therapist availability...', { duration: 2000 });
-    
-    setTimeout(() => {
-      success('Smart pairing completed! Found 3 optimal matches.', {
-        action: {
-          label: 'View Results',
-          onClick: () => {}
+  // Smart pairing function - now using real API
+  const performSmartPairing = async (clientId?: string) => {
+    try {
+      info('Analyzing client preferences and therapist availability...', { duration: 3000 });
+      
+      // If no specific client ID, perform bulk pairing for all pending clients
+      const clientsToProcess = clientId ? 
+        waitingList.filter(client => client.id === clientId) : 
+        waitingList.filter(client => client.status === 'viewed' || client.status === 'contacted');
+      
+      if (clientsToProcess.length === 0) {
+        warning('No clients available for smart pairing');
+        return;
+      }
+      
+      const { adminApi } = require('../../../services/unifiedApi');
+      const recommendations: any[] = [];
+      
+      // Get recommendations for each client
+      for (const client of clientsToProcess) {
+        try {
+          const response = await adminApi.getSmartPairingRecommendations({
+            clientId: client.id,
+            appointmentDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next week
+            preferredLanguage: client.preferred_language,
+            problemCategory: client.hulpvragen?.[0] // Use first hulpvraag if available
+          });
+          
+          if (response.success && response.data?.recommendations?.length > 0) {
+            recommendations.push({
+              client,
+              recommendations: response.data.recommendations.slice(0, 3) // Top 3 matches
+            });
+          }
+        } catch (error) {
+          console.error(`Error getting recommendations for client ${client.id}:`, error);
         }
+      }
+      
+      if (recommendations.length > 0) {
+        success(`Smart pairing completed! Found ${recommendations.length} clients with optimal matches.`, {
+          action: {
+            label: 'View Results',
+            onClick: () => {
+              // Store recommendations in state for display
+              setSmartPairingResults(recommendations);
+              setShowPairingResults(true);
+            }
+          }
+        });
+      } else {
+        warning('No optimal matches found. Please check therapist availability and client preferences.');
+      }
+      
+    } catch (err) {
+      console.error('Smart pairing error:', err);
+      error('Failed to perform smart pairing. Please try again.');
+    }
+  };
+
+  // Handle therapist assignment - FIXED: Now calls correct assignment endpoint
+  const handleAssignTherapist = async (clientId: string, therapistId: string) => {
+    try {
+      const { adminApi } = require('../../../services/unifiedApi');
+      
+      // CORRECTED: Call proper assignment endpoint instead of waiting list update
+      const response = await adminApi.assignTherapist(clientId, {
+        therapistId,
+        assignmentDate: new Date().toISOString(),
+        notes: 'Assigned via Smart Pairing Algorithm'
       });
-    }, 2000);
+      
+      if (response.success) {
+        // Update local state
+        setWaitingList(prev =>
+          prev.map(item =>
+            item.id === clientId ? { 
+              ...item, 
+              status: 'assigned' as any,
+              assignedTherapistId: therapistId 
+            } : item
+          )
+        );
+        
+        // Find client name for success message
+        const client = waitingList.find(c => c.id === clientId);
+        const clientName = client?.client_name || 'Client';
+        
+        success(`${clientName} successfully assigned to therapist`);
+        
+        // Reload data to get fresh updates
+        getWaitingList();
+      } else {
+        throw new Error(response.error || 'Assignment failed');
+      }
+    } catch (err: any) {
+      console.error('Assignment error:', err);
+      error(`Failed to assign therapist: ${err.message || 'Unknown error'}`);
+      throw err; // Re-throw for SmartPairingResults component to handle
+    }
   };
 
   // Handle status update
@@ -215,7 +351,7 @@ const WaitingListManagement: React.FC = () => {
             <PremiumButton
               variant="outline"
               icon={SparklesIcon}
-              onClick={performSmartPairing}
+              onClick={() => performSmartPairing()}
               className="bg-white/10 border-white/30 text-white hover:bg-white/20"
             >
               Smart Pairing
@@ -249,6 +385,18 @@ const WaitingListManagement: React.FC = () => {
           ))}
         </div>
       </PremiumCard>
+
+      {/* Smart Pairing Results */}
+      {showPairingResults && smartPairingResults.length > 0 && (
+        <SmartPairingResults
+          pairingResults={smartPairingResults}
+          onAssignTherapist={handleAssignTherapist}
+          onClose={() => {
+            setShowPairingResults(false);
+            setSmartPairingResults([]);
+          }}
+        />
+      )}
 
       {/* Filters */}
       <PremiumCard>

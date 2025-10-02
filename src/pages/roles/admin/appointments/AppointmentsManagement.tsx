@@ -182,29 +182,35 @@ const AppointmentsManagement: React.FC = () => {
         let appointmentsData = response.data.appointments || [];
         console.log('Raw appointments data:', appointmentsData.length, 'appointments');
         
-        // Map data to ensure all fields are present
-        appointmentsData = appointmentsData.map(apt => {
-          const rawApt = apt as any;
-          return {
-            ...apt,
-            // Ensure time fields are present
-            start_time: apt.start_time || rawApt.appointment_time,
-            appointment_time: rawApt.appointment_time || apt.start_time,
-            // Ensure name fields are present
-            client_first_name: apt.client_first_name || rawApt.clientFirstName,
-            client_last_name: apt.client_last_name || rawApt.clientLastName,
-            client_email: rawApt.client_email || rawApt.clientEmail,
-            client_phone: rawApt.client_phone || rawApt.clientPhone,
-            therapist_first_name: apt.therapist_first_name || rawApt.therapistFirstName,
-            therapist_last_name: apt.therapist_last_name || rawApt.therapistLastName,
-            therapist_email: rawApt.therapist_email || rawApt.therapistEmail,
-            // Ensure other fields have defaults
-            duration: apt.duration || rawApt.duration_minutes || 60,
-            therapy_type: apt.therapy_type || rawApt.type || 'individual',
-            payment_status: apt.payment_status || 'pending',
-            invoice_sent: apt.invoice_sent || false
-          };
-        });
+        // Use centralized data transformation instead of manual mapping
+        const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
+        
+        try {
+          const normalizedAppointments = normalizeAppointmentList(appointmentsData);
+          appointmentsData = normalizedAppointments.map((normalized: any) => {
+            const appointment = withSmartDefaults(normalized, 'appointment');
+            
+            return {
+              ...appointment,
+              // Map to component's expected field names
+              start_time: appointment.startTime,
+              appointment_time: appointment.appointmentTime,
+              client_first_name: appointment.clientFirstName,
+              client_last_name: appointment.clientLastName,
+              client_email: appointment.clientEmail,
+              client_phone: appointment.client?.phone || '',
+              therapist_first_name: appointment.therapistFirstName,
+              therapist_last_name: appointment.therapistLastName,
+              therapist_email: appointment.therapistEmail,
+              therapy_type: appointment.therapyType,
+              payment_status: appointment.paymentStatus,
+              invoice_sent: appointment.invoice_sent || false
+            };
+          });
+        } catch (error) {
+          console.error('Error normalizing appointment data:', error);
+          // Fallback to original data if normalization fails
+        }
         
         // Apply date filter
         appointmentsData = filterAppointmentsByDate(appointmentsData);
@@ -592,7 +598,7 @@ const AppointmentsManagement: React.FC = () => {
                     <UserIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        {selectedAppointment.client_first_name || 'Unknown'} {selectedAppointment.client_last_name || 'Client'}
+                        {selectedAppointment.client_first_name || 'Client'} {selectedAppointment.client_last_name || ''}
                       </p>
                       {selectedAppointment.client_email && (
                         <a href={`mailto:${selectedAppointment.client_email}`} className="text-sm text-blue-600 hover:text-blue-800">
@@ -617,7 +623,7 @@ const AppointmentsManagement: React.FC = () => {
                     <UserIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">
-                        Dr. {selectedAppointment.therapist_first_name || 'Unknown'} {selectedAppointment.therapist_last_name || 'Therapist'}
+                        Dr. {selectedAppointment.therapist_first_name || 'Therapist'} {selectedAppointment.therapist_last_name || ''}
                       </p>
                       {selectedAppointment.therapist_email && (
                         <a href={`mailto:${selectedAppointment.therapist_email}`} className="text-sm text-blue-600 hover:text-blue-800">
@@ -976,7 +982,7 @@ const AppointmentsManagement: React.FC = () => {
                                 <UserIcon className="w-4 h-4 text-gray-400" />
                                 <span className="font-medium">Client:</span>
                                 <span className="text-gray-900">
-                                  {appointment.client_first_name || 'Unknown'} {appointment.client_last_name || ''}
+                                  {appointment.client_first_name || 'Client'} {appointment.client_last_name || ''}
                                 </span>
                               </div>
                             </div>
@@ -993,7 +999,7 @@ const AppointmentsManagement: React.FC = () => {
                                 <UserIcon className="w-4 h-4 text-gray-400" />
                                 <span className="font-medium">Therapist:</span>
                                 <span className="text-gray-900">
-                                  Dr. {appointment.therapist_first_name || 'Unknown'} {appointment.therapist_last_name || ''}
+                                  Dr. {appointment.therapist_first_name || 'Therapist'} {appointment.therapist_last_name || ''}
                                 </span>
                               </div>
                             </div>

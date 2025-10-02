@@ -19,7 +19,8 @@ import {
   ExclamationCircleIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { therapistApi } from '@/services/therapistApi';
+import { therapistApi as legacyTherapistApi } from '@/services/therapistApi';
+import { therapistApi } from '@/services/unifiedApi';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useAlert } from '@/components/ui/CustomAlert';
 import { PremiumCard, PremiumButton, PremiumEmptyState, StatusBadge } from '@/components/layout/PremiumLayout';
@@ -146,7 +147,7 @@ const SessionManagement: React.FC = () => {
       
       // Load today's appointments
       const today = new Date().toISOString().split('T')[0];
-      const appointmentsResponse = await therapistApi.getAppointments({
+      const appointmentsResponse = await legacyTherapistApi.getAppointments({
         date: today,
         status: 'scheduled'
       });
@@ -163,7 +164,7 @@ const SessionManagement: React.FC = () => {
         });
         
         if (sessionsResponse.success && sessionsResponse.data) {
-          const sessions = sessionsResponse.data.sessions || sessionsResponse.data;
+          const sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : (sessionsResponse.data as any)?.sessions || [];
           setSessionHistory(Array.isArray(sessions) ? sessions : []);
         }
       } catch (err) {
@@ -263,15 +264,47 @@ const SessionManagement: React.FC = () => {
     }
 
     try {
-      const response = await therapistApi.endSession(activeSession.id, {
+      // FIXED: End session with automatic invoice generation
+      const sessionEndResponse = await therapistApi.endSession(activeSession.id, {
         summary: progressForm.summary || 'Session completed',
         homework: progressForm.homework || 'None',
         nextSessionGoals: progressForm.nextSessionRecommendation || 'Continue current treatment plan',
-        clientMoodEnd: progressForm.clientMoodEnd
+        clientMoodEnd: progressForm.clientMoodEnd,
+        techniquesUsed: progressForm.techniquesUsed,
+        progressNotes: progressForm.progressNotes,
+        goalsDiscussed: progressForm.goalsDiscussed
       });
 
-      if (response.success) {
+      if (sessionEndResponse.success) {
         success('Session ended successfully');
+        
+        // ADDED: Automatic invoice generation after session completion
+        try {
+          const invoiceResponse = await therapistApi.generateInvoiceFromSession(activeSession.id, {
+            appointmentId: activeSession.appointment?.id,
+            clientId: activeSession.appointment?.client?.id,
+            sessionDuration: activeSession.duration,
+            sessionType: activeSession.appointment?.type || 'therapy',
+            autoSend: true // Automatically send invoice to client
+          });
+          
+          if (invoiceResponse.success) {
+            success('Invoice automatically generated and sent to client', {
+              action: {
+                label: 'View Invoice',
+                onClick: () => window.open(`/therapist/invoices/${invoiceResponse.data?.invoiceId}`, '_blank')
+              }
+            });
+          } else {
+            // Invoice generation failed but session ended successfully
+            error('Session completed but invoice generation failed. Please create invoice manually.');
+          }
+        } catch (invoiceErr: any) {
+          console.error('Invoice generation error:', invoiceErr);
+          error('Session completed but invoice generation failed. Please create invoice manually.');
+        }
+        
+        // Reset form and state
         setActiveSession(null);
         setProgressForm({
           progressNotes: '',
@@ -294,7 +327,7 @@ const SessionManagement: React.FC = () => {
 
   const markClientAbsent = async (appointment: Appointment) => {
     try {
-      await therapistApi.updateAppointment(appointment.id, {
+      await legacyTherapistApi.updateAppointment(appointment.id, {
         status: 'cancelled',
         notes: `Client marked as no-show at ${new Date().toLocaleString()}`
       });

@@ -70,6 +70,7 @@ import ProfessionalTherapistChallenges from '@/pages/roles/therapist/challenges/
 import CreateChallenge from '@/pages/roles/therapist/challenges/CreateChallenge';
 import AssignChallenge from '@/pages/roles/therapist/challenges/AssignChallenge';
 import ResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
+import TherapistClientProfile from '@/pages/roles/therapist/clients/TherapistClientProfile';
 
 // Client Components
 import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
@@ -258,7 +259,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="appointments/:appointmentId/reschedule" element={<RescheduleAppointment />} />
                   <Route path="clients" element={<ProfessionalTherapistClients />} />
                   <Route path="clients/:clientId/psychological-behaviors" element={<ClientPsychologicalBehavior />} />
-                  {/* <Route path="clients/:clientId" element={<TherapistClientProfile />} /> */}
+                  <Route path="clients/:clientId" element={<TherapistClientProfile />} />
                   {/* <Route path="client/:clientId" element={<ClientOverview />} /> */}
                   {/* <Route path="billing" element={<TherapistBilling />} /> */}
                   <Route path="profile" element={<ProfessionalTherapistProfile />} />

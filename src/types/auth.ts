@@ -290,7 +290,7 @@ export enum UserRole {
   
   export interface ApiResponse<T = any> {
     success: boolean;
-    message: string;
+    message?: string;
     data?: T;
     errors?: Array<{
       field: string;

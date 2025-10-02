@@ -102,16 +102,23 @@ const ClientAppointments: React.FC = () => {
           // response.data contains appointments array
           const appointmentsData = response.data.appointments || response.data.data || response.data;
           const appointmentsArray = Array.isArray(appointmentsData) ? appointmentsData : [];
-          // Ensure each appointment has the required fields
-          const formattedAppointments = appointmentsArray.map((apt: any) => ({
-            ...apt,
-            date: apt.date || apt.appointment_date || apt.appointmentDate, // Map various date field names
-            therapist_name: apt.therapist_name || `${apt.therapist_first_name || ''} ${apt.therapist_last_name || ''}`.trim() || 'Unknown Therapist',
-            type: apt.type || apt.therapy_type || 'Regular Session',
-            start_time: apt.start_time || apt.time || '09:00',
-            end_time: apt.end_time || '10:00',
-            location: apt.location || 'Main Office'
-          }));
+          // Use centralized data transformation
+          const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
+          
+          const normalizedAppointments = normalizeAppointmentList(appointmentsArray);
+          const formattedAppointments = normalizedAppointments.map((normalized: any) => {
+            const appointment = withSmartDefaults(normalized, 'appointment');
+            
+            return {
+              ...appointment,
+              date: appointment.appointmentDate,
+              therapist_name: appointment.therapistName,
+              type: appointment.therapyType || 'Regular Session',
+              start_time: appointment.startTime || appointment.appointmentTime,
+              end_time: appointment.endTime,
+              location: appointment.location
+            };
+          });
           setAppointments(formattedAppointments);
           // Debug logging removed for production
         }

@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import { AxiosError } from 'axios';
 import { adminApi, therapistApi, clientApi, assistantApi, bookkeeperApi, commonApi } from '@/services/endpoints';
 import { realApiService } from '@/services/realApi';
+import { unifiedApi } from '@/services/unifiedApi';
 import { useAuth } from '@/store/authStore';
 import { ApiResponse } from '@/types/auth';
 
@@ -112,9 +113,19 @@ export function useAdminWaitingList() {
   const [total, setTotal] = useState(0);
   
   const { execute, isLoading, error } = useApiCall(adminApi.getWaitingList, {
-    onSuccess: (data) => {
-      setWaitingList(data.waitingList);
-      setTotal(data.total);
+    onSuccess: (response) => {
+      // Use the new response normalizer
+      const { normalizeApiResponse } = require('../utils/apiResponseNormalizer');
+      const normalized = normalizeApiResponse(response, 'waitingList');
+      
+      if (normalized.success && Array.isArray(normalized.data)) {
+        setWaitingList(normalized.data);
+        setTotal(normalized.pagination?.total || normalized.data.length);
+      } else {
+        console.warn('Unexpected waiting list response format:', response);
+        setWaitingList([]);
+        setTotal(0);
+      }
     }
   });
 
@@ -137,14 +148,14 @@ export function useAdminFinancialOverview() {
   return useApiCall(adminApi.getFinancialOverview);
 }
 
-// Therapist hooks
+// Therapist hooks - MIGRATED to unified API
 export function useTherapistDashboard() {
-  return useApiCall(realApiService.therapist.getDashboard);
+  return useApiCall(unifiedApi.therapist.getDashboard);
 }
 
 export function useTherapistProfile() {
-  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(realApiService.therapist.getProfile);
-  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(realApiService.therapist.updateProfile, {
+  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(unifiedApi.therapist.getProfile);
+  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(unifiedApi.therapist.updateProfile, {
     showSuccessToast: true,
     successMessage: 'Profile updated successfully'
   });
@@ -161,7 +172,7 @@ export function useTherapistProfile() {
 export function useTherapistClients() {
   const [clients, setClients] = useState<any[]>([]);
   
-  const { execute, isLoading, error } = useApiCall(realApiService.therapist.getClients, {
+  const { execute, isLoading, error } = useApiCall(unifiedApi.therapist.getClients, {
     onSuccess: (data) => {
       // API returns Client[] directly
       setClients(Array.isArray(data) ? data : []);
@@ -174,7 +185,7 @@ export function useTherapistClients() {
 export function useTherapistAppointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   
-  const { execute: getAppointments, isLoading, error } = useApiCall(realApiService.therapist.getAppointments, {
+  const { execute: getAppointments, isLoading, error } = useApiCall(unifiedApi.therapist.getAppointments, {
     onSuccess: (data) => {
       // Handle both direct array response and nested appointments property
       if (Array.isArray(data)) {
@@ -196,12 +207,12 @@ export function useTherapistAppointments() {
     showErrorToast: false // Prevent duplicate error toasts
   });
 
-  const { execute: createAppointment } = useApiCall(therapistApi.createAppointment, {
+  const { execute: createAppointment } = useApiCall(unifiedApi.admin.createAppointment, {
     showSuccessToast: true,
     successMessage: 'Appointment created successfully'
   });
 
-  const { execute: updateAppointment } = useApiCall(therapistApi.updateAppointment, {
+  const { execute: updateAppointment } = useApiCall(unifiedApi.admin.updateAppointment, {
     showSuccessToast: true,
     successMessage: 'Appointment updated successfully'
   });
@@ -216,14 +227,14 @@ export function useTherapistAppointments() {
   };
 }
 
-// Client hooks
+// Client hooks - MIGRATED to unified API
 export function useClientDashboard() {
-  return useApiCall(clientApi.getDashboard);
+  return useApiCall(unifiedApi.client.getDashboard);
 }
 
 export function useClientProfile() {
-  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(clientApi.getProfile);
-  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(clientApi.updateProfile, {
+  const { execute: getProfile, data: profile, isLoading: isLoadingProfile, error: profileError } = useApiCall(unifiedApi.client.getProfile);
+  const { execute: updateProfile, isLoading: isUpdating } = useApiCall(unifiedApi.client.updateProfile, {
     showSuccessToast: true,
     successMessage: 'Profile updated successfully'
   });
@@ -240,13 +251,13 @@ export function useClientProfile() {
 export function useClientAppointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
   
-  const { execute: getAppointments, isLoading, error } = useApiCall(clientApi.getAppointments, {
+  const { execute: getAppointments, isLoading, error } = useApiCall(unifiedApi.client.getAppointments, {
     onSuccess: (data) => {
-      setAppointments(data.appointments);
+      setAppointments(Array.isArray(data) ? data : (data as any)?.appointments || []);
     }
   });
 
-  const { execute: requestAppointment } = useApiCall(clientApi.requestAppointment, {
+  const { execute: requestAppointment } = useApiCall(unifiedApi.client.requestAppointment, {
     showSuccessToast: true,
     successMessage: 'Appointment request submitted'
   });

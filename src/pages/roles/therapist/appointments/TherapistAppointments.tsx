@@ -169,38 +169,52 @@ const TherapistAppointments: React.FC = () => {
   // Update local appointments when API data changes
   useEffect(() => {
     if (Array.isArray(apiAppointments)) {
-      // Map API data to appointment format
-      const mappedAppointments = apiAppointments.map((apt, index) => {
-        return {
-        id: apt.id || apt.appointment_id || String(Math.random()),
-        client_name: apt.client_name || apt.client?.name || `${apt.client_first_name || ''} ${apt.client_last_name || ''}`.trim() || 'Unknown Client',
-        client_id: apt.client_id,
-        client: apt.client || (apt.client_id ? {
-          id: apt.client_id,
-          first_name: apt.client_first_name || apt.client?.first_name || '',
-          last_name: apt.client_last_name || apt.client?.last_name || '',
-          email: apt.client_email || apt.client?.email || '',
-          phone: apt.client_phone || apt.client?.phone || '',
-          profile_photo_url: apt.client?.profile_photo_url,
-          last_session_date: apt.client?.last_session_date,
-          total_sessions: apt.client?.total_sessions,
-          therapy_goals: apt.client?.therapy_goals
-        } : undefined),
-        date: apt.date || apt.appointment_date,
-        time: apt.time || apt.appointment_time || apt.start_time,
-        duration: apt.duration || 50,
-        type: apt.type || 'therapy',
-        location: apt.location || 'office',
-        status: apt.status || 'scheduled',
-        notes: apt.notes,
-        preparation_notes: apt.preparation_notes,
-        session_notes: apt.session_notes,
-        priority: apt.priority || 'normal',
-        recurring: apt.recurring,
-        recurring_pattern: apt.recurring_pattern,
-        video_link: apt.video_link
-      }});
-      setAppointments(mappedAppointments);
+      // Use centralized data transformation
+      const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
+      
+      try {
+        const normalizedAppointments = normalizeAppointmentList(apiAppointments);
+        
+        // Map to component's expected format
+        const mappedAppointments = normalizedAppointments.map((normalized: any) => {
+          const appointment = withSmartDefaults(normalized, 'appointment');
+          
+          return {
+            id: appointment.id,
+            client_name: appointment.clientName,
+            client_id: appointment.client?.id || appointment.clientId,
+            client: {
+              id: appointment.client?.id || appointment.clientId,
+              first_name: appointment.clientFirstName,
+              last_name: appointment.clientLastName,
+              email: appointment.clientEmail,
+              phone: appointment.client?.phone || '',
+              profile_photo_url: appointment.client?.profile_photo_url,
+              last_session_date: appointment.client?.last_session_date,
+              total_sessions: appointment.client?.total_sessions,
+              therapy_goals: appointment.client?.therapy_goals
+            },
+            date: appointment.appointmentDate,
+            time: appointment.appointmentTime,
+            duration: appointment.duration,
+            type: appointment.therapyType || 'therapy',
+            location: appointment.location,
+            status: appointment.status,
+            notes: appointment.notes,
+            preparation_notes: appointment.preparation_notes,
+            session_notes: appointment.session_notes,
+            priority: appointment.urgencyLevel || 'normal',
+            recurring: appointment.recurring,
+            recurring_pattern: appointment.recurring_pattern,
+            video_link: appointment.video_link
+          };
+        });
+        
+        setAppointments(mappedAppointments);
+      } catch (error) {
+        console.error('Error normalizing appointment data:', error);
+        setAppointments([]);
+      }
     } else {
       // If no appointments or invalid data, set empty array
       setAppointments([]);
