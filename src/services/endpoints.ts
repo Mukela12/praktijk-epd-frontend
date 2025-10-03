@@ -546,7 +546,7 @@ export const clientApi = {
   },
 
   requestAppointment: async (requestData: any): Promise<ApiResponse<{ id: string }>> => {
-    const response = await api.post('/client/appointments/request', requestData);
+    const response = await api.post('/client/appointment-request', requestData);
     return response.data;
   },
 

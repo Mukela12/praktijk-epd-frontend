@@ -111,7 +111,7 @@ const BookAppointment: React.FC = () => {
       // Fallback to hardcoded slots if no therapist selected
       generateTimeSlots();
     }
-  }, [selectedDate, selectedTherapist?.id]);
+  }, [selectedDate, selectedTherapist]);
 
   const checkUnpaidInvoices = async () => {
     try {
@@ -141,9 +141,15 @@ const BookAppointment: React.FC = () => {
   };
 
   const loadTherapists = async () => {
+    // Prevent duplicate calls - check if already loading
+    if (isLoading) {
+      console.log('[BookAppointment] Already loading therapists, skipping duplicate call');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      
+
       // First try to get assigned therapist
       try {
         const assignedResponse = await realApiService.client.getTherapist();
@@ -154,16 +160,19 @@ const BookAppointment: React.FC = () => {
         }
       } catch (error) {
         // No assigned therapist - this is okay
+        console.log('[BookAppointment] No assigned therapist found');
       }
 
       // Load all available therapists
       const allTherapistsResponse = await realApiService.therapists.getAll({ status: 'active' });
       if (allTherapistsResponse.success && allTherapistsResponse.data) {
         const therapistsList = allTherapistsResponse.data.therapists || allTherapistsResponse.data || [];
+        console.log('[BookAppointment] Loaded therapists:', therapistsList.length);
         setAllTherapists(therapistsList);
       }
     } catch (error) {
       // Silent fail - user can still proceed without therapist selection
+      console.error('[BookAppointment] Error loading therapists:', error);
     } finally {
       setIsLoading(false);
     }
@@ -173,9 +182,16 @@ const BookAppointment: React.FC = () => {
   // FIXED: Load real therapist availability instead of hardcoded slots
   const loadTherapistAvailability = async () => {
     if (!selectedTherapist || !selectedDate) return;
-    
+
+    // Prevent duplicate calls
+    if (isLoadingAvailability) {
+      console.log('[BookAppointment] Already loading availability, skipping duplicate call');
+      return;
+    }
+
     try {
       setIsLoadingAvailability(true);
+      console.log('[BookAppointment] Loading availability for therapist:', selectedTherapist.id, 'date:', selectedDate);
       const response = await clientApi.getTherapistAvailability(selectedTherapist.id, {
         date: selectedDate
       });
