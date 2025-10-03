@@ -73,11 +73,26 @@ const BookAppointment: React.FC = () => {
   maxDate.setDate(maxDate.getDate() + 30);
   const maxDateStr = maxDate.toISOString().split('T')[0];
 
+  // Load initial data once on component mount
   useEffect(() => {
-    loadTherapists();
-    checkUnpaidInvoices();
-    
-    // Check if a therapist was preselected from navigation
+    let isMounted = true;
+
+    const loadInitialData = async () => {
+      if (isMounted) {
+        await loadTherapists();
+        await checkUnpaidInvoices();
+      }
+    };
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Only run once on mount
+
+  // Handle preselected therapist separately
+  useEffect(() => {
     const preselectedTherapistId = location.state?.preselectedTherapistId;
     if (preselectedTherapistId && allTherapists.length > 0) {
       const preselectedTherapist = allTherapists.find(t => t.id === preselectedTherapistId);
@@ -87,7 +102,7 @@ const BookAppointment: React.FC = () => {
         setShowTherapistSelection(true);
       }
     }
-  }, [location.state, allTherapists]);
+  }, [allTherapists]); // Only re-run when therapists list changes
 
   useEffect(() => {
     if (selectedDate && selectedTherapist) {
