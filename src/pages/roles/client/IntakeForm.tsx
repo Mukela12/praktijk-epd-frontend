@@ -15,7 +15,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import { clientApi } from '@/services/endpoints';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
+import HulpvragenSelector from '@/components/forms/HulpvragenSelector';
 
 interface IntakeFormData {
   reasonForTherapy: string;
@@ -334,7 +334,7 @@ const IntakeForm: React.FC = () => {
 
             <HulpvragenSelector
               value={formData.hulpvragen}
-              onChange={(hulpvragen) => setFormData(prev => ({ ...prev, hulpvragen }))}
+              onChange={(hulpvragen: string[]) => setFormData(prev => ({ ...prev, hulpvragen }))}
               maxSelection={5}
               required={true}
               placeholder="Select the areas you'd like to work on..."

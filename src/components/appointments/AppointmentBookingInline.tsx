@@ -16,7 +16,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import { useAuth } from '@/store/authStore';
 import { PremiumCard, PremiumButton, StatusBadge } from '@/components/layout/PremiumLayout';
 import { TextField, TextareaField, SelectField } from '@/components/forms/FormFields';
-import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
+import HulpvragenSelector from '@/components/forms/HulpvragenSelector';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
 import { motion } from 'framer-motion';
@@ -461,7 +461,7 @@ const AppointmentBookingInline: React.FC = () => {
 
             <HulpvragenSelector
               value={bookingData.hulpvragen}
-              onChange={(hulpvragen) => setBookingData(prev => ({ ...prev, hulpvragen }))}
+              onChange={(hulpvragen: string[]) => setBookingData(prev => ({ ...prev, hulpvragen }))}
               maxSelection={5}
               required={true}
               placeholder="Select the areas you'd like to work on..."
