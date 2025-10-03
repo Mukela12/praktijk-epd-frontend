@@ -24,7 +24,7 @@ interface HulpvragenSelectorProps {
   placeholder?: string;
 }
 
-export const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
+const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
   value = [],
   onChange,
   maxSelection = 5,

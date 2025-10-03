@@ -18,7 +18,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
-import { HulpvragenSelector } from '@/components/forms/HulpvragenSelector';
+import HulpvragenSelector from '@/components/forms/HulpvragenSelector';
 
 interface Therapist {
   id: string;

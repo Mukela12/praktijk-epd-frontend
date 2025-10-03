@@ -275,7 +275,7 @@ class UnifiedApiClient {
     
     // Appointments
     getAppointments: (params?: any) => this.request<any[]>('GET', '/client/appointments', undefined, params, { entityKey: 'appointments' }),
-    requestAppointment: (requestData: any) => this.request<any>('POST', '/client/appointment-requests', requestData),
+    requestAppointment: (requestData: any) => this.request<any>('POST', '/client/appointment-request', requestData),
     
     // Intake
     submitIntakeForm: (intakeData: any) => this.request<any>('POST', '/client/intake', intakeData),
