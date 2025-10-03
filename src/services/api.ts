@@ -59,9 +59,11 @@ api.interceptors.request.use(
       '/auth/login',
       '/auth/register',
       '/auth/refresh',
+      '/auth/refresh-token',
       '/auth/verify-email',
       '/auth/resend-verification',
-      '/health'
+      '/health',
+      '/public'
     ];
     
     const isSkipEndpoint = skipAuthEndpoints.some(endpoint => 
@@ -129,8 +131,15 @@ api.interceptors.request.use(
 // Helper function to refresh access token
 const refreshAccessToken = async (): Promise<string> => {
   try {
-    // Send empty body with POST request, cookies will be sent automatically
-    const response = await api.post('/auth/refresh', {});
+    // Use refresh-token endpoint which reads refresh token from httpOnly cookie
+    // This doesn't require an Authorization header
+    const response = await api.post('/auth/refresh-token', {}, {
+      headers: {
+        // Don't send Authorization header for refresh
+      },
+      // Ensure cookies are sent
+      withCredentials: true
+    });
     
     if (response.data.success && response.data.accessToken) {
       const newToken = response.data.accessToken;
@@ -202,6 +211,7 @@ api.interceptors.response.use(
       '/auth/login',
       '/auth/register',
       '/auth/refresh',
+      '/auth/refresh-token',
       '/auth/verify-2fa',
       '/auth/setup-2fa'
     ];
