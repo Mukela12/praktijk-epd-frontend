@@ -18,7 +18,7 @@ import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
-import HulpvragenSelector from '@/components/forms/HulpvragenSelector';
+import SimpleHulpvragenSelector from '@/components/forms/SimpleHulpvragenSelector';
 
 interface Therapist {
   id: string;
@@ -586,7 +586,7 @@ const BookAppointment: React.FC = () => {
               
               {/* Hulpvragen Selector */}
               <div className="mb-6">
-                <HulpvragenSelector
+                <SimpleHulpvragenSelector
                   value={selectedHulpvragen}
                   onChange={setSelectedHulpvragen}
                   maxSelection={5}
