@@ -644,6 +644,39 @@ export const realApiService = {
       return response.data;
     },
 
+    // Appointment Requests (NEW)
+    getAppointmentRequests: async (params?: {
+      status?: string;
+      urgency?: string;
+      page?: number;
+      limit?: number;
+    }): Promise<ApiResponse<{ requests: any[]; pagination: any }>> => {
+      const response = await api.get('/admin/appointment-requests', { params });
+      return response.data;
+    },
+
+    // Smart Pairing Recommendations (NEW)
+    getSmartPairingRecommendations: async (params: {
+      clientId: string;
+      appointmentDate: string;
+      appointmentTime: string;
+    }): Promise<ApiResponse<{ recommendations: any[]; totalTherapistsEvaluated: number }>> => {
+      const response = await api.get('/admin/smart-pairing-recommendations', { params });
+      return response.data;
+    },
+
+    // Assign therapist to appointment request (NEW)
+    assignAppointmentRequest: async (requestId: string, data: {
+      therapistId: string;
+    }): Promise<ApiResponse<any>> => {
+      const response = await api.put(`/admin/appointment-requests/${requestId}/assign`, data);
+      if (response.data.success) {
+        requestManager.clearRelatedCache('/admin/appointment-requests');
+        requestManager.clearRelatedCache('/admin/appointments');
+      }
+      return response.data;
+    },
+
     // Reports (✅ WORKING)
     getReports: async (reportType: string, params?: any): Promise<ApiResponse<any>> => {
       const response = await api.get('/admin/reports', { params: { reportType, ...params } });
@@ -740,13 +773,7 @@ export const realApiService = {
       return response.data;
     },
 
-    // Appointment Requests Management
-    getAppointmentRequests: async (): Promise<ApiResponse<{ requests: any[] }>> => {
-      const response = await api.get('/admin/appointment-requests');
-      return response.data;
-    },
-
-    // Therapist Assignment
+    // Therapist Assignment (legacy)
     assignTherapist: async (data: {
       clientId: string;
       therapistId: string;
@@ -754,25 +781,6 @@ export const realApiService = {
       notes?: string;
     }): Promise<ApiResponse<any>> => {
       const response = await api.post('/admin/assign-therapist', data);
-      return response.data;
-    },
-    
-    assignTherapistToAppointment: async (requestId: string, data: {
-      therapistId: string;
-    }): Promise<ApiResponse<any>> => {
-      const response = await api.put(`/admin/appointment-requests/${requestId}/assign`, data);
-      return response.data;
-    },
-
-    // Smart Pairing
-    getSmartPairingRecommendations: async (params: {
-      clientId: string;
-      appointmentDate?: string;
-      appointmentTime?: string;
-      therapyType?: string;
-      urgencyLevel?: string;
-    }): Promise<ApiResponse<{ recommendations: any[] }>> => {
-      const response = await api.get('/admin/smart-pairing/recommendations', { params });
       return response.data;
     },
 
@@ -829,11 +837,6 @@ export const realApiService = {
     },
 
     // Appointment Management
-
-    assignAppointmentRequest: async (id: string, therapistId: string): Promise<ApiResponse> => {
-      const response = await api.put(`/admin/appointment-requests/${id}/assign`, { therapistId });
-      return response.data;
-    },
 
     getSessionProgress: async (params?: any): Promise<ApiResponse<any[]>> => {
       const response = await api.get('/admin/session-progress', { params });

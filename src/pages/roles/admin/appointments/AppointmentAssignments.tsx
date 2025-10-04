@@ -79,8 +79,7 @@ const AppointmentAssignments: React.FC = () => {
       const response = await realApiService.admin.getSmartPairingRecommendations({
         clientId: request.clientId,
         appointmentDate: request.preferredDate,
-        appointmentTime: request.preferredTime,
-        urgencyLevel: request.urgency
+        appointmentTime: request.preferredTime
       });
       
       if (response.success && response.data) {
@@ -94,10 +93,10 @@ const AppointmentAssignments: React.FC = () => {
 
   const handleAssignTherapist = async (therapistId: string) => {
     if (!selectedRequest) return;
-    
+
     setIsAssigning(true);
     try {
-      const response = await realApiService.admin.assignTherapistToAppointment(selectedRequest.id, {
+      const response = await realApiService.admin.assignAppointmentRequest(selectedRequest.id, {
         therapistId
       });
       

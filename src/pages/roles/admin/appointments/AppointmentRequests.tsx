@@ -137,19 +137,17 @@ const AppointmentRequests: React.FC = () => {
       const response = await realApiService.admin.getSmartPairingRecommendations({
         clientId: request.client_id,
         appointmentDate: request.preferred_date,
-        appointmentTime: request.preferred_time,
-        therapyType: request.therapy_type,
-        urgencyLevel: request.urgency_level
+        appointmentTime: request.preferred_time
       });
 
       if (response.success && response.data) {
         const recommendations = response.data.recommendations || [];
         setSmartRecommendations(recommendations);
         setShowSmartPairing(true);
-        
+
         // SUCCESS NOTIFICATION: Smart pairing analysis completed
         if (recommendations.length > 0) {
-          info(`Best match: ${recommendations[0]?.therapist_name} (${Math.round(recommendations[0]?.score || 0)}% compatibility)`, {
+          info(`Best match: ${recommendations[0]?.therapist_name} (${Math.round((recommendations[0]?.score || 0) * 100)}% compatibility)`, {
             title: `Found ${recommendations.length} Therapist Matches`,
             duration: 5000
           });
@@ -175,11 +173,8 @@ const AppointmentRequests: React.FC = () => {
 
     setIsAssigning(true);
     try {
-      const response = await realApiService.admin.assignTherapist({
-        clientId: selectedRequest.client_id,
-        therapistId: selectedTherapist,
-        appointmentRequestId: selectedRequest.id,
-        notes: assignmentNotes
+      const response = await realApiService.admin.assignAppointmentRequest(selectedRequest.id, {
+        therapistId: selectedTherapist
       });
 
       if (response.success) {

@@ -44,6 +44,7 @@ import PsychologicalProblemsManagement from '@/pages/roles/admin/psychological-p
 import AddressChangeManagement from '@/pages/roles/admin/AddressChangeManagement';
 import UserManagement from '@/pages/roles/admin/user-management/UserManagement';
 import AdminAppointmentsManagement from '@/pages/roles/admin/appointments/AppointmentsManagement';
+import AppointmentRequests from '@/pages/roles/admin/appointments/AppointmentRequests';
 import TherapistManagement from '@/pages/roles/admin/therapist-management'; // New modular therapist management
 
 // Therapist Components
@@ -237,6 +238,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="address-changes" element={<AddressChangeManagement />} />
                   <Route path="users" element={<UserManagement />} />
                   <Route path="appointments" element={<AdminAppointmentsManagement />} />
+                  <Route path="appointment-requests" element={<AppointmentRequests />} />
                   <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                 </Routes>
               </DashboardLayout>
