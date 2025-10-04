@@ -346,7 +346,7 @@ const BookAppointment: React.FC = () => {
               'The therapist is not available at your selected time. Your request has been added to the waiting list and an admin will assign you a suitable therapist soon.',
               {
                 title: 'Added to Waiting List',
-                duration: 6000
+                duration: 8000
               }
             );
           } else {
@@ -354,13 +354,22 @@ const BookAppointment: React.FC = () => {
               `Your appointment with ${selectedTherapist.first_name} ${selectedTherapist.last_name} has been successfully booked for ${formatDate(selectedDate)} at ${selectedTime}!`,
               {
                 title: 'Appointment Confirmed',
-                duration: 5000
+                duration: 8000,
+                action: {
+                  label: 'View Appointments',
+                  onClick: () => navigate('/client/appointments')
+                }
               }
             );
           }
 
-          // Navigate after a short delay to let user see the notification
-          setTimeout(() => navigate('/client/appointments'), 1500);
+          // Reset form
+          console.log('[BookAppointment] Booking successful - resetting form');
+          setSelectedDate('');
+          setSelectedTime('');
+          setSelectedHulpvragen([]);
+          setProblemDescription('');
+          setStep(1);
         }
       } catch (error: any) {
         console.error('[BookAppointment] Booking error:', error);
@@ -393,10 +402,21 @@ const BookAppointment: React.FC = () => {
             'Your appointment request has been submitted successfully. An admin will review and assign a therapist soon.',
             {
               title: 'Request Submitted',
-              duration: 5000
+              duration: 8000,
+              action: {
+                label: 'View Appointments',
+                onClick: () => navigate('/client/appointments')
+              }
             }
           );
-          setTimeout(() => navigate('/client/appointments'), 1500);
+
+          // Reset form
+          console.log('[BookAppointment] Request successful - resetting form');
+          setSelectedDate('');
+          setSelectedTime('');
+          setSelectedHulpvragen([]);
+          setProblemDescription('');
+          setStep(1);
         }
       } catch (error: any) {
         console.error('[BookAppointment] Request error:', error);

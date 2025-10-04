@@ -91,17 +91,24 @@ const ClientAppointments: React.FC = () => {
     const loadAppointments = async () => {
       // Don't retry if we already have an error or are already loading
       if (hasErrorRef.current || loadingRef.current) return;
-      
+
+      console.log('[ClientAppointments] Loading appointments from API...');
+
       try {
         loadingRef.current = true;
         setIsLoading(true);
         hasErrorRef.current = false;
         const response = await clientApi.getAppointments();
-        
+
+        console.log('[ClientAppointments] API Response:', response);
+
         if (response.success && response.data) {
           // Backend now returns properly formatted data with JOINs
           const appointmentsData = response.data.appointments || response.data.data || response.data;
           const appointmentsArray = Array.isArray(appointmentsData) ? appointmentsData : [];
+
+          console.log('[ClientAppointments] Raw appointments data:', appointmentsArray);
+          console.log('[ClientAppointments] Number of appointments received:', appointmentsArray.length);
 
           // Simple mapping - backend sends clean data with therapist names
           const formattedAppointments = appointmentsArray.map((apt: any) => ({
@@ -123,11 +130,14 @@ const ClientAppointments: React.FC = () => {
             cost: apt.cost
           }));
 
+          console.log('[ClientAppointments] Formatted appointments:', formattedAppointments);
           setAppointments(formattedAppointments);
+          console.log('[ClientAppointments] ✓ Successfully loaded', formattedAppointments.length, 'appointments');
         }
       } catch (error: any) {
+        console.error('[ClientAppointments] Error loading appointments:', error);
         // Silent error handling
-        
+
         // Don't keep retrying if it's a rate limit or auth error
         if (error?.response?.status === 429 || error?.response?.status === 403) {
           hasErrorRef.current = true;
