@@ -116,6 +116,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           roles: [UserRole.ADMIN],
         },
         {
+          name: 'Appointment Requests',
+          nameKey: 'nav.appointmentRequests',
+          href: '/admin/appointment-requests',
+          icon: ClipboardDocumentListIcon,
+          roles: [UserRole.ADMIN],
+        },
+        {
           name: 'Clients',
           nameKey: 'nav.clients',
           href: '/admin/clients',
