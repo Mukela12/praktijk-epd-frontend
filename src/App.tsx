@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
 import { NotificationProvider, useNotifications } from '@/components/ui/NotificationProvider';
 import { PremiumNotifications } from '@/utils/premiumNotifications';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -474,6 +475,16 @@ const App: React.FC = () => {
           <NetworkErrorHandler>
             <LanguageProvider>
               <NotificationInitializer />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#fff',
+                    color: '#363636',
+                  },
+                }}
+              />
               <Router>
                 <AppRoutes />
               </Router>
