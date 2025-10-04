@@ -19,7 +19,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
 import SimpleHulpvragenSelector from '@/components/forms/SimpleHulpvragenSelector';
-import notifications from '@/utils/notifications';
+import { usePremiumNotifications } from '@/utils/premiumNotifications';
 
 interface Therapist {
   id: string;
@@ -40,6 +40,7 @@ const BookAppointment: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { success, error: errorAlert } = useAlert();
+  const notifications = usePremiumNotifications();
 
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -343,17 +344,19 @@ const BookAppointment: React.FC = () => {
         if (response.success) {
           if (response.data?.waitingList) {
             notifications.info(
-              'The therapist is not available at your selected time. Your request has been added to the waiting list and an admin will assign you a suitable therapist soon.',
+              'Your request has been added to the waiting list. An admin will assign you a suitable therapist soon.',
               {
                 title: 'Added to Waiting List',
+                description: `Requested time: ${formatDate(selectedDate)} at ${selectedTime}`,
                 duration: 8000
               }
             );
           } else {
             notifications.success(
-              `Your appointment with ${selectedTherapist.first_name} ${selectedTherapist.last_name} has been successfully booked for ${formatDate(selectedDate)} at ${selectedTime}!`,
+              `Your appointment has been successfully booked!`,
               {
                 title: 'Appointment Confirmed',
+                description: `${selectedTherapist.first_name} ${selectedTherapist.last_name} on ${formatDate(selectedDate)} at ${selectedTime}`,
                 duration: 8000,
                 action: {
                   label: 'View Appointments',
@@ -376,7 +379,8 @@ const BookAppointment: React.FC = () => {
         const errorMessage = error.response?.data?.message || 'Failed to book appointment. Please try again.';
         notifications.error(errorMessage, {
           title: 'Booking Failed',
-          duration: 5000
+          description: 'Please check your details and try again',
+          duration: 6000
         });
       } finally {
         setIsSubmitting(false);
@@ -399,9 +403,10 @@ const BookAppointment: React.FC = () => {
 
         if (response.success) {
           notifications.success(
-            'Your appointment request has been submitted successfully. An admin will review and assign a therapist soon.',
+            'Your appointment request has been submitted successfully.',
             {
               title: 'Request Submitted',
+              description: 'An admin will review and assign a therapist soon',
               duration: 8000,
               action: {
                 label: 'View Appointments',
@@ -423,7 +428,8 @@ const BookAppointment: React.FC = () => {
         const errorMessage = error.response?.data?.message || 'Failed to submit appointment request. Please try again.';
         notifications.error(errorMessage, {
           title: 'Submission Failed',
-          duration: 5000
+          description: 'Please check your details and try again',
+          duration: 6000
         });
       } finally {
         setIsSubmitting(false);
