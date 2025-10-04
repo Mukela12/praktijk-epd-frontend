@@ -192,35 +192,32 @@ const BookAppointment: React.FC = () => {
     try {
       setIsLoadingAvailability(true);
       console.log('[BookAppointment] Loading availability for therapist:', selectedTherapist.id, 'date:', selectedDate);
-      const response = await clientApi.getTherapistAvailability(selectedTherapist.id, {
+
+      // Call new endpoint to get therapists with availability slots
+      const response = await realApiService.client.getAvailableTherapists({
         date: selectedDate
       });
-      
+
       if (response.success && response.data) {
-        // Process availability data into time slots
-        const availabilityData = response.data;
-        const slots: string[] = [];
-        
-        if (Array.isArray(availabilityData)) {
-          availabilityData.forEach((availability: any) => {
-            if (availability.available_times && Array.isArray(availability.available_times)) {
-              availability.available_times.forEach((time: string) => {
-                // Format time to HH:MM format
-                const formattedTime = time.substring(0, 5); // Extract HH:MM from HH:MM:SS
-                if (!slots.includes(formattedTime)) {
-                  slots.push(formattedTime);
-                }
-              });
-            }
-          });
-        }
-        
-        // Sort slots by time
-        slots.sort((a, b) => a.localeCompare(b));
-        setAvailableSlots(slots);
-        
-        if (slots.length === 0) {
-          errorAlert(`No available time slots for ${selectedTherapist.first_name} ${selectedTherapist.last_name} on ${formatDate(selectedDate)}`);
+        const therapists = response.data.therapists || [];
+
+        // Find selected therapist in response
+        const therapistData = therapists.find((t: any) => t.id === selectedTherapist.id);
+
+        if (therapistData && therapistData.availabilitySlots) {
+          // Extract time slots from availability slots
+          const slots = therapistData.availabilitySlots
+            .map((slot: any) => slot.start_time.substring(0, 5)) // Format as HH:MM
+            .sort((a: string, b: string) => a.localeCompare(b)); // Sort by time
+
+          setAvailableSlots(slots);
+
+          if (slots.length === 0) {
+            errorAlert(`No available time slots for ${selectedTherapist.first_name} ${selectedTherapist.last_name} on ${formatDate(selectedDate)}`);
+          }
+        } else {
+          setAvailableSlots([]);
+          errorAlert(`${selectedTherapist.first_name} ${selectedTherapist.last_name} is not available on ${formatDate(selectedDate)}`);
         }
       } else {
         // Fallback to hardcoded slots if API fails
@@ -257,28 +254,60 @@ const BookAppointment: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const requestData = {
-        preferredDate: selectedDate,
-        preferredTime: selectedTime,
-        therapyType: urgency === 'urgent' ? 'emergency' : 'regular', // Map urgency to therapy type
-        urgencyLevel: urgency,
-        hulpvragen: selectedHulpvragen,
-        reason: problemDescription || '', // Optional additional description
-        problemDescription: problemDescription || '' // Backward compatibility
-      };
+    // If therapist is selected, use new booking endpoint
+    if (selectedTherapist) {
+      setIsSubmitting(true);
+      try {
+        const bookingData = {
+          therapistId: selectedTherapist.id,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedTime,
+          hulpvragen: selectedHulpvragen,
+          problemDescription: problemDescription || '',
+          therapyType: urgency === 'urgent' ? 'emergency' : 'individual',
+          urgencyLevel: urgency
+        };
 
-      const response = await realApiService.client.requestAppointment(requestData);
-      
-      if (response.success) {
-        success(t('appointments.requestSubmittedSuccess'));
-        navigate('/client/appointments');
+        const response = await realApiService.client.bookWithTherapist(bookingData);
+
+        if (response.success) {
+          if (response.data?.waitingList) {
+            success('Therapist not available. Your request has been added to the waiting list.');
+          } else {
+            success('Appointment booked successfully!');
+          }
+          navigate('/client/appointments');
+        }
+      } catch (error: any) {
+        errorAlert(error.response?.data?.message || 'Failed to book appointment');
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error: any) {
-      errorAlert(error.response?.data?.message || t('appointments.requestSubmitError'));
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Fallback to old endpoint if no therapist selected
+      setIsSubmitting(true);
+      try {
+        const requestData = {
+          preferredDate: selectedDate,
+          preferredTime: selectedTime,
+          therapyType: urgency === 'urgent' ? 'emergency' : 'regular',
+          urgencyLevel: urgency,
+          hulpvragen: selectedHulpvragen,
+          reason: problemDescription || '',
+          problemDescription: problemDescription || ''
+        };
+
+        const response = await realApiService.client.requestAppointment(requestData);
+
+        if (response.success) {
+          success(t('appointments.requestSubmittedSuccess'));
+          navigate('/client/appointments');
+        }
+      } catch (error: any) {
+        errorAlert(error.response?.data?.message || t('appointments.requestSubmitError'));
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

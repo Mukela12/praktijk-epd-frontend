@@ -1196,6 +1196,30 @@ export const realApiService = {
       return response.data;
     },
 
+    // Therapist Selection & Booking (✅ NEW)
+    getAvailableTherapists: async (params?: {
+      date?: string;
+      time?: string;
+      city?: string;
+      specialization?: string;
+    }): Promise<ApiResponse> => {
+      const response = await api.get('/client/therapists/available', { params });
+      return response.data;
+    },
+
+    bookWithTherapist: async (data: {
+      therapistId: string;
+      appointmentDate: string;
+      appointmentTime: string;
+      hulpvragen?: string[];
+      problemDescription?: string;
+      therapyType?: string;
+      urgencyLevel?: string;
+    }): Promise<ApiResponse> => {
+      const response = await api.post('/client/appointments/book-with-therapist', data);
+      return response.data;
+    },
+
     // Therapist info (✅ WORKING)
     getTherapist: async (): Promise<ApiResponse<Therapist>> => {
       const response = await api.get('/client/therapist');
