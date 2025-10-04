@@ -104,23 +104,44 @@ const AppointmentRequests: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      console.log('[AppointmentRequests] ===== LOADING DATA =====');
+      console.log('[AppointmentRequests] Calling APIs: /admin/appointment-requests and /admin/therapists');
+
       const [requestsResponse, therapistsResponse] = await Promise.all([
         realApiService.admin.getAppointmentRequests(),
         realApiService.admin.getTherapists()
       ]);
 
+      console.log('[AppointmentRequests] Requests response:', requestsResponse);
+      console.log('[AppointmentRequests] Therapists response:', therapistsResponse);
+
       if (requestsResponse.success && requestsResponse.data) {
-        setRequests((requestsResponse.data as any).requests || []);
+        const requestsData = (requestsResponse.data as any).requests || [];
+        console.log('[AppointmentRequests] Loaded', requestsData.length, 'appointment requests');
+        console.log('[AppointmentRequests] First request (if any):', requestsData[0]);
+        setRequests(requestsData);
+      } else {
+        console.error('[AppointmentRequests] ✗ Invalid requests response structure');
       }
 
       if (therapistsResponse.success && therapistsResponse.data) {
-        const therapistsData = Array.isArray(therapistsResponse.data) 
-          ? therapistsResponse.data 
+        const therapistsData = Array.isArray(therapistsResponse.data)
+          ? therapistsResponse.data
           : therapistsResponse.data.therapists || [];
+        console.log('[AppointmentRequests] Loaded', therapistsData.length, 'therapists');
         setTherapists(therapistsData);
+      } else {
+        console.error('[AppointmentRequests] ✗ Invalid therapists response structure');
       }
+
+      console.log('[AppointmentRequests] ✓ Data loading complete');
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error('[AppointmentRequests] ✗ Failed to load data:', error);
+      console.error('[AppointmentRequests] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       errorAlert(handleApiError(error).message);
     } finally {
       setIsLoading(false);
@@ -133,56 +154,99 @@ const AppointmentRequests: React.FC = () => {
 
   // Load smart pairing recommendations
   const loadSmartRecommendations = async (request: AppointmentRequest) => {
+    console.log('[AppointmentRequests] ===== LOADING SMART PAIRING =====');
+    console.log('[AppointmentRequests] Request ID:', request.id);
+    console.log('[AppointmentRequests] Client ID:', request.client_id);
+    console.log('[AppointmentRequests] Preferred date/time:', request.preferred_date, request.preferred_time);
+
     try {
-      const response = await realApiService.admin.getSmartPairingRecommendations({
+      const params = {
         clientId: request.client_id,
         appointmentDate: request.preferred_date,
         appointmentTime: request.preferred_time
-      });
+      };
+      console.log('[AppointmentRequests] API params:', params);
+      console.log('[AppointmentRequests] Calling API: /admin/smart-pairing');
+
+      const response = await realApiService.admin.getSmartPairingRecommendations(params);
+
+      console.log('[AppointmentRequests] Smart pairing response:', response);
 
       if (response.success && response.data) {
         const recommendations = response.data.recommendations || [];
+        console.log('[AppointmentRequests] Received', recommendations.length, 'recommendations');
+        console.log('[AppointmentRequests] Recommendations:', recommendations);
         setSmartRecommendations(recommendations);
         setShowSmartPairing(true);
 
         // SUCCESS NOTIFICATION: Smart pairing analysis completed
         if (recommendations.length > 0) {
+          console.log('[AppointmentRequests] ✓ Best match:', recommendations[0]?.therapist_name, 'with score', recommendations[0]?.score);
           info(`Best match: ${recommendations[0]?.therapist_name} (${Math.round((recommendations[0]?.score || 0) * 100)}% compatibility)`, {
             title: `Found ${recommendations.length} Therapist Matches`,
             duration: 5000
           });
         } else {
+          console.log('[AppointmentRequests] ⚠ No optimal matches found');
           warning('Consider manual assignment or adjusting criteria', {
             title: 'No Optimal Matches Found',
             duration: 4000
           });
         }
+      } else {
+        console.error('[AppointmentRequests] ✗ Invalid smart pairing response');
       }
     } catch (error) {
-      console.error('Failed to load smart recommendations:', error);
+      console.error('[AppointmentRequests] ✗ Failed to load smart recommendations:', error);
+      console.error('[AppointmentRequests] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       warning('Unable to load smart pairing recommendations');
     }
   };
 
   // Handle assignment
   const handleAssignment = async () => {
+    console.log('[AppointmentRequests] ===== ASSIGNING THERAPIST =====');
+    console.log('[AppointmentRequests] Request:', selectedRequest);
+    console.log('[AppointmentRequests] Selected therapist ID:', selectedTherapist);
+    console.log('[AppointmentRequests] Assignment notes:', assignmentNotes);
+
     if (!selectedRequest || !selectedTherapist) {
+      console.log('[AppointmentRequests] ✗ Missing request or therapist');
       warning('Please select a therapist');
       return;
     }
 
     setIsAssigning(true);
     try {
-      const response = await realApiService.admin.assignAppointmentRequest(selectedRequest.id, {
+      const assignmentData = {
         therapistId: selectedTherapist
-      });
+      };
+      console.log('[AppointmentRequests] Assignment data:', assignmentData);
+      console.log('[AppointmentRequests] Calling API: /admin/appointment-requests/:id/assign');
+
+      const response = await realApiService.admin.assignAppointmentRequest(selectedRequest.id, assignmentData);
+
+      console.log('[AppointmentRequests] Assignment response:', response);
 
       if (response.success) {
+        console.log('[AppointmentRequests] ✓ Therapist assigned successfully');
         success('Therapist assigned successfully! Both the client and therapist have been notified.');
         await loadData();
         resetAssignment();
+      } else {
+        console.error('[AppointmentRequests] ✗ Assignment failed - invalid response');
       }
     } catch (error) {
+      console.error('[AppointmentRequests] ✗ Assignment error:', error);
+      console.error('[AppointmentRequests] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       errorAlert(handleApiError(error).message);
     } finally {
       setIsAssigning(false);

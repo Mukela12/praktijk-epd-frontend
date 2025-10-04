@@ -168,28 +168,38 @@ const AppointmentsManagement: React.FC = () => {
   const loadAppointments = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading appointments with filters:', filters);
-      
-      const response = await realApiService.admin.getAppointments({
+      console.log('[AdminAppointments] ===== LOADING APPOINTMENTS =====');
+      console.log('[AdminAppointments] Filters:', filters);
+
+      const apiParams = {
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.therapist !== 'all' && { therapistId: filters.therapist }),
         page: 1,
-        limit: 100 // Load more appointments
-      });
-      
-      console.log('Appointments response:', response);
+        limit: 100
+      };
+      console.log('[AdminAppointments] API params:', apiParams);
+      console.log('[AdminAppointments] Calling API: /admin/appointments');
+
+      const response = await realApiService.admin.getAppointments(apiParams);
+
+      console.log('[AdminAppointments] API Response:', response);
+      console.log('[AdminAppointments] Response success:', response.success);
+      console.log('[AdminAppointments] Response data keys:', response.data ? Object.keys(response.data) : 'no data');
       
       if (response.success && response.data) {
         let appointmentsData = response.data.appointments || [];
-        console.log('Raw appointments data:', appointmentsData.length, 'appointments');
+        console.log('[AdminAppointments] Raw appointments count:', appointmentsData.length);
+        console.log('[AdminAppointments] First raw appointment (if any):', appointmentsData[0]);
 
         // Use centralized data transformation instead of manual mapping
-        
+        console.log('[AdminAppointments] Starting normalization...');
         try {
           const normalizedAppointments = normalizeAppointmentList(appointmentsData);
+          console.log('[AdminAppointments] Normalized count:', normalizedAppointments.length);
+
           appointmentsData = normalizedAppointments.map((normalized: any) => {
             const appointment = withSmartDefaults(normalized, 'appointment');
-            
+
             return {
               ...appointment,
               // Map to component's expected field names
@@ -207,20 +217,32 @@ const AppointmentsManagement: React.FC = () => {
               invoice_sent: appointment.invoice_sent || false
             };
           });
+          console.log('[AdminAppointments] ✓ Normalization successful');
+          console.log('[AdminAppointments] First normalized appointment:', appointmentsData[0]);
         } catch (error) {
-          console.error('Error normalizing appointment data:', error);
+          console.error('[AdminAppointments] ✗ Error normalizing appointment data:', error);
+          console.error('[AdminAppointments] Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           // Fallback to original data if normalization fails
         }
-        
+
         // Apply date filter
+        console.log('[AdminAppointments] Applying date filter:', filters.date);
+        const beforeDateFilter = appointmentsData.length;
         appointmentsData = filterAppointmentsByDate(appointmentsData);
-        
+        console.log('[AdminAppointments] After date filter:', appointmentsData.length, `(filtered out ${beforeDateFilter - appointmentsData.length})`);
+
         // Apply payment status filter
         if (filters.paymentStatus !== 'all') {
+          console.log('[AdminAppointments] Applying payment status filter:', filters.paymentStatus);
+          const beforePaymentFilter = appointmentsData.length;
           appointmentsData = appointmentsData.filter(apt => apt.payment_status === filters.paymentStatus);
+          console.log('[AdminAppointments] After payment filter:', appointmentsData.length, `(filtered out ${beforePaymentFilter - appointmentsData.length})`);
         }
-        
-        console.log('Filtered appointments:', appointmentsData.length);
+
+        console.log('[AdminAppointments] Final filtered count:', appointmentsData.length);
         setAppointments(appointmentsData);
         
         // Calculate statistics
@@ -248,56 +270,65 @@ const AppointmentsManagement: React.FC = () => {
           pendingPayments: appointmentsData.filter(apt => apt.payment_status === 'pending').length
         };
         
+        console.log('[AdminAppointments] Calculated statistics:', stats);
         setStatistics(stats);
-        
+
         // If we have statistics from the API response, merge them
         if (response.data && 'statistics' in response.data) {
+          console.log('[AdminAppointments] Merging API statistics:', (response.data as any).statistics);
           setStatistics(prev => ({ ...prev, ...(response.data as any).statistics }));
         }
+        console.log('[AdminAppointments] ✓ Successfully loaded appointments');
       } else {
-        console.error('Invalid response structure:', response);
+        console.error('[AdminAppointments] ✗ Invalid response structure:', response);
         errorAlert('Invalid response from server');
       }
     } catch (error) {
-      console.error('Error loading appointments:', error);
+      console.error('[AdminAppointments] ✗ Error loading appointments:', error);
+      console.error('[AdminAppointments] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       handleApiError(error);
       errorAlert('Failed to load appointments. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
+      console.log('[AdminAppointments] ===== LOAD COMPLETE =====');
     }
   };
 
   const loadClients = async () => {
     try {
-      console.log('Loading clients for dropdown...');
+      console.log('[AdminAppointments] Loading clients for dropdown...');
       const response = await realApiService.admin.getClients({ status: 'active' });
-      console.log('Clients dropdown response:', response);
+      console.log('[AdminAppointments] Clients response:', response);
       if (response.success && response.data) {
         const clientsData = response.data.clients || [];
-        console.log('Setting clients for dropdown:', clientsData.length, 'clients');
+        console.log('[AdminAppointments] ✓ Loaded', clientsData.length, 'clients for dropdown');
         setClients(clientsData);
       } else {
-        console.error('No clients in response for dropdown');
+        console.error('[AdminAppointments] ✗ No clients in response');
       }
     } catch (error) {
-      console.error('Failed to load clients:', error);
+      console.error('[AdminAppointments] ✗ Failed to load clients:', error);
     }
   };
 
   const loadTherapists = async () => {
     try {
-      console.log('Loading therapists for dropdown...');
+      console.log('[AdminAppointments] Loading therapists for dropdown...');
       const response = await realApiService.admin.getTherapists({ status: 'active' });
-      console.log('Therapists dropdown response:', response);
+      console.log('[AdminAppointments] Therapists response:', response);
       if (response.success && response.data) {
         const therapistsData = response.data.therapists || [];
-        console.log('Setting therapists for dropdown:', therapistsData.length, 'therapists');
+        console.log('[AdminAppointments] ✓ Loaded', therapistsData.length, 'therapists for dropdown');
         setTherapists(therapistsData);
       } else {
-        console.error('No therapists in response for dropdown');
+        console.error('[AdminAppointments] ✗ No therapists in response');
       }
     } catch (error) {
-      console.error('Failed to load therapists:', error);
+      console.error('[AdminAppointments] ✗ Failed to load therapists:', error);
     }
   };
 
@@ -399,7 +430,12 @@ const AppointmentsManagement: React.FC = () => {
 
   // Handle form submission
   const handleSubmit = async () => {
+    console.log('[AdminAppointments] ===== FORM SUBMISSION =====');
+    console.log('[AdminAppointments] View mode:', viewMode);
+    console.log('[AdminAppointments] Form data:', formData);
+
     if (!validateForm()) {
+      console.log('[AdminAppointments] ✗ Form validation failed');
       warning('Please fix the form errors');
       return;
     }
@@ -416,36 +452,61 @@ const AppointmentsManagement: React.FC = () => {
         notes: formData.notes
       };
 
+      console.log('[AdminAppointments] Appointment data to submit:', appointmentData);
+
       if (viewMode === 'create') {
+        console.log('[AdminAppointments] Creating new appointment...');
         await createAppointmentApi.execute(appointmentData);
+        console.log('[AdminAppointments] ✓ Appointment created successfully');
         await loadAppointments();
         setViewMode('list');
         resetForm();
       } else if (viewMode === 'edit' && selectedAppointment) {
+        console.log('[AdminAppointments] Updating appointment:', selectedAppointment.id);
         await updateAppointmentApi.execute(selectedAppointment.id, appointmentData);
+        console.log('[AdminAppointments] ✓ Appointment updated successfully');
         await loadAppointments();
         setViewMode('list');
         setSelectedAppointment(null);
         resetForm();
       }
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error('[AdminAppointments] ✗ Form submission error:', error);
+      console.error('[AdminAppointments] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
     }
   };
 
   // Handle status change
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
+    console.log('[AdminAppointments] ===== STATUS CHANGE =====');
+    console.log('[AdminAppointments] Appointment ID:', appointmentId);
+    console.log('[AdminAppointments] New status:', newStatus);
+
     try {
       await updateAppointmentApi.execute(appointmentId, { status: newStatus });
+      console.log('[AdminAppointments] ✓ Status changed successfully');
       success(`Appointment ${newStatus}`);
       await loadAppointments();
     } catch (error) {
+      console.error('[AdminAppointments] ✗ Status change failed:', error);
+      console.error('[AdminAppointments] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       handleApiError(error);
     }
   };
 
   // Handle delete appointment
   const handleDeleteAppointment = async (appointmentId: string) => {
+    console.log('[AdminAppointments] ===== DELETE APPOINTMENT =====');
+    console.log('[AdminAppointments] Appointment ID:', appointmentId);
+
     const confirmed = await confirm({
       title: 'Cancel Appointment',
       message: 'Are you sure you want to cancel this appointment?',
@@ -453,16 +514,27 @@ const AppointmentsManagement: React.FC = () => {
       cancelText: 'Keep'
     });
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('[AdminAppointments] Delete cancelled by user');
+      return;
+    }
 
     try {
-      await updateAppointmentApi.execute(appointmentId, { 
+      console.log('[AdminAppointments] Cancelling appointment...');
+      await updateAppointmentApi.execute(appointmentId, {
         status: 'cancelled',
         cancellation_reason: 'Cancelled by admin'
       });
+      console.log('[AdminAppointments] ✓ Appointment cancelled successfully');
       success('Appointment cancelled');
       await loadAppointments();
     } catch (error) {
+      console.error('[AdminAppointments] ✗ Delete failed:', error);
+      console.error('[AdminAppointments] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data,
+        status: (error as any)?.response?.status
+      });
       handleApiError(error);
     }
   };

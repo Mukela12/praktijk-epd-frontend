@@ -70,21 +70,30 @@ const WaitingListManagement: React.FC = () => {
 
   // Load data
   useEffect(() => {
+    console.log('[WaitingList] ===== LOADING WAITING LIST =====');
+    console.log('[WaitingList] Calling API hook: getWaitingList()');
     getWaitingList();
   }, []);
 
   // Update local state when API data changes - using centralized data transformation
   useEffect(() => {
+    console.log('[WaitingList] ===== PROCESSING API DATA =====');
+    console.log('[WaitingList] API waiting list data:', apiWaitingList);
+    console.log('[WaitingList] Data length:', apiWaitingList?.length || 0);
+
     if (apiWaitingList && apiWaitingList.length > 0) {
+      console.log('[WaitingList] First raw item:', apiWaitingList[0]);
+
       // Use centralized data transformation
-      
+      console.log('[WaitingList] Starting normalization...');
       try {
         const normalizedClients = normalizeClientList(apiWaitingList);
-        
+        console.log('[WaitingList] Normalized clients count:', normalizedClients.length);
+
         // Map to waiting list format expected by component
         const formattedData = normalizedClients.map((normalized: any) => {
           const client = withSmartDefaults(normalized, 'client');
-          
+
           return {
             id: client.id,
             client_name: client.name,
@@ -107,12 +116,21 @@ const WaitingListManagement: React.FC = () => {
             intakeCompleted: client.intakeCompleted
           };
         });
-        
+
+        console.log('[WaitingList] ✓ Normalization successful');
+        console.log('[WaitingList] Formatted data count:', formattedData.length);
+        console.log('[WaitingList] First formatted item:', formattedData[0]);
         setWaitingList(formattedData);
         setFilteredList(formattedData);
       } catch (error) {
-        console.error('Error normalizing waiting list data:', error);
+        console.error('[WaitingList] ✗ Error normalizing waiting list data:', error);
+        console.error('[WaitingList] Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
+
         // Fallback to existing logic if normalization fails
+        console.log('[WaitingList] Using fallback data mapping...');
         const fallbackData = apiWaitingList.map(item => ({
           id: item.id,
           client_name: `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Client',
@@ -130,9 +148,12 @@ const WaitingListManagement: React.FC = () => {
           insurance_type: item.insurance_type,
           location_preference: item.location_preference
         }));
+        console.log('[WaitingList] ✓ Fallback data created:', fallbackData.length, 'items');
         setWaitingList(fallbackData);
         setFilteredList(fallbackData);
       }
+    } else {
+      console.log('[WaitingList] No waiting list data available');
     }
   }, [apiWaitingList]);
 
@@ -182,43 +203,68 @@ const WaitingListManagement: React.FC = () => {
 
   // Smart pairing function - now using real API
   const performSmartPairing = async (clientId?: string) => {
+    console.log('[WaitingList] ===== SMART PAIRING =====');
+    console.log('[WaitingList] Client ID (if specific):', clientId);
+
     try {
       info('Analyzing client preferences and therapist availability...', { duration: 3000 });
-      
+
       // If no specific client ID, perform bulk pairing for all pending clients
-      const clientsToProcess = clientId ? 
-        waitingList.filter(client => client.id === clientId) : 
+      const clientsToProcess = clientId ?
+        waitingList.filter(client => client.id === clientId) :
         waitingList.filter(client => client.status === 'viewed' || client.status === 'contacted');
-      
+
+      console.log('[WaitingList] Clients to process:', clientsToProcess.length);
+      console.log('[WaitingList] Clients:', clientsToProcess.map(c => ({ id: c.id, name: c.client_name })));
+
       if (clientsToProcess.length === 0) {
+        console.log('[WaitingList] ⚠ No clients available for smart pairing');
         warning('No clients available for smart pairing');
         return;
       }
 
       const recommendations: any[] = [];
-      
+
       // Get recommendations for each client
       for (const client of clientsToProcess) {
+        console.log('[WaitingList] Processing client:', client.id, client.client_name);
         try {
-          const response = await adminApi.getSmartPairingRecommendations({
+          const params = {
             clientId: client.id,
             appointmentDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next week
             preferredLanguage: client.preferred_language,
             problemCategory: client.hulpvragen?.[0] // Use first hulpvraag if available
-          });
-          
+          };
+          console.log('[WaitingList] API params for client:', params);
+
+          const response = await adminApi.getSmartPairingRecommendations(params);
+
+          console.log('[WaitingList] Smart pairing response for client', client.id, ':', response);
+
           if (response.success && response.data?.recommendations?.length > 0) {
+            const topRecommendations = response.data.recommendations.slice(0, 3);
+            console.log('[WaitingList] ✓ Found', response.data.recommendations.length, 'matches (taking top 3)');
             recommendations.push({
               client,
-              recommendations: response.data.recommendations.slice(0, 3) // Top 3 matches
+              recommendations: topRecommendations
             });
+          } else {
+            console.log('[WaitingList] No recommendations for client', client.id);
           }
         } catch (error) {
-          console.error(`Error getting recommendations for client ${client.id}:`, error);
+          console.error(`[WaitingList] ✗ Error getting recommendations for client ${client.id}:`, error);
+          console.error('[WaitingList] Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            response: (error as any)?.response?.data,
+            status: (error as any)?.response?.status
+          });
         }
       }
-      
+
+      console.log('[WaitingList] Total recommendations:', recommendations.length);
+
       if (recommendations.length > 0) {
+        console.log('[WaitingList] ✓ Smart pairing completed successfully');
         success(`Smart pairing completed! Found ${recommendations.length} clients with optimal matches.`, {
           action: {
             label: 'View Results',
@@ -230,50 +276,75 @@ const WaitingListManagement: React.FC = () => {
           }
         });
       } else {
+        console.log('[WaitingList] ⚠ No optimal matches found');
         warning('No optimal matches found. Please check therapist availability and client preferences.');
       }
-      
+
     } catch (err) {
-      console.error('Smart pairing error:', err);
+      console.error('[WaitingList] ✗ Smart pairing error:', err);
+      console.error('[WaitingList] Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        response: (err as any)?.response?.data,
+        status: (err as any)?.response?.status
+      });
       error('Failed to perform smart pairing. Please try again.');
     }
   };
 
   // Handle therapist assignment - FIXED: Now calls correct assignment endpoint
   const handleAssignTherapist = async (clientId: string, therapistId: string) => {
+    console.log('[WaitingList] ===== ASSIGN THERAPIST =====');
+    console.log('[WaitingList] Client ID:', clientId);
+    console.log('[WaitingList] Therapist ID:', therapistId);
+
     try {
-      // CORRECTED: Call proper assignment endpoint instead of waiting list update
-      const response = await adminApi.assignTherapist(clientId, {
+      const assignmentData = {
         therapistId,
         assignmentDate: new Date().toISOString(),
         notes: 'Assigned via Smart Pairing Algorithm'
-      });
-      
+      };
+      console.log('[WaitingList] Assignment data:', assignmentData);
+      console.log('[WaitingList] Calling API: /admin/assign-therapist');
+
+      // CORRECTED: Call proper assignment endpoint instead of waiting list update
+      const response = await adminApi.assignTherapist(clientId, assignmentData);
+
+      console.log('[WaitingList] Assignment response:', response);
+
       if (response.success) {
+        console.log('[WaitingList] ✓ Assignment successful');
+
         // Update local state
         setWaitingList(prev =>
           prev.map(item =>
-            item.id === clientId ? { 
-              ...item, 
+            item.id === clientId ? {
+              ...item,
               status: 'assigned' as any,
-              assignedTherapistId: therapistId 
+              assignedTherapistId: therapistId
             } : item
           )
         );
-        
+
         // Find client name for success message
         const client = waitingList.find(c => c.id === clientId);
         const clientName = client?.client_name || 'Client';
-        
+
         success(`${clientName} successfully assigned to therapist`);
-        
+
         // Reload data to get fresh updates
+        console.log('[WaitingList] Reloading waiting list...');
         getWaitingList();
       } else {
+        console.error('[WaitingList] ✗ Assignment failed - invalid response');
         throw new Error(response.error || 'Assignment failed');
       }
     } catch (err: any) {
-      console.error('Assignment error:', err);
+      console.error('[WaitingList] ✗ Assignment error:', err);
+      console.error('[WaitingList] Error details:', {
+        message: err.message || 'Unknown error',
+        response: err?.response?.data,
+        status: err?.response?.status
+      });
       error(`Failed to assign therapist: ${err.message || 'Unknown error'}`);
       throw err; // Re-throw for SmartPairingResults component to handle
     }
@@ -281,17 +352,32 @@ const WaitingListManagement: React.FC = () => {
 
   // Handle status update
   const handleStatusUpdate = async (itemId: string, newStatus: string) => {
+    console.log('[WaitingList] ===== STATUS UPDATE =====');
+    console.log('[WaitingList] Item ID:', itemId);
+    console.log('[WaitingList] New status:', newStatus);
+
     try {
+      console.log('[WaitingList] Calling updateEntry hook...');
       await updateEntry(itemId, { status: newStatus });
+      console.log('[WaitingList] ✓ Status updated successfully');
+
       setWaitingList(prev =>
         prev.map(item =>
           item.id === itemId ? { ...item, status: newStatus as any } : item
         )
       );
       success(`Status updated to ${newStatus}`);
+
       // Reload data to get fresh updates
+      console.log('[WaitingList] Reloading waiting list...');
       getWaitingList();
     } catch (err) {
+      console.error('[WaitingList] ✗ Failed to update status:', err);
+      console.error('[WaitingList] Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        response: (err as any)?.response?.data,
+        status: (err as any)?.response?.status
+      });
       error('Failed to update status');
     }
   };
