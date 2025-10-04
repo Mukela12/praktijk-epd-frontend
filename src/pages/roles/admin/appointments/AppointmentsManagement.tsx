@@ -28,6 +28,7 @@ import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/co
 import { useAlert } from '@/components/ui/CustomAlert';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormatters';
 import { useApiWithErrorHandling } from '@/hooks/useApiWithErrorHandling';
+import { normalizeAppointmentList, withSmartDefaults } from '@/utils/dataMappers';
 import { InlineCrudLayout, FilterBar, ListItemCard, FormSection, ActionButtons } from '@/components/crud/InlineCrudLayout';
 import { TextField, SelectField, TextareaField, DateField, TimeField } from '@/components/forms/FormFields';
 import { handleApiError } from '@/utils/apiErrorHandler';
@@ -181,9 +182,8 @@ const AppointmentsManagement: React.FC = () => {
       if (response.success && response.data) {
         let appointmentsData = response.data.appointments || [];
         console.log('Raw appointments data:', appointmentsData.length, 'appointments');
-        
+
         // Use centralized data transformation instead of manual mapping
-        const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
         
         try {
           const normalizedAppointments = normalizeAppointmentList(appointmentsData);

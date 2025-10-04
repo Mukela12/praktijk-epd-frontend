@@ -27,6 +27,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { therapistApi } from '@/services/therapistApi';
 import { realApiService } from '@/services/realApi';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
+import { normalizeAppointmentList, withSmartDefaults } from '@/utils/dataMappers';
 
 // Types
 interface ClientInfo {
@@ -170,7 +171,6 @@ const TherapistAppointments: React.FC = () => {
   useEffect(() => {
     if (Array.isArray(apiAppointments)) {
       // Use centralized data transformation
-      const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
       
       try {
         const normalizedAppointments = normalizeAppointmentList(apiAppointments);

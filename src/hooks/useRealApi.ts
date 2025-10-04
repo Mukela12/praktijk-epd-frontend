@@ -113,9 +113,9 @@ export function useAdminWaitingList() {
   const [total, setTotal] = useState(0);
   
   const { execute, isLoading, error } = useApiCall(adminApi.getWaitingList, {
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       // Use the new response normalizer
-      const { normalizeApiResponse } = require('../utils/apiResponseNormalizer');
+      const { normalizeApiResponse } = await import('../utils/apiResponseNormalizer');
       const normalized = normalizeApiResponse(response, 'waitingList');
       
       if (normalized.success && Array.isArray(normalized.data)) {

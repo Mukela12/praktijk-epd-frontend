@@ -18,6 +18,8 @@ import {
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useAdminWaitingList } from '@/hooks/useRealApi';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumListItem, PremiumEmptyState } from '@/components/layout/PremiumLayout';
+import { normalizeClientList, withSmartDefaults } from '@/utils/dataMappers';
+import { adminApi } from '@/services/unifiedApi';
 import { useAlert } from '@/components/ui/CustomAlert';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SmartPairingResults from '@/components/admin/SmartPairingResults';
@@ -75,7 +77,6 @@ const WaitingListManagement: React.FC = () => {
   useEffect(() => {
     if (apiWaitingList && apiWaitingList.length > 0) {
       // Use centralized data transformation
-      const { normalizeClientList, withSmartDefaults } = require('../../../utils/dataMappers');
       
       try {
         const normalizedClients = normalizeClientList(apiWaitingList);
@@ -193,8 +194,7 @@ const WaitingListManagement: React.FC = () => {
         warning('No clients available for smart pairing');
         return;
       }
-      
-      const { adminApi } = require('../../../services/unifiedApi');
+
       const recommendations: any[] = [];
       
       // Get recommendations for each client
@@ -242,8 +242,6 @@ const WaitingListManagement: React.FC = () => {
   // Handle therapist assignment - FIXED: Now calls correct assignment endpoint
   const handleAssignTherapist = async (clientId: string, therapistId: string) => {
     try {
-      const { adminApi } = require('../../../services/unifiedApi');
-      
       // CORRECTED: Call proper assignment endpoint instead of waiting list update
       const response = await adminApi.assignTherapist(clientId, {
         therapistId,
