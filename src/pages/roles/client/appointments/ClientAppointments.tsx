@@ -99,28 +99,31 @@ const ClientAppointments: React.FC = () => {
         const response = await clientApi.getAppointments();
         
         if (response.success && response.data) {
-          // response.data contains appointments array
+          // Backend now returns properly formatted data with JOINs
           const appointmentsData = response.data.appointments || response.data.data || response.data;
           const appointmentsArray = Array.isArray(appointmentsData) ? appointmentsData : [];
-          // Use centralized data transformation
-          const { normalizeAppointmentList, withSmartDefaults } = require('../../../utils/dataMappers');
-          
-          const normalizedAppointments = normalizeAppointmentList(appointmentsArray);
-          const formattedAppointments = normalizedAppointments.map((normalized: any) => {
-            const appointment = withSmartDefaults(normalized, 'appointment');
-            
-            return {
-              ...appointment,
-              date: appointment.appointmentDate,
-              therapist_name: appointment.therapistName,
-              type: appointment.therapyType || 'Regular Session',
-              start_time: appointment.startTime || appointment.appointmentTime,
-              end_time: appointment.endTime,
-              location: appointment.location
-            };
-          });
+
+          // Simple mapping - backend sends clean data with therapist names
+          const formattedAppointments = appointmentsArray.map((apt: any) => ({
+            id: apt.id,
+            date: apt.appointment_date,
+            start_time: apt.start_time,
+            end_time: apt.end_time,
+            therapist_name: apt.therapist_first_name && apt.therapist_last_name
+              ? `${apt.therapist_first_name} ${apt.therapist_last_name}`
+              : 'Therapist',
+            therapist_first_name: apt.therapist_first_name,
+            therapist_last_name: apt.therapist_last_name,
+            type: apt.therapy_type || 'Regular Session',
+            therapy_type: apt.therapy_type,
+            status: apt.status || 'scheduled',
+            location: apt.location || 'Office',
+            notes: apt.session_notes,
+            session_notes: apt.session_notes,
+            cost: apt.cost
+          }));
+
           setAppointments(formattedAppointments);
-          // Debug logging removed for production
         }
       } catch (error: any) {
         // Silent error handling
