@@ -250,9 +250,11 @@ const AppointmentRequests: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h4 className="text-lg font-semibold text-gray-900">{request.client_name}</h4>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(request.urgency_level)}`}>
-                        {request.urgency_level.toUpperCase()}
-                      </span>
+                      {request.urgency_level && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(request.urgency_level)}`}>
+                          {request.urgency_level.toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">

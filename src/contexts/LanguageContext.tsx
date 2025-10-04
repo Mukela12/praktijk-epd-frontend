@@ -60,6 +60,7 @@ const translations = {
   'nav.clients': { en: 'Clients', nl: 'Cliënten' },
   'nav.therapists': { en: 'Therapists', nl: 'Therapeuten' },
   'nav.appointments': { en: 'Appointments', nl: 'Afspraken' },
+  'nav.appointmentRequests': { en: 'Appointment Requests', nl: 'Afspraak Aanvragen' },
   'nav.calendar': { en: 'Calendar', nl: 'Agenda' },
   'nav.messages': { en: 'Messages', nl: 'Berichten' },
   'nav.financial': { en: 'Financial', nl: 'Financieel' },
