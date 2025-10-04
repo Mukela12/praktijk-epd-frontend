@@ -19,6 +19,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
 import SimpleHulpvragenSelector from '@/components/forms/SimpleHulpvragenSelector';
+import notifications from '@/utils/notifications';
 
 interface Therapist {
   id: string;
@@ -258,6 +259,13 @@ const BookAppointment: React.FC = () => {
     if (selectedTherapist) {
       setIsSubmitting(true);
       try {
+        console.log('[BookAppointment] Submitting booking with:', {
+          therapistId: selectedTherapist.id,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedTime,
+          hulpvragen: selectedHulpvragen
+        });
+
         const bookingData = {
           therapistId: selectedTherapist.id,
           appointmentDate: selectedDate,
@@ -270,16 +278,37 @@ const BookAppointment: React.FC = () => {
 
         const response = await realApiService.client.bookWithTherapist(bookingData);
 
+        console.log('[BookAppointment] Booking response:', response);
+
         if (response.success) {
           if (response.data?.waitingList) {
-            success('Therapist not available. Your request has been added to the waiting list.');
+            notifications.info(
+              'The therapist is not available at your selected time. Your request has been added to the waiting list and an admin will assign you a suitable therapist soon.',
+              {
+                title: 'Added to Waiting List',
+                duration: 6000
+              }
+            );
           } else {
-            success('Appointment booked successfully!');
+            notifications.success(
+              `Your appointment with ${selectedTherapist.first_name} ${selectedTherapist.last_name} has been successfully booked for ${formatDate(selectedDate)} at ${selectedTime}!`,
+              {
+                title: 'Appointment Confirmed',
+                duration: 5000
+              }
+            );
           }
-          navigate('/client/appointments');
+
+          // Navigate after a short delay to let user see the notification
+          setTimeout(() => navigate('/client/appointments'), 1500);
         }
       } catch (error: any) {
-        errorAlert(error.response?.data?.message || 'Failed to book appointment');
+        console.error('[BookAppointment] Booking error:', error);
+        const errorMessage = error.response?.data?.message || 'Failed to book appointment. Please try again.';
+        notifications.error(errorMessage, {
+          title: 'Booking Failed',
+          duration: 5000
+        });
       } finally {
         setIsSubmitting(false);
       }
@@ -300,11 +329,22 @@ const BookAppointment: React.FC = () => {
         const response = await realApiService.client.requestAppointment(requestData);
 
         if (response.success) {
-          success(t('appointments.requestSubmittedSuccess'));
-          navigate('/client/appointments');
+          notifications.success(
+            'Your appointment request has been submitted successfully. An admin will review and assign a therapist soon.',
+            {
+              title: 'Request Submitted',
+              duration: 5000
+            }
+          );
+          setTimeout(() => navigate('/client/appointments'), 1500);
         }
       } catch (error: any) {
-        errorAlert(error.response?.data?.message || t('appointments.requestSubmitError'));
+        console.error('[BookAppointment] Request error:', error);
+        const errorMessage = error.response?.data?.message || 'Failed to submit appointment request. Please try again.';
+        notifications.error(errorMessage, {
+          title: 'Submission Failed',
+          duration: 5000
+        });
       } finally {
         setIsSubmitting(false);
       }
