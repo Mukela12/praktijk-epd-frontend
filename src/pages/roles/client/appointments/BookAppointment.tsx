@@ -76,18 +76,22 @@ const BookAppointment: React.FC = () => {
 
   // Load initial data once on component mount
   useEffect(() => {
+    console.log('[BookAppointment] Component mounted - initializing');
     let isMounted = true;
 
     const loadInitialData = async () => {
       if (isMounted) {
+        console.log('[BookAppointment] Loading initial data');
         await loadTherapists();
         await checkUnpaidInvoices();
+        console.log('[BookAppointment] Initial data loaded');
       }
     };
 
     loadInitialData();
 
     return () => {
+      console.log('[BookAppointment] Component unmounting');
       isMounted = false;
     };
   }, []); // Only run once on mount
@@ -95,46 +99,63 @@ const BookAppointment: React.FC = () => {
   // Handle preselected therapist separately
   useEffect(() => {
     const preselectedTherapistId = location.state?.preselectedTherapistId;
+    console.log('[BookAppointment] Checking for preselected therapist:', preselectedTherapistId);
     if (preselectedTherapistId && allTherapists.length > 0) {
       const preselectedTherapist = allTherapists.find(t => t.id === preselectedTherapistId);
       if (preselectedTherapist) {
+        console.log('[BookAppointment] Found preselected therapist:', preselectedTherapist.first_name, preselectedTherapist.last_name);
         setSelectedTherapist(preselectedTherapist);
         setPreferredTherapist(preselectedTherapistId);
         setShowTherapistSelection(true);
+      } else {
+        console.log('[BookAppointment] Preselected therapist not found in list');
       }
     }
   }, [allTherapists]); // Only re-run when therapists list changes
 
   useEffect(() => {
+    console.log('[BookAppointment] Date/Therapist changed:', { selectedDate, therapist: selectedTherapist?.id });
     if (selectedDate && selectedTherapist) {
+      console.log('[BookAppointment] Loading therapist availability');
       loadTherapistAvailability();
     } else if (selectedDate) {
       // Fallback to hardcoded slots if no therapist selected
+      console.log('[BookAppointment] No therapist selected, generating fallback time slots');
       generateTimeSlots();
     }
   }, [selectedDate, selectedTherapist]);
 
   const checkUnpaidInvoices = async () => {
+    console.log('[BookAppointment] Checking unpaid invoices');
     try {
       setIsCheckingInvoices(true);
       const response = await realApiService.client.getInvoices({ status: 'unpaid' });
-      
+
+      console.log('[BookAppointment] Invoices response:', response);
+
       if (response.success && response.data) {
         const data = response.data as any;
         const invoices = data.invoices || data || [];
-        const unpaid = invoices.filter((inv: any) => 
+        const unpaid = invoices.filter((inv: any) =>
           inv.status === 'sent' || inv.status === 'overdue'
         );
-        
+
         let total = 0;
         unpaid.forEach((invoice: any) => {
           total += Number(invoice.total_amount);
         });
-        
+
+        console.log('[BookAppointment] Unpaid invoices:', unpaid.length, 'Total:', total);
+
         setUnpaidAmount(total);
         setHasUnpaidInvoices(total > 300);
+
+        if (total > 300) {
+          console.log('[BookAppointment] WARNING: Client has unpaid invoices over €300');
+        }
       }
     } catch (error) {
+      console.error('[BookAppointment] Error checking invoices:', error);
       // Silent fail - continue with appointment booking
     } finally {
       setIsCheckingInvoices(false);
@@ -148,41 +169,56 @@ const BookAppointment: React.FC = () => {
       return;
     }
 
+    console.log('[BookAppointment] Starting to load therapists');
+
     try {
       setIsLoading(true);
 
       // First try to get assigned therapist
+      console.log('[BookAppointment] Checking for assigned therapist');
       try {
         const assignedResponse = await realApiService.client.getTherapist();
+        console.log('[BookAppointment] Assigned therapist response:', assignedResponse);
         if (assignedResponse.success && assignedResponse.data) {
+          console.log('[BookAppointment] Client has assigned therapist:', assignedResponse.data.first_name, assignedResponse.data.last_name);
           setTherapists([assignedResponse.data]);
           setPreferredTherapist(assignedResponse.data.id);
           setSelectedTherapist(assignedResponse.data);
         }
       } catch (error) {
         // No assigned therapist - this is okay
-        console.log('[BookAppointment] No assigned therapist found');
+        console.log('[BookAppointment] No assigned therapist found (expected for new clients)');
       }
 
       // Load all available therapists
+      console.log('[BookAppointment] Loading all available therapists');
       const allTherapistsResponse = await realApiService.therapists.getAll({ status: 'active' });
+      console.log('[BookAppointment] All therapists response:', allTherapistsResponse);
+
       if (allTherapistsResponse.success && allTherapistsResponse.data) {
         const therapistsList = allTherapistsResponse.data.therapists || allTherapistsResponse.data || [];
         console.log('[BookAppointment] Loaded therapists:', therapistsList.length);
+        console.log('[BookAppointment] Therapists list:', therapistsList.map((t: any) => ({ id: t.id, name: `${t.first_name} ${t.last_name}` })));
         setAllTherapists(therapistsList);
+      } else {
+        console.warn('[BookAppointment] Failed to load therapists list');
       }
     } catch (error) {
       // Silent fail - user can still proceed without therapist selection
       console.error('[BookAppointment] Error loading therapists:', error);
     } finally {
       setIsLoading(false);
+      console.log('[BookAppointment] Finished loading therapists');
     }
   };
 
 
   // FIXED: Load real therapist availability instead of hardcoded slots
   const loadTherapistAvailability = async () => {
-    if (!selectedTherapist || !selectedDate) return;
+    if (!selectedTherapist || !selectedDate) {
+      console.log('[BookAppointment] Cannot load availability - missing therapist or date');
+      return;
+    }
 
     // Prevent duplicate calls
     if (isLoadingAvailability) {
@@ -190,62 +226,86 @@ const BookAppointment: React.FC = () => {
       return;
     }
 
+    console.log('[BookAppointment] ===== LOADING THERAPIST AVAILABILITY =====');
+    console.log('[BookAppointment] Therapist:', selectedTherapist.first_name, selectedTherapist.last_name, '(ID:', selectedTherapist.id + ')');
+    console.log('[BookAppointment] Date:', selectedDate);
+
     try {
       setIsLoadingAvailability(true);
-      console.log('[BookAppointment] Loading availability for therapist:', selectedTherapist.id, 'date:', selectedDate);
 
       // Call new endpoint to get therapists with availability slots
+      console.log('[BookAppointment] Calling API: /client/therapists/available?date=' + selectedDate);
       const response = await realApiService.client.getAvailableTherapists({
         date: selectedDate
       });
 
+      console.log('[BookAppointment] API Response:', response);
+
       if (response.success && response.data) {
         const therapists = response.data.therapists || [];
+        console.log('[BookAppointment] Received therapists count:', therapists.length);
 
         // Find selected therapist in response
         const therapistData = therapists.find((t: any) => t.id === selectedTherapist.id);
+        console.log('[BookAppointment] Found selected therapist in response:', !!therapistData);
 
         if (therapistData && therapistData.availabilitySlots) {
+          console.log('[BookAppointment] Therapist availability slots:', therapistData.availabilitySlots);
+
           // Extract time slots from availability slots
           const slots = therapistData.availabilitySlots
             .map((slot: any) => slot.start_time.substring(0, 5)) // Format as HH:MM
             .sort((a: string, b: string) => a.localeCompare(b)); // Sort by time
 
+          console.log('[BookAppointment] Processed time slots:', slots);
           setAvailableSlots(slots);
 
           if (slots.length === 0) {
+            console.warn('[BookAppointment] No slots available for this date');
             errorAlert(`No available time slots for ${selectedTherapist.first_name} ${selectedTherapist.last_name} on ${formatDate(selectedDate)}`);
+          } else {
+            console.log('[BookAppointment] ✓ Successfully loaded', slots.length, 'available slots');
           }
         } else {
+          console.warn('[BookAppointment] Therapist not found in response or no availability slots');
           setAvailableSlots([]);
           errorAlert(`${selectedTherapist.first_name} ${selectedTherapist.last_name} is not available on ${formatDate(selectedDate)}`);
         }
       } else {
+        console.error('[BookAppointment] API response not successful');
         // Fallback to hardcoded slots if API fails
         generateTimeSlots();
         errorAlert('Could not load therapist availability. Showing general time slots.');
       }
-    } catch (error) {
-      console.error('Error loading therapist availability:', error);
+    } catch (error: any) {
+      console.error('[BookAppointment] ✗ Error loading therapist availability:', error);
+      console.error('[BookAppointment] Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       // Fallback to hardcoded slots
       generateTimeSlots();
       errorAlert('Could not load therapist availability. Showing general time slots.');
     } finally {
       setIsLoadingAvailability(false);
+      console.log('[BookAppointment] ===== END LOADING AVAILABILITY =====');
     }
   };
 
   // Fallback method for when no therapist is selected
   const generateTimeSlots = () => {
+    console.log('[BookAppointment] Generating fallback time slots (9:00-17:00)');
     const slots = [];
     const startHour = 9; // 9 AM
     const endHour = 17; // 5 PM
-    
+
     for (let hour = startHour; hour < endHour; hour++) {
       slots.push(`${hour.toString().padStart(2, '0')}:00`);
       slots.push(`${hour.toString().padStart(2, '0')}:30`);
     }
-    
+
+    console.log('[BookAppointment] Generated', slots.length, 'fallback slots');
     setAvailableSlots(slots);
   };
 
@@ -369,7 +429,10 @@ const BookAppointment: React.FC = () => {
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      console.log('[BookAppointment] Date selected:', e.target.value);
+                      setSelectedDate(e.target.value);
+                    }}
                     min={minDate}
                     max={maxDateStr}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -402,7 +465,10 @@ const BookAppointment: React.FC = () => {
                       {availableSlots.map((slot) => (
                         <button
                           key={slot}
-                          onClick={() => setSelectedTime(slot)}
+                          onClick={() => {
+                            console.log('[BookAppointment] Time slot selected:', slot);
+                            setSelectedTime(slot);
+                          }}
                           className={`py-2 px-4 rounded-lg border-2 transition-all ${
                             selectedTime === slot
                               ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
@@ -515,7 +581,10 @@ const BookAppointment: React.FC = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setShowTherapistSelection(true)}
+                        onClick={() => {
+                          console.log('[BookAppointment] User clicked "Choose Another Therapist"');
+                          setShowTherapistSelection(true);
+                        }}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
                         {t('appointments.chooseAnother')}
@@ -552,10 +621,12 @@ const BookAppointment: React.FC = () => {
                         <div
                           key={therapist.id}
                           onClick={() => {
+                            console.log('[BookAppointment] Therapist selected:', therapist.first_name, therapist.last_name, '(ID:', therapist.id + ')');
                             setSelectedTherapist(therapist);
                             setPreferredTherapist(therapist.id);
                             setShowTherapistSelection(false);
                             // Reset selected time when changing therapist
+                            console.log('[BookAppointment] Resetting selected time due to therapist change');
                             setSelectedTime('');
                           }}
                           className={`p-3 rounded-lg cursor-pointer transition-all ${
@@ -601,10 +672,12 @@ const BookAppointment: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        console.log('[BookAppointment] Returning to assigned therapist:', therapists[0].first_name, therapists[0].last_name);
                         setSelectedTherapist(therapists[0]);
                         setPreferredTherapist(therapists[0].id);
                         setShowTherapistSelection(false);
                         // Reset selected time when changing therapist
+                        console.log('[BookAppointment] Resetting selected time');
                         setSelectedTime('');
                       }}
                       className="text-sm text-gray-600 hover:text-gray-700"
@@ -855,25 +928,38 @@ const BookAppointment: React.FC = () => {
         <div className="flex justify-between">
           {step > 1 && (
             <button
-              onClick={() => setStep(step - 1)}
+              onClick={() => {
+                console.log('[BookAppointment] Navigation: Going back from step', step, 'to step', step - 1);
+                setStep(step - 1);
+              }}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
               {t('common.previous')}
             </button>
           )}
-          
+
           <div className="ml-auto">
             {step < 3 ? (
               <button
                 onClick={() => {
+                  console.log('[BookAppointment] Attempting to move from step', step, 'to step', step + 1);
                   if (step === 1 && (!selectedDate || !selectedTime)) {
+                    console.warn('[BookAppointment] Cannot proceed: Missing date or time');
                     errorAlert(t('appointments.selectDateTimeError'));
                     return;
                   }
                   if (step === 2 && selectedHulpvragen.length === 0) {
+                    console.warn('[BookAppointment] Cannot proceed: No hulpvragen selected');
                     errorAlert(t('appointments.selectConcerns'));
                     return;
                   }
+                  console.log('[BookAppointment] ✓ Validation passed, moving to step', step + 1);
+                  console.log('[BookAppointment] Current state:', {
+                    date: selectedDate,
+                    time: selectedTime,
+                    therapist: selectedTherapist ? `${selectedTherapist.first_name} ${selectedTherapist.last_name}` : 'None',
+                    hulpvragen: selectedHulpvragen
+                  });
                   setStep(step + 1);
                 }}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
