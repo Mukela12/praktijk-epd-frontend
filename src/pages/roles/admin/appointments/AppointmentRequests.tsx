@@ -160,9 +160,12 @@ const AppointmentRequests: React.FC = () => {
     console.log('[AppointmentRequests] Preferred date/time:', request.preferred_date, request.preferred_time);
 
     try {
+      // Format date as YYYY-MM-DD (remove time portion if present)
+      const formattedDate = request.preferred_date.split('T')[0];
+
       const params = {
         clientId: request.client_id,
-        appointmentDate: request.preferred_date,
+        appointmentDate: formattedDate,
         appointmentTime: request.preferred_time
       };
       console.log('[AppointmentRequests] API params:', params);
