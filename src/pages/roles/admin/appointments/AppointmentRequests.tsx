@@ -54,11 +54,11 @@ interface Therapist {
 }
 
 interface SmartPairingRecommendation {
-  therapist_id: string;
-  therapist_name: string;
-  match_score: number;
-  reasons: string[];
-  availability: boolean;
+  therapistId: string;
+  therapistName: string;
+  score: number;
+  reasons?: string[];
+  availability?: boolean;
   factors?: {
     availability: number;
     hulpvragen: number;
@@ -188,8 +188,8 @@ const AppointmentRequests: React.FC = () => {
 
         // SUCCESS NOTIFICATION: Smart pairing analysis completed
         if (recommendations.length > 0) {
-          console.log('[AppointmentRequests] ✓ Best match:', recommendations[0]?.therapist_name, 'with score', recommendations[0]?.score);
-          info(`Best match: ${recommendations[0]?.therapist_name} (${Math.round((recommendations[0]?.score || 0) * 100)}% compatibility)`, {
+          console.log('[AppointmentRequests] ✓ Best match:', recommendations[0]?.therapistName, 'with score', recommendations[0]?.score);
+          info(`Best match: ${recommendations[0]?.therapistName} (${Math.round((recommendations[0]?.score || 0) * 100)}% compatibility)`, {
             title: `Found ${recommendations.length} Therapist Matches`,
             duration: 5000
           });
@@ -473,21 +473,21 @@ const AppointmentRequests: React.FC = () => {
             <div className="space-y-3">
               {smartRecommendations.map((rec) => (
                 <div
-                  key={rec.therapist_id}
+                  key={rec.therapistId}
                   className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    selectedTherapist === rec.therapist_id
+                    selectedTherapist === rec.therapistId
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => setSelectedTherapist(rec.therapist_id)}
+                  onClick={() => setSelectedTherapist(rec.therapistId)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <h4 className="font-medium text-gray-900">{rec.therapist_name}</h4>
+                        <h4 className="font-medium text-gray-900">{rec.therapistName}</h4>
                         <div className="flex items-center space-x-1">
                           <SparklesIcon className="w-4 h-4 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-700">{rec.match_score}% match</span>
+                          <span className="text-sm font-medium text-gray-700">{Math.round(rec.score * 100)}% match</span>
                         </div>
                         {rec.availability && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
@@ -495,14 +495,17 @@ const AppointmentRequests: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600">Matching factors:</p>
-                        <ul className="mt-1 text-sm text-gray-500 list-disc list-inside">
-                          {rec.reasons.map((reason, idx) => (
-                            <li key={idx}>{reason}</li>
-                          ))}
-                        </ul>
-                        
+                      {rec.reasons && rec.reasons.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600">Matching factors:</p>
+                          <ul className="mt-1 text-sm text-gray-500 list-disc list-inside">
+                            {rec.reasons.map((reason, idx) => (
+                              <li key={idx}>{reason}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                         {/* Detailed Matching Scores */}
                         {rec.factors && (
                           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -567,7 +570,7 @@ const AppointmentRequests: React.FC = () => {
                       </div>
                     </div>
                     <div className="ml-4">
-                      {selectedTherapist === rec.therapist_id && (
+                      {selectedTherapist === rec.therapistId && (
                         <CheckCircleIcon className="w-6 h-6 text-blue-600" />
                       )}
                     </div>
