@@ -163,10 +163,13 @@ const AppointmentRequests: React.FC = () => {
       // Format date as YYYY-MM-DD (remove time portion if present)
       const formattedDate = request.preferred_date.split('T')[0];
 
+      // Format time as HH:MM (remove seconds if present)
+      const formattedTime = request.preferred_time?.substring(0, 5);
+
       const params = {
         clientId: request.client_id,
         appointmentDate: formattedDate,
-        appointmentTime: request.preferred_time
+        appointmentTime: formattedTime
       };
       console.log('[AppointmentRequests] API params:', params);
       console.log('[AppointmentRequests] Calling API: /admin/smart-pairing');
