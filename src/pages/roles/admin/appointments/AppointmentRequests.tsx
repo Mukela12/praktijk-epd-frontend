@@ -373,7 +373,7 @@ const AppointmentRequests: React.FC = () => {
                     </div>
                     <div className="mt-2 flex items-center space-x-4">
                       <span className="text-sm text-gray-600">
-                        <span className="font-medium">Therapy Type:</span> {request.therapy_type.replace('_', ' ')}
+                        <span className="font-medium">Therapy Type:</span> {request.therapy_type?.replace('_', ' ') || 'Not specified'}
                       </span>
                       <span className="text-sm text-gray-500">
                         Requested {formatDate(request.created_at)}
@@ -432,7 +432,7 @@ const AppointmentRequests: React.FC = () => {
             </div>
             <div>
               <p className="text-sm text-blue-700">Therapy Type</p>
-              <p className="font-medium text-blue-900 capitalize">{selectedRequest.therapy_type.replace('_', ' ')}</p>
+              <p className="font-medium text-blue-900 capitalize">{selectedRequest.therapy_type?.replace('_', ' ') || 'Not specified'}</p>
             </div>
             <div className="md:col-span-2">
               <p className="text-sm text-blue-700">Reason for Therapy</p>
