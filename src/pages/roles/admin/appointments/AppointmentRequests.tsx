@@ -506,68 +506,67 @@ const AppointmentRequests: React.FC = () => {
                         </div>
                       )}
 
-                        {/* Detailed Matching Scores */}
-                        {rec.factors && (
-                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                            {rec.factors.hulpvragen > 0 && (
-                              <div className="flex justify-between">
-                                <span>Hulpvragen Match:</span>
-                                <span className="font-medium text-blue-600">{Math.round(rec.factors.hulpvragen * 100)}%</span>
-                              </div>
-                            )}
-                            {rec.factors.specialization > 0 && (
-                              <div className="flex justify-between">
-                                <span>Specialization:</span>
-                                <span className="font-medium text-green-600">{Math.round(rec.factors.specialization * 100)}%</span>
-                              </div>
-                            )}
-                            {rec.factors.availability > 0 && (
-                              <div className="flex justify-between">
-                                <span>Availability:</span>
-                                <span className="font-medium text-purple-600">{Math.round(rec.factors.availability * 100)}%</span>
-                              </div>
-                            )}
-                            {rec.factors.language > 0 && (
-                              <div className="flex justify-between">
-                                <span>Language:</span>
-                                <span className="font-medium text-orange-600">{Math.round(rec.factors.language * 100)}%</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Hulpvragen Expertise Details */}
-                        {rec.details?.hulpvragenExpertise && rec.details.hulpvragenExpertise.length > 0 && selectedRequest?.hulpvragen && (
-                          <div className="mt-3 p-2 bg-gray-50 rounded">
-                            <p className="text-xs font-medium text-gray-700 mb-1">Hulpvragen Expertise:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedRequest.hulpvragen.map((clientHulpvraag) => {
-                                const expertise = rec.details!.hulpvragenExpertise.find(
-                                  (exp: any) => exp.problem_category === clientHulpvraag
-                                );
-                                return (
-                                  <span
-                                    key={clientHulpvraag}
-                                    className={`text-xs px-2 py-0.5 rounded-full ${
-                                      expertise
-                                        ? expertise.expertise_level >= 4
-                                          ? 'bg-green-100 text-green-800'
-                                          : expertise.expertise_level >= 3
-                                          ? 'bg-yellow-100 text-yellow-800'
-                                          : 'bg-gray-100 text-gray-700'
-                                        : 'bg-red-100 text-red-700'
-                                    }`}
-                                  >
-                                    {clientHulpvraag}
-                                    {expertise && ` (${expertise.expertise_level}/5)`}
-                                    {!expertise && ' (No expertise)'}
-                                  </span>
-                                );
-                              })}
+                      {/* Detailed Matching Scores */}
+                      {rec.factors && (
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          {rec.factors.hulpvragen > 0 && (
+                            <div className="flex justify-between">
+                              <span>Hulpvragen Match:</span>
+                              <span className="font-medium text-blue-600">{Math.round(rec.factors.hulpvragen * 100)}%</span>
                             </div>
+                          )}
+                          {rec.factors.specialization > 0 && (
+                            <div className="flex justify-between">
+                              <span>Specialization:</span>
+                              <span className="font-medium text-green-600">{Math.round(rec.factors.specialization * 100)}%</span>
+                            </div>
+                          )}
+                          {rec.factors.availability > 0 && (
+                            <div className="flex justify-between">
+                              <span>Availability:</span>
+                              <span className="font-medium text-purple-600">{Math.round(rec.factors.availability * 100)}%</span>
+                            </div>
+                          )}
+                          {rec.factors.language > 0 && (
+                            <div className="flex justify-between">
+                              <span>Language:</span>
+                              <span className="font-medium text-orange-600">{Math.round(rec.factors.language * 100)}%</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Hulpvragen Expertise Details */}
+                      {rec.details?.hulpvragenExpertise && rec.details.hulpvragenExpertise.length > 0 && selectedRequest?.hulpvragen && (
+                        <div className="mt-3 p-2 bg-gray-50 rounded">
+                          <p className="text-xs font-medium text-gray-700 mb-1">Hulpvragen Expertise:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedRequest.hulpvragen.map((clientHulpvraag) => {
+                              const expertise = rec.details!.hulpvragenExpertise.find(
+                                (exp: any) => exp.problem_category === clientHulpvraag
+                              );
+                              return (
+                                <span
+                                  key={clientHulpvraag}
+                                  className={`text-xs px-2 py-0.5 rounded-full ${
+                                    expertise
+                                      ? expertise.expertise_level >= 4
+                                        ? 'bg-green-100 text-green-800'
+                                        : expertise.expertise_level >= 3
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-gray-100 text-gray-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}
+                                >
+                                  {clientHulpvraag}
+                                  {expertise && ` (${expertise.expertise_level}/5)`}
+                                  {!expertise && ' (No expertise)'}
+                                </span>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                     <div className="ml-4">
                       {selectedTherapist === rec.therapistId && (
