@@ -99,6 +99,7 @@ const AppointmentRequests: React.FC = () => {
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
   const [showSmartPairing, setShowSmartPairing] = useState(false);
+  const [autoMatchEnabled, setAutoMatchEnabled] = useState(false);
 
   // Load data
   const loadData = async () => {
@@ -692,6 +693,42 @@ const AppointmentRequests: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Auto-Match Toggle */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3">
+                  <SparklesIcon className="w-6 h-6 text-purple-600" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Auto-Match Mode</h3>
+                    <p className="text-xs text-gray-500">
+                      Automatically match pending requests to therapists using smart recommendations
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setAutoMatchEnabled(!autoMatchEnabled)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${
+                  autoMatchEnabled ? 'bg-purple-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    autoMatchEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {autoMatchEnabled && (
+              <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <p className="text-xs text-purple-800">
+                  <strong>Auto-match is active:</strong> New appointment requests will be automatically matched to the best available therapist based on smart recommendations.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Filter Bar */}

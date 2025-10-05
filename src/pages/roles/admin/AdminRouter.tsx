@@ -37,7 +37,6 @@ import ResourcesManagementInline from './resources/ResourcesManagementInline';
 import SurveysManagementInline from './surveys/SurveysManagementInline';
 
 // Other Components
-import WaitingListManagement from './waiting-list/WaitingListManagement';
 import AdminSettings from './settings/AdminSettings';
 import AdminReports from './reports/AdminReports';
 import AgendaPage from './agenda/AgendaPage';
@@ -117,13 +116,6 @@ const adminNavigation = [
     icon: 'CalendarIcon',
     color: 'text-purple-600',
     bgColor: 'bg-purple-100'
-  },
-  {
-    name: 'Waiting List',
-    href: '/admin/waiting-list',
-    icon: 'ClockIcon',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100'
   },
   {
     name: 'Address Changes',
@@ -214,7 +206,6 @@ const AdminRouter: React.FC = () => {
         
         {/* Other Pages */}
         <Route path="/agenda" element={<AgendaPage />} />
-        <Route path="/waiting-list" element={<WaitingListManagement />} />
         <Route path="/reports" element={<AdminReports />} />
         <Route path="/settings" element={<AdminSettings />} />
         <Route path="/company-settings" element={<CompanySettings />} />
