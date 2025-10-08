@@ -50,11 +50,21 @@ export interface Client extends BaseEntity {
     relationship: string;
     phone: string;
   };
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
   insurance?: {
     company: string;
     policy_number: string;
     coverage_type: string;
   };
+  insurance_company?: string;
+  insurance_number?: string;
+  bsn?: string;
+  medications?: string[];
+  allergies?: string[];
+  therapy_goals?: string;
+  intake_completed?: boolean;
   notes?: string;
   tags?: string[];
   // Hulpvragen integration - from appointment request
@@ -63,6 +73,10 @@ export interface Client extends BaseEntity {
   requested_therapy_type?: string;
   problem_description?: string;
   request_date?: string;
+  // Session stats
+  total_sessions?: number;
+  last_session?: string;
+  next_session?: string;
 }
 
 // Therapist entity
@@ -102,15 +116,20 @@ export interface Appointment extends BaseEntity {
   appointment_date: string;
   start_time: string;
   end_time: string;
+  duration?: number;
   status: AppointmentStatus;
   type: 'intake' | 'regular' | 'emergency' | 'follow_up';
   location?: string;
   notes?: string;
+  preparation_notes?: string;
+  focus_areas?: string[];
+  hulpvragen?: string[];
   session_notes?: string;
   cancelled_by?: string;
   cancelled_at?: string;
   cancellation_reason?: string;
   no_show_reason?: string;
+  therapy_goals?: string;
   client?: Client;
   therapist?: Therapist;
 }
