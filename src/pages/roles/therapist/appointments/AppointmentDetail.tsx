@@ -122,7 +122,18 @@ const AppointmentDetail: React.FC = () => {
           ...appointmentData.client,
           // Ensure name property exists (construct from first_name + last_name if needed)
           name: appointmentData.client.name ||
-                `${appointmentData.client.first_name || ''} ${appointmentData.client.last_name || ''}`.trim()
+                `${appointmentData.client.first_name || ''} ${appointmentData.client.last_name || ''}`.trim(),
+          // Transform flat emergency contact fields to nested object structure
+          emergency_contact: {
+            name: appointmentData.client.emergency_contact_name || 'N/A',
+            relationship: appointmentData.client.emergency_contact_relationship || 'N/A',
+            phone: appointmentData.client.emergency_contact_phone || 'N/A'
+          },
+          // Transform insurance fields if present
+          insurance_info: appointmentData.client.insurance_company ? {
+            provider: appointmentData.client.insurance_company,
+            policy_number: appointmentData.client.insurance_number || 'N/A'
+          } : undefined
         } : null;
 
         setAppointment({
@@ -339,19 +350,19 @@ const AppointmentDetail: React.FC = () => {
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Name:</dt>
                 <dd className="text-sm font-medium text-gray-900">
-                  {appointment.client.emergency_contact.name}
+                  {appointment.client?.emergency_contact?.name || 'N/A'}
                 </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Relationship:</dt>
                 <dd className="text-sm font-medium text-gray-900">
-                  {appointment.client.emergency_contact.relationship}
+                  {appointment.client?.emergency_contact?.relationship || 'N/A'}
                 </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Phone:</dt>
                 <dd className="text-sm font-medium text-gray-900">
-                  {appointment.client.emergency_contact.phone}
+                  {appointment.client?.emergency_contact?.phone || 'N/A'}
                 </dd>
               </div>
             </dl>
