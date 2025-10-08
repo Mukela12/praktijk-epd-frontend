@@ -80,8 +80,20 @@ export const therapistApi = {
         status: response.status,
         dataKeys: Object.keys(response.data || {}),
         success: response.data?.success,
-        clientCount: response.data?.data?.clients?.length || response.data?.data?.length || 0
+        clientCount: response.data?.data?.clients?.length || response.data?.data?.length || 0,
+        dataStructure: response.data?.data ? Object.keys(response.data.data) : []
       });
+
+      // Backend returns { success, data: { clients: [], pagination: {} } }
+      // Frontend expects { success, data: [] }
+      if (response.data?.data?.clients) {
+        return {
+          success: response.data.success,
+          message: response.data.message || 'Clients loaded successfully',
+          data: response.data.data.clients
+        };
+      }
+
       return response.data;
     } catch (error: any) {
       console.error('[therapistApi.getClients] ERROR:', {
@@ -170,6 +182,17 @@ export const therapistApi = {
         sessionCount: response.data?.data?.sessions?.length || 0,
         dataStructure: response.data?.data ? Object.keys(response.data.data) : []
       });
+
+      // Backend returns { success, data: { sessions: [], pagination: {} } }
+      // Frontend expects { success, data: [] } for some components
+      if (response.data?.data?.sessions) {
+        return {
+          success: true,
+          message: response.data.message || 'Sessions loaded successfully',
+          data: response.data.data.sessions
+        };
+      }
+
       // Handle nested data structure
       if (response.data && response.data.data) {
         return {
