@@ -302,7 +302,7 @@ const TherapistClientProfile: React.FC = () => {
                   </div>
                 )}
 
-                {client.hulpvragen.length > 0 && (
+                {client.hulpvragen && Array.isArray(client.hulpvragen) && client.hulpvragen.length > 0 && (
                   <div className="mb-6">
                     <div className="text-sm font-medium text-gray-700 mb-3">Areas of Concern</div>
                     <div className="flex flex-wrap gap-2">

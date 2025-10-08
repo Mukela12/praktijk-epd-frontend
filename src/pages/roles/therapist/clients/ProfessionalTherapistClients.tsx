@@ -139,7 +139,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onSelect }) => {
 
       <div className="space-y-3">
         {/* Hulpvragen (Client Concerns) */}
-        {client.hulpvragen && client.hulpvragen.length > 0 && (
+        {client.hulpvragen && Array.isArray(client.hulpvragen) && client.hulpvragen.length > 0 && (
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">Treatment Focus Areas:</p>
             <div className="flex flex-wrap gap-1">

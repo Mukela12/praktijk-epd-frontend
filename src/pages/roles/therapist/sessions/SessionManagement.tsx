@@ -139,7 +139,7 @@ const SessionManagement: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [activeSession?.id, appointments, location.search]);
+  }, [activeSession?.id, location.search]); // Removed 'appointments' to prevent infinite loop
 
   const loadData = async () => {
     try {

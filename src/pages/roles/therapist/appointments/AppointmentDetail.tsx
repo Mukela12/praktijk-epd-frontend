@@ -116,8 +116,18 @@ const AppointmentDetail: React.FC = () => {
           const end = new Date(`1970-01-01T${appointmentData.end_time}`);
           duration = Math.floor((end.getTime() - start.getTime()) / 60000);
         }
+
+        // Transform client data to match expected interface
+        const transformedClient = appointmentData.client ? {
+          ...appointmentData.client,
+          // Ensure name property exists (construct from first_name + last_name if needed)
+          name: appointmentData.client.name ||
+                `${appointmentData.client.first_name || ''} ${appointmentData.client.last_name || ''}`.trim()
+        } : null;
+
         setAppointment({
           ...appointmentData,
+          client: transformedClient,
           duration: duration || 60 // Default to 60 minutes if not calculable
         } as AppointmentDetail);
       } else {
