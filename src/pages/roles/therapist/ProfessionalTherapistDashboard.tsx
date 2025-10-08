@@ -225,87 +225,37 @@ const ProfessionalTherapistDashboard: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Load all data in parallel with proper error handling
-      const [appointmentsResult, clientsResult, sessionsResult] = await Promise.allSettled([
-        realApiService.therapist.getAppointments(),
-        realApiService.therapist.getClients(),
-        realApiService.therapist.getSessions({ limit: 50 })
-      ]);
 
-      let todayAppointments = 0;
-      let weeklyAppointments = 0;
-      let upcomingAppts: Appointment[] = [];
+      // Use dedicated dashboard endpoint for optimized data fetching
+      const result = await realApiService.therapist.getDashboard();
 
-      // Handle appointments
-      if (appointmentsResult.status === 'fulfilled' && appointmentsResult.value.success) {
-        const appointments = appointmentsResult.value.data || [];
-        
-        // Filter today's appointments
-        const todayAppts = appointments.filter((apt: any) => apt.appointment_date === today);
-        todayAppointments = todayAppts.length;
-        
-        // Calculate weekly appointments
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        
-        weeklyAppointments = appointments.filter((apt: any) => {
-          const aptDate = new Date(apt.appointment_date);
-          return aptDate >= weekStart && aptDate <= weekEnd;
-        }).length;
-        
-        // Get upcoming appointments (future or today) that are scheduled or confirmed
-        upcomingAppts = appointments
-          .filter((apt: any) => {
-            const aptDate = new Date(apt.appointment_date);
-            return aptDate >= new Date(today) && 
-                   (apt.status === 'scheduled' || apt.status === 'confirmed');
-          })
-          .sort((a: any, b: any) => {
-            const dateA = new Date(a.appointment_date + ' ' + a.start_time);
-            const dateB = new Date(b.appointment_date + ' ' + b.start_time);
-            return dateA.getTime() - dateB.getTime();
-          })
-          .slice(0, 5) as unknown as Appointment[];
-      }
+      if (result.success && result.data) {
+        const dashboardData = result.data;
 
-      // Handle clients
-      let activeClientsCount = 0;
-      if (clientsResult.status === 'fulfilled' && clientsResult.value.success) {
-        const clients = clientsResult.value.data || [];
-        setActiveClients(clients as unknown as Client[]);
-        activeClientsCount = clients.filter((c: any) => c.status === 'active').length;
-      }
+        // Set dashboard stats from backend
+        setDashboardData({
+          stats: {
+            activeClients: dashboardData.stats?.activeClients || 0,
+            todayAppointments: dashboardData.stats?.todayAppointments || 0,
+            weeklyAppointments: dashboardData.stats?.weeklyAppointments || 0,
+            completedSessions: dashboardData.stats?.completedSessions || 0,
+            monthlyRevenue: dashboardData.stats?.monthlyRevenue || 0,
+            averageRating: dashboardData.stats?.averageRating || 0
+          }
+        });
 
-      // Handle sessions (for completed count)
-      let completedSessions = 0;
-      if (sessionsResult.status === 'fulfilled' && sessionsResult.value.success) {
-        const sessions = sessionsResult.value.data?.sessions || [];
-        // Count sessions completed this month
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        completedSessions = sessions.filter((s: any) => {
-          const sessionDate = new Date(s.created_at || s.date);
-          return s.status === 'completed' && sessionDate >= monthStart;
-        }).length;
-      }
+        // Set upcoming appointments (backend returns flattened array from grouped data)
+        const upcomingAppts = dashboardData.upcomingAppointments
+          ? Object.values(dashboardData.upcomingAppointments).flat().slice(0, 5)
+          : [];
+        setUpcomingAppointments(upcomingAppts as unknown as Appointment[]);
 
-      // Set dashboard data
-      setDashboardData({
-        stats: {
-          activeClients: activeClientsCount,
-          todayAppointments,
-          weeklyAppointments,
-          completedSessions
+        // Load active clients separately for the clients section
+        const clientsResult = await realApiService.therapist.getClients();
+        if (clientsResult.success && clientsResult.data) {
+          setActiveClients(clientsResult.data as unknown as Client[]);
         }
-      });
-      
-      setUpcomingAppointments(upcomingAppts);
+      }
 
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -373,7 +323,6 @@ const ProfessionalTherapistDashboard: React.FC = () => {
             value={stats.activeClients}
             subtitle="Currently in therapy"
             icon={UserGroupIcon}
-            trend={{ value: 12, isPositive: true }}
             gradientFrom="#4F46E5"
             gradientTo="#7C3AED"
             onClick={() => navigate('/therapist/clients')}
@@ -388,11 +337,10 @@ const ProfessionalTherapistDashboard: React.FC = () => {
             onClick={() => navigate('/therapist/calendar')}
           />
           <MetricCard
-            title="This Week"
+            title="Next 7 Days"
             value={stats.weeklyAppointments}
             subtitle="Total appointments"
             icon={CalendarDaysIcon}
-            trend={{ value: 8, isPositive: true }}
             gradientFrom="#DC2626"
             gradientTo="#F59E0B"
             onClick={() => navigate('/therapist/appointments')}
@@ -402,7 +350,6 @@ const ProfessionalTherapistDashboard: React.FC = () => {
             value={stats.completedSessions}
             subtitle="Sessions this month"
             icon={CheckCircleIcon}
-            trend={{ value: 15, isPositive: true }}
             gradientFrom="#0891B2"
             gradientTo="#06B6D4"
             onClick={() => navigate('/therapist/appointments?status=completed')}

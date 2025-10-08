@@ -14,60 +14,10 @@ export interface ApiResponse<T> {
  */
 
 export const therapistApi = {
-  // Dashboard - custom implementation since there's no specific endpoint
+  // Dashboard - uses dedicated backend endpoint for optimized performance
   getDashboard: async (): Promise<ApiResponse<any>> => {
-    try {
-      // Load multiple data points in parallel
-      const [appointmentsRes, clientsRes, sessionsRes] = await Promise.all([
-        api.get('/appointments'),
-        api.get('/therapist/clients').catch(() => ({ data: { data: [] } })), // Fallback for 404
-        api.get('/therapist/sessions?limit=10')
-      ]);
-
-      // Handle different response structures
-      const appointments = appointmentsRes.data?.data?.appointments || appointmentsRes.data?.data || [];
-      const clients = clientsRes.data?.data || [];
-      const sessions = sessionsRes.data?.data?.sessions || sessionsRes.data?.data || [];
-
-      const today = new Date().toISOString().split('T')[0];
-      const todayAppointments = appointments.filter((apt: any) => 
-        apt.appointment_date === today
-      );
-
-      // Count appointments for this week
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      const weeklyAppointments = appointments.filter((apt: any) => {
-        const aptDate = new Date(apt.appointment_date);
-        return aptDate >= weekStart && aptDate <= weekEnd;
-      });
-
-      const completedSessions = sessions.filter((s: any) => 
-        s.status === 'completed'
-      ).length;
-
-      return {
-        success: true,
-        message: 'Dashboard data loaded successfully',
-        data: {
-          stats: {
-            activeClients: clients.filter((c: any) => c.status === 'active').length,
-            todayAppointments: todayAppointments.length,
-            weeklyAppointments: weeklyAppointments.length,
-            completedSessions: completedSessions
-          },
-          upcomingAppointments: appointments.filter((apt: any) => 
-            apt.status === 'scheduled' || apt.status === 'confirmed'
-          ).slice(0, 5),
-          activeClients: clients.filter((c: any) => c.status === 'active')
-        }
-      };
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get('/therapist/dashboard');
+    return response.data;
   },
 
   // Clients - Use therapist-specific endpoint
