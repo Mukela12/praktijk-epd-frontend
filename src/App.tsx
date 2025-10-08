@@ -54,6 +54,7 @@ import TherapistMessages from '@/pages/roles/therapist/messages/TherapistMessage
 import ProfessionalTherapistClients from '@/pages/roles/therapist/clients/ProfessionalTherapistClients';
 import ClientPsychologicalBehavior from '@/pages/roles/therapist/clients/ClientPsychologicalBehavior';
 import ProfessionalTherapistAppointments from '@/pages/roles/therapist/appointments/ProfessionalTherapistAppointments';
+import AppointmentDetail from '@/pages/roles/therapist/appointments/AppointmentDetail';
 import CreateAppointment from '@/pages/roles/therapist/appointments/CreateAppointment';
 import RescheduleAppointment from '@/pages/roles/therapist/appointments/RescheduleAppointment';
 // Removed imports for non-existent therapist components
@@ -259,6 +260,7 @@ const AppRoutes: React.FC = () => {
                   <Route path="messages" element={<TherapistMessages />} />
                   <Route path="appointments" element={<ProfessionalTherapistAppointments />} />
                   <Route path="appointments/new" element={<CreateAppointment />} />
+                  <Route path="appointments/:id" element={<AppointmentDetail />} />
                   <Route path="appointments/:appointmentId/reschedule" element={<RescheduleAppointment />} />
                   <Route path="clients" element={<ProfessionalTherapistClients />} />
                   <Route path="clients/:clientId/psychological-behaviors" element={<ClientPsychologicalBehavior />} />

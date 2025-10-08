@@ -83,7 +83,7 @@ interface AppointmentDetail {
 }
 
 const AppointmentDetail: React.FC = () => {
-  const { appointmentId } = useParams();
+  const { id: appointmentId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { success, error, warning, info } = useAlert();
