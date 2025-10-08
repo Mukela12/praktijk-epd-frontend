@@ -72,13 +72,27 @@ export const therapistApi = {
 
   // Clients - Use therapist-specific endpoint
   getClients: async (params?: any): Promise<ApiResponse<Client[]>> => {
+    console.log('[therapistApi.getClients] Request params:', params);
     try {
       // Use the therapist-specific clients endpoint
       const response = await api.get('/therapist/clients', { params });
+      console.log('[therapistApi.getClients] Response:', {
+        status: response.status,
+        dataKeys: Object.keys(response.data || {}),
+        success: response.data?.success,
+        clientCount: response.data?.data?.clients?.length || response.data?.data?.length || 0
+      });
       return response.data;
     } catch (error: any) {
+      console.error('[therapistApi.getClients] ERROR:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message
+      });
       // If 404, get clients from appointments as fallback
       if (error?.response?.status === 404) {
+        console.log('[therapistApi.getClients] 404 - using fallback from appointments');
         const appointmentsResponse = await api.get('/appointments');
         const appointments = appointmentsResponse.data.data || [];
 
@@ -91,6 +105,7 @@ export const therapistApi = {
         });
 
         const clients = Array.from(clientsMap.values());
+        console.log('[therapistApi.getClients] Fallback loaded:', clients.length, 'clients');
         return {
           success: true,
           message: 'Clients loaded from appointments',
@@ -145,16 +160,35 @@ export const therapistApi = {
 
   // Sessions - use therapist-specific endpoint
   getSessions: async (params?: any): Promise<ApiResponse<any>> => {
-    const response = await api.get('/therapist/sessions', { params });
-    // Handle nested data structure
-    if (response.data && response.data.data) {
-      return {
-        success: true,
-        message: response.data.message || 'Sessions loaded successfully',
-        data: response.data.data
-      };
+    console.log('[therapistApi.getSessions] Request params:', params);
+    try {
+      const response = await api.get('/therapist/sessions', { params });
+      console.log('[therapistApi.getSessions] Response:', {
+        status: response.status,
+        dataKeys: Object.keys(response.data || {}),
+        success: response.data?.success,
+        sessionCount: response.data?.data?.sessions?.length || 0,
+        dataStructure: response.data?.data ? Object.keys(response.data.data) : []
+      });
+      // Handle nested data structure
+      if (response.data && response.data.data) {
+        return {
+          success: true,
+          message: response.data.message || 'Sessions loaded successfully',
+          data: response.data.data
+        };
+      }
+      return response.data;
+    } catch (error: any) {
+      console.error('[therapistApi.getSessions] ERROR:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+        stack: error?.stack?.split('\n').slice(0, 3)
+      });
+      throw error;
     }
-    return response.data;
   },
 
   startSession: async (data: any): Promise<ApiResponse<any>> => {
