@@ -445,7 +445,7 @@ const AppointmentDetail: React.FC = () => {
               </p>
             </div>
 
-            {appointment.therapy_goals && appointment.therapy_goals.length > 0 && (
+            {appointment.therapy_goals && Array.isArray(appointment.therapy_goals) && appointment.therapy_goals.length > 0 && (
               <div>
                 <p className="text-sm text-gray-600 mb-2">Therapy Goals</p>
                 <ul className="list-disc list-inside space-y-1">

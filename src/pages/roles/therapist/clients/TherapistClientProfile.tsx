@@ -288,7 +288,7 @@ const TherapistClientProfile: React.FC = () => {
               <div className="bg-white rounded-xl border border-gray-100 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Therapy Information</h3>
                 
-                {client.therapyGoals.length > 0 && (
+                {client.therapyGoals && Array.isArray(client.therapyGoals) && client.therapyGoals.length > 0 && (
                   <div className="mb-6">
                     <div className="text-sm font-medium text-gray-700 mb-3">Therapy Goals</div>
                     <div className="space-y-2">
