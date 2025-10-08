@@ -480,6 +480,10 @@ const translations = {
   'therapist.selectConversation': { en: 'Select a conversation', nl: 'Selecteer een gesprek' },
   'therapist.selectConversationSubtitle': { en: 'Choose a conversation to start messaging', nl: 'Kies een gesprek om te beginnen met berichten' },
   'therapist.typeMessage': { en: 'Type your message...', nl: 'Typ uw bericht...' },
+
+  // Sessions
+  'sessions.title': { en: 'Session Management', nl: 'Sessiebeheer' },
+  'sessions.subtitle': { en: 'Manage and track your therapy sessions', nl: 'Beheer en volg uw therapiesessies' },
   
   // 2FA
   'twofa.setup': { en: 'Setup Two-Factor Authentication', nl: 'Twee-Factor Authenticatie Instellen' },

@@ -20,7 +20,7 @@ export const therapistApi = {
       // Load multiple data points in parallel
       const [appointmentsRes, clientsRes, sessionsRes] = await Promise.all([
         api.get('/appointments'),
-        api.get('/clients').catch(() => ({ data: { data: [] } })), // Fallback for 404
+        api.get('/therapist/clients').catch(() => ({ data: { data: [] } })), // Fallback for 404
         api.get('/therapist/sessions?limit=10')
       ]);
 
@@ -70,18 +70,18 @@ export const therapistApi = {
     }
   },
 
-  // Clients - Get unique clients from appointments since /clients returns 404 for therapists
+  // Clients - Use therapist-specific endpoint
   getClients: async (params?: any): Promise<ApiResponse<Client[]>> => {
     try {
-      // First try the direct endpoint
-      const response = await api.get('/clients', { params });
+      // Use the therapist-specific clients endpoint
+      const response = await api.get('/therapist/clients', { params });
       return response.data;
     } catch (error: any) {
-      // If 404, get clients from appointments
+      // If 404, get clients from appointments as fallback
       if (error?.response?.status === 404) {
         const appointmentsResponse = await api.get('/appointments');
         const appointments = appointmentsResponse.data.data || [];
-        
+
         // Extract unique clients from appointments
         const clientsMap = new Map();
         appointments.forEach((apt: any) => {
@@ -89,7 +89,7 @@ export const therapistApi = {
             clientsMap.set(apt.client.id, apt.client);
           }
         });
-        
+
         const clients = Array.from(clientsMap.values());
         return {
           success: true,
@@ -102,7 +102,7 @@ export const therapistApi = {
   },
 
   getClient: async (clientId: string): Promise<ApiResponse<Client>> => {
-    const response = await api.get(`/clients/${clientId}`);
+    const response = await api.get(`/therapist/clients/${clientId}`);
     return response.data;
   },
 
@@ -169,27 +169,27 @@ export const therapistApi = {
 
   // Session Notes
   getSessionNotes: async (params?: any): Promise<ApiResponse<any[]>> => {
-    const response = await api.get('/session-notes', { params });
+    const response = await api.get('/therapist/session-notes', { params });
     return response.data;
   },
 
   getSessionNote: async (noteId: string): Promise<ApiResponse<any>> => {
-    const response = await api.get(`/session-notes/${noteId}`);
+    const response = await api.get(`/therapist/session-notes/${noteId}`);
     return response.data;
   },
 
   createSessionNote: async (data: any): Promise<ApiResponse<any>> => {
-    const response = await api.post('/session-notes', data);
+    const response = await api.post('/therapist/session-notes', data);
     return response.data;
   },
 
   updateSessionNote: async (noteId: string, data: any): Promise<ApiResponse<any>> => {
-    const response = await api.put(`/session-notes/${noteId}`, data);
+    const response = await api.put(`/therapist/session-notes/${noteId}`, data);
     return response.data;
   },
 
   deleteSessionNote: async (noteId: string): Promise<ApiResponse<any>> => {
-    const response = await api.delete(`/session-notes/${noteId}`);
+    const response = await api.delete(`/therapist/session-notes/${noteId}`);
     return response.data;
   },
 
@@ -410,8 +410,8 @@ export const therapistApi = {
       if (error?.response?.status === 404) {
         const [appointmentsRes, sessionsRes, clientsRes] = await Promise.all([
           api.get('/appointments', { params }),
-          api.get('/sessions', { params: { ...params, limit: 100 } }),
-          api.get('/clients').catch(() => ({ data: { data: [] } }))
+          api.get('/therapist/sessions', { params: { ...params, limit: 100 } }),
+          api.get('/therapist/clients').catch(() => ({ data: { data: [] } }))
         ]);
 
         const appointments = appointmentsRes.data?.data?.appointments || appointmentsRes.data?.data || [];
