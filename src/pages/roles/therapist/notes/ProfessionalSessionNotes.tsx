@@ -298,25 +298,27 @@ const ProfessionalSessionNotes: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await therapistApi.getSessionNotes();
-      
+
       if (response.success && response.data) {
-        setNotes(response.data);
+        setNotes(Array.isArray(response.data) ? response.data : []);
       } else {
         setNotes([]);
-        setError('No session notes found.');
+        // Don't show error for empty notes - just show empty state
       }
     } catch (error: any) {
-      console.error('Error loading notes:', error);
+      console.error('Error loading session notes:', error);
       setNotes([]);
-      
-      if (error.response?.status === 404) {
-        setError('Session notes endpoint not found. Please contact support.');
-      } else if (error.response?.status === 401) {
+
+      // Check if endpoint doesn't exist (404 or 501)
+      if (error.response?.status === 404 || error.response?.status === 501) {
+        // Endpoint not implemented yet - show empty state instead of error
+        console.log('Session notes endpoint not yet implemented');
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
         setError('You are not authorized to view session notes.');
       } else {
-        setError('Failed to load session notes. Please try again later.');
+        setError('Failed to load session notes. The feature may not be available yet.');
       }
     } finally {
       setIsLoading(false);

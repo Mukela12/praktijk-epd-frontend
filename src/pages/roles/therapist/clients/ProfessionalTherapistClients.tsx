@@ -94,36 +94,41 @@ interface ClientCardProps {
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({ client, onSelect }) => {
-  const sessionCount = 0; // TODO: Get from API
-  const lastSessionDate = null; // TODO: Get from API
-  const daysSinceLastSession = null; // TODO: Calculate when lastSessionDate is available
+  // Get session data from API response
+  const sessionCount = client.total_sessions ? parseInt(client.total_sessions.toString()) : 0;
+  const lastSessionDate = client.last_session ? new Date(client.last_session) : null;
+
+  // Calculate days since last session
+  const daysSinceLastSession = lastSessionDate
+    ? Math.floor((new Date().getTime() - lastSessionDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   return (
-    <div 
+    <div
       onClick={onSelect}
       className="group bg-white rounded-xl border border-gray-100 p-6 hover:shadow-lg hover:border-green-600/20 transition-all duration-300 cursor-pointer"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-center space-x-4 min-w-0 flex-1">
           <ProfilePhotoUpload
             userId={client.user_id || client.id}
             currentPhotoUrl={client.profile_photo_url || client.photo_url}
             size="small"
             editable={false}
           />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600 transition-colors truncate">
               {client.first_name} {client.last_name}
             </h3>
-            <p className="text-sm text-gray-600">{client.email}</p>
+            <p className="text-sm text-gray-600 truncate">{client.email}</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-start gap-2 flex-shrink-0">
           <ClientStatusBadge status={client.status} />
           {client.urgency_level && client.urgency_level !== 'normal' && (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              client.urgency_level === 'emergency' 
-                ? 'bg-red-100 text-red-800' 
+            <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+              client.urgency_level === 'emergency'
+                ? 'bg-red-100 text-red-800'
                 : 'bg-orange-100 text-orange-800'
             }`}>
               {client.urgency_level.toUpperCase()}
