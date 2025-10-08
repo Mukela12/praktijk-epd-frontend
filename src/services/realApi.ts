@@ -457,6 +457,8 @@ export const realApiService = {
         batchSize: options?.batchSize || 10,
         delayBetweenBatches: options?.delayBetweenBatches || 2000,
         regeneratePasswords: options?.regeneratePasswords || false
+      }, {
+        timeout: 300000 // 5 minutes timeout for bulk operations
       });
       return response.data;
     },

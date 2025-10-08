@@ -155,22 +155,22 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
       return;
     }
 
-    if (!window.confirm(`Send activation emails to ${selectedClients.length} clients?`)) {
-      return;
-    }
-
     try {
       setIsSendingEmails(true);
       setProgress({ current: 0, total: selectedClients.length, isActive: true });
 
+      // Show initial toast
+      const loadingToast = toast.loading(`Sending activation emails to ${selectedClients.length} clients...`);
+
       await sendBulkActivationEmails(selectedClients, bulkOptions);
-      
-      toast.success(`Activation emails sent to ${selectedClients.length} clients`);
+
+      toast.dismiss(loadingToast);
+      toast.success(`Successfully sent activation emails to ${selectedClients.length} clients`);
       setSelectedClients([]);
       await loadData(); // Refresh data
     } catch (error) {
       console.error('Failed to send bulk activation emails:', error);
-      toast.error('Failed to send bulk activation emails');
+      toast.error('Failed to send bulk activation emails. Please try again.');
     } finally {
       setIsSendingEmails(false);
       setProgress({ current: 0, total: 0, isActive: false });
