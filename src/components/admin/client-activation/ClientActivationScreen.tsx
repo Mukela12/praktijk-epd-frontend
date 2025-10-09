@@ -148,6 +148,30 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
     }
   };
 
+  // Select all clients across all pages
+  const handleSelectAllPages = async () => {
+    try {
+      const loadingToast = toast.loading('Loading all unverified clients...');
+
+      // Fetch all unverified clients
+      const response = await getUnverifiedClients({
+        limit: pagination.totalClients,
+        offset: 0
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (response?.clients) {
+        const allClientIds = response.clients.map((client: any) => client.id);
+        setSelectedClients(allClientIds);
+        toast.success(`Selected all ${allClientIds.length} unverified clients`);
+      }
+    } catch (error) {
+      console.error('Failed to load all clients:', error);
+      toast.error('Failed to load all clients');
+    }
+  };
+
   // Handle bulk activation
   const handleBulkActivation = async () => {
     if (selectedClients.length === 0) {
@@ -162,10 +186,21 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
       // Show initial toast
       const loadingToast = toast.loading(`Sending activation emails to ${selectedClients.length} clients...`);
 
-      await sendBulkActivationEmails(selectedClients, bulkOptions);
+      const result = await sendBulkActivationEmails(selectedClients, bulkOptions);
 
       toast.dismiss(loadingToast);
-      toast.success(`Successfully sent activation emails to ${selectedClients.length} clients`);
+
+      // Check for warnings (e.g., quota exceeded)
+      if (result.data?.warnings && result.data.warnings.length > 0) {
+        toast.success(`${result.data.successful} clients activated successfully`, { duration: 4000 });
+        toast.error(
+          `⚠️ Email quota exceeded for ${result.data.warnings.length} clients. They are activated but emails were not sent.`,
+          { duration: 8000 }
+        );
+      } else {
+        toast.success(`Successfully sent activation emails to ${selectedClients.length} clients`);
+      }
+
       setSelectedClients([]);
       await loadData(); // Refresh data
     } catch (error) {
@@ -335,7 +370,17 @@ const ClientActivationScreen: React.FC<ClientActivationScreenProps> = ({ onBack 
             >
               {selectedClients.length === unverifiedClients.length ? 'Deselect All' : 'Select All'} on this page
             </button>
-            
+
+            {pagination.totalPages > 1 && (
+              <button
+                onClick={handleSelectAllPages}
+                className="inline-flex items-center px-4 py-2 border border-blue-300 text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <UserGroupIcon className="w-4 h-4 mr-2" />
+                Select All {pagination.totalClients} Clients
+              </button>
+            )}
+
             <button
               onClick={handleBulkActivation}
               disabled={selectedClients.length === 0 || isSendingEmails}
