@@ -581,47 +581,11 @@ const BookAppointment: React.FC = () => {
             {/* Therapist Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('appointments.selectTherapist')}
+                {t('appointments.selectTherapist')} <span className="text-gray-500 text-xs">({t('appointments.optional')})</span>
               </label>
-              
-              {/* Show assigned therapist first if exists */}
-              {therapists.length > 0 && !showTherapistSelection && (
-                <div>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
-                          {therapists[0].first_name?.charAt(0)}{therapists[0].last_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {therapists[0].first_name} {therapists[0].last_name}
-                          </p>
-                          {therapists[0].specializations && therapists[0].specializations.length > 0 && (
-                            <p className="text-sm text-gray-600">
-                              {therapists[0].specializations.join(', ')}
-                            </p>
-                          )}
-                          <p className="text-xs text-blue-600 font-medium">{t('appointments.yourTherapist')}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          console.log('[BookAppointment] User clicked "Choose Another Therapist"');
-                          setShowTherapistSelection(true);
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        {t('appointments.chooseAnother')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {/* Show therapist selection */}
-              {(showTherapistSelection || therapists.length === 0) && (
+              {/* Show therapist selection - always visible */}
+              {allTherapists.length > 0 && (
                 <div className="space-y-3">
                   {/* Search bar */}
                   <div className="relative">
@@ -693,24 +657,6 @@ const BookAppointment: React.FC = () => {
                       <p className="text-center text-gray-500 py-4">{t('appointments.noTherapistsAvailable')}</p>
                     )}
                   </div>
-
-                  {therapists.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log('[BookAppointment] Returning to assigned therapist:', therapists[0].first_name, therapists[0].last_name);
-                        setSelectedTherapist(therapists[0]);
-                        setPreferredTherapist(therapists[0].id);
-                        setShowTherapistSelection(false);
-                        // Reset selected time when changing therapist
-                        console.log('[BookAppointment] Resetting selected time');
-                        setSelectedTime('');
-                      }}
-                      className="text-sm text-gray-600 hover:text-gray-700"
-                    >
-                      {t('appointments.backToAssigned')}
-                    </button>
-                  )}
                 </div>
               )}
             </div>
