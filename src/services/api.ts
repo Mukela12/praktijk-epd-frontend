@@ -263,7 +263,9 @@ api.interceptors.response.use(
     if (error.response?.status === 403) {
       toast.error('Access denied. You do not have permission for this action.');
     } else if (error.response?.status === 404) {
-      toast.error('Resource not found.');
+      // Don't show generic toast for 404 errors - let components handle them
+      // 404s are often expected (e.g., "no assigned therapist" for new clients)
+      return Promise.reject(error);
     } else if (error.response?.status === 422) {
       // Validation errors are handled by individual components
       return Promise.reject(error);
