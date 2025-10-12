@@ -93,6 +93,8 @@ const TherapistAppointments: React.FC = () => {
   const [filterLocation, setFilterLocation] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [hasClients, setHasClients] = useState<boolean | null>(null);
   const [expandedAppointment, setExpandedAppointment] = useState<string | null>(null);
@@ -245,14 +247,28 @@ const TherapistAppointments: React.FC = () => {
     const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
     const matchesLocation = filterLocation === 'all' || appointment.location === filterLocation;
     const matchesType = filterType === 'all' || appointment.type === filterType;
-    const matchesDate = viewMode === 'day' ? appointment.date === selectedDate : true;
-    
+
+    // Date filtering logic
+    let matchesDate = true;
+    if (viewMode === 'day') {
+      matchesDate = appointment.date === selectedDate;
+    } else if (startDate && endDate) {
+      // Date range filter
+      matchesDate = appointment.date >= startDate && appointment.date <= endDate;
+    } else if (startDate) {
+      // Only start date specified
+      matchesDate = appointment.date >= startDate;
+    } else if (endDate) {
+      // Only end date specified
+      matchesDate = appointment.date <= endDate;
+    }
+
     return matchesSearch && matchesStatus && matchesLocation && matchesType && matchesDate;
   }).sort((a, b) => {
-    // Sort by date and time
+    // Sort by date and time (newest first)
     const dateTimeA = new Date(`${a.date}T${a.time}:00`);
     const dateTimeB = new Date(`${b.date}T${b.time}:00`);
-    return dateTimeA.getTime() - dateTimeB.getTime();
+    return dateTimeB.getTime() - dateTimeA.getTime();
   });
 
   // Get appointment stats
@@ -518,12 +534,32 @@ const TherapistAppointments: React.FC = () => {
                 className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
+            {viewMode === 'day' ? (
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            ) : (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  placeholder="Start Date"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                <span className="text-gray-500">to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  placeholder="End Date"
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -725,13 +761,13 @@ const TherapistAppointments: React.FC = () => {
                       </div>
                       <div className="flex items-center space-x-1">
                         <LocationIcon className="w-4 h-4" />
-                        <span className="capitalize">{appointment.location}</span>
+                        <span className="capitalize">{appointment.location || 'N/A'}</span>
                       </div>
                       <span className="capitalize bg-gray-100 px-2 py-1 rounded text-xs">
-                        {appointment.type.replace('_', ' ')}
+                        {appointment.type?.replace('_', ' ') || 'N/A'}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(appointment.priority)}`}>
-                        {appointment.priority.toUpperCase()}
+                        {appointment.priority?.toUpperCase() || 'NORMAL'}
                       </span>
                       {appointment.recurring && (
                         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">

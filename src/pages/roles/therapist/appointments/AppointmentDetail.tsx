@@ -252,6 +252,40 @@ const AppointmentDetail: React.FC = () => {
     return null;
   }
 
+  // Handle missing client data
+  if (!appointment.client) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/therapist/appointments')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Appointment Details</h1>
+          </div>
+        </div>
+        <PremiumCard>
+          <div className="text-center py-12">
+            <ExclamationTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Client Data</h3>
+            <p className="text-gray-600 mb-6">
+              Unable to load client information for this appointment. The client data may be incomplete.
+            </p>
+            <PremiumButton
+              variant="primary"
+              onClick={() => navigate('/therapist/appointments')}
+            >
+              Back to Appointments
+            </PremiumButton>
+          </div>
+        </PremiumCard>
+      </div>
+    );
+  }
+
   const LocationIcon = getLocationIcon(appointment.location);
   const appointmentDateTime = new Date(`${appointment.appointment_date}T${appointment.start_time}`);
   const isUpcoming = appointmentDateTime > new Date();
@@ -309,7 +343,7 @@ const AppointmentDetail: React.FC = () => {
             Client Information
           </h2>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>
-            {appointment.status.replace('_', ' ').toUpperCase()}
+            {appointment.status?.replace('_', ' ').toUpperCase() || 'N/A'}
           </span>
         </div>
 
@@ -329,17 +363,17 @@ const AppointmentDetail: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Phone:</dt>
-                <dd className="text-sm font-medium text-gray-900">{appointment.client.phone}</dd>
+                <dd className="text-sm font-medium text-gray-900">{appointment.client.phone || 'N/A'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Date of Birth:</dt>
                 <dd className="text-sm font-medium text-gray-900">
-                  {formatDate(appointment.client.date_of_birth)}
+                  {appointment.client.date_of_birth ? formatDate(appointment.client.date_of_birth) : 'N/A'}
                 </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-gray-600">Gender:</dt>
-                <dd className="text-sm font-medium text-gray-900">{appointment.client.gender}</dd>
+                <dd className="text-sm font-medium text-gray-900">{appointment.client.gender || 'N/A'}</dd>
               </div>
             </dl>
           </div>
@@ -452,7 +486,7 @@ const AppointmentDetail: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Appointment Type</p>
               <p className="font-medium text-gray-900 capitalize">
-                {appointment.type.replace('_', ' ')}
+                {appointment.type?.replace('_', ' ') || 'N/A'}
               </p>
             </div>
 
