@@ -33,7 +33,6 @@ interface Therapist {
   bio?: string;
   therapy_types?: string;
   languages_spoken?: string[];
-  online_therapy_available?: boolean;
 }
 
 const BookAppointment: React.FC = () => {
@@ -646,11 +645,6 @@ const BookAppointment: React.FC = () => {
                                 <p className="text-xs text-gray-500 mt-1">
                                   {t('appointments.languages')}: {therapist.languages_spoken.join(', ')}
                                 </p>
-                              )}
-                              {therapist.online_therapy_available && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
-                                  {t('appointments.onlineAvailable')}
-                                </span>
                               )}
                             </div>
                           </div>
