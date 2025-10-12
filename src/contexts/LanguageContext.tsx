@@ -456,7 +456,8 @@ const translations = {
   'appointments.additionalInfo': { en: 'Additional Information', nl: 'Aanvullende Informatie' },
   'appointments.additionalDetailsPlaceholder': { en: 'Add any additional details that might help your therapist prepare for the session...', nl: 'Voeg eventuele aanvullende details toe die uw therapeut kunnen helpen bij de voorbereiding van de sessie...' },
   'appointments.optionalAdditionalInfo': { en: 'This is optional but can help provide additional context beyond your selected concerns.', nl: 'Dit is optioneel maar kan helpen om extra context te geven naast uw geselecteerde hulpvragen.' },
-  
+  'appointments.optional': { en: 'optional', nl: 'optioneel' },
+
   // Therapist
   'therapist.browseOtherTherapists': { en: 'Browse Other Therapists', nl: 'Bekijk Andere Therapeuten' },
   'therapist.loadError': { en: 'Failed to load therapist information', nl: 'Kan therapeutinformatie niet laden' },
