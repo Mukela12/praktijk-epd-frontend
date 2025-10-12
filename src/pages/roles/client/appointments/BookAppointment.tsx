@@ -627,11 +627,14 @@ const BookAppointment: React.FC = () => {
                         >
                           <div className="flex items-start space-x-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                              {therapist.first_name?.charAt(0)}{therapist.last_name?.charAt(0)}
+                              {therapist.first_name?.charAt(0) || therapist.name?.charAt(0) || therapist.email?.charAt(0) || 'T'}
+                              {therapist.last_name?.charAt(0) || therapist.name?.charAt(1) || ''}
                             </div>
                             <div className="flex-1">
                               <p className="font-semibold text-gray-900">
-                                {therapist.first_name} {therapist.last_name}
+                                {therapist.first_name && therapist.last_name
+                                  ? `${therapist.first_name} ${therapist.last_name}`
+                                  : therapist.name || therapist.email || 'Therapist'}
                               </p>
                               {therapist.specializations && therapist.specializations.length > 0 && (
                                 <p className="text-sm text-gray-600">
