@@ -100,6 +100,7 @@ const AppointmentRequests: React.FC = () => {
   const [isAssigning, setIsAssigning] = useState(false);
   const [showSmartPairing, setShowSmartPairing] = useState(false);
   const [autoMatchEnabled, setAutoMatchEnabled] = useState(false);
+  const [isTogglingAutoMatch, setIsTogglingAutoMatch] = useState(false);
 
   // Load data
   const loadData = async () => {
@@ -151,7 +152,107 @@ const AppointmentRequests: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    loadAutoMatchStatus();
   }, []);
+
+  // Load auto-match status
+  const loadAutoMatchStatus = async () => {
+    try {
+      console.log('[AppointmentRequests] Loading auto-match status...');
+      const response = await realApiService.admin.getAutoMatchingStatus();
+      console.log('[AppointmentRequests] Auto-match status response:', response);
+
+      if (response.success && response.data) {
+        setAutoMatchEnabled(response.data.autoMatchingEnabled);
+        console.log('[AppointmentRequests] Auto-match enabled:', response.data.autoMatchingEnabled);
+      }
+    } catch (error) {
+      console.error('[AppointmentRequests] Failed to load auto-match status:', error);
+      // Don't show error to user - just default to false
+    }
+  };
+
+  // Handle auto-match toggle
+  const handleToggleAutoMatch = async () => {
+    console.log('[AppointmentRequests] ===== TOGGLING AUTO-MATCH =====');
+    console.log('[AppointmentRequests] Current state:', autoMatchEnabled);
+
+    try {
+      setIsTogglingAutoMatch(true);
+      const newState = !autoMatchEnabled;
+      console.log('[AppointmentRequests] New state:', newState);
+
+      // Persist to backend
+      console.log('[AppointmentRequests] Calling toggleAutoMatching API...');
+      const toggleResponse = await realApiService.admin.toggleAutoMatching(newState);
+      console.log('[AppointmentRequests] Toggle response:', toggleResponse);
+
+      if (!toggleResponse.success) {
+        throw new Error('Failed to toggle auto-matching setting');
+      }
+
+      setAutoMatchEnabled(newState);
+
+      if (newState) {
+        // Show processing notification
+        info('Processing pending appointment requests...', {
+          title: 'Auto-Matching Active',
+          duration: 3000
+        });
+
+        // Trigger immediate auto-matching for existing pending requests
+        console.log('[AppointmentRequests] Calling processAutoAssignments API...');
+        const processResponse = await realApiService.admin.processAutoAssignments();
+        console.log('[AppointmentRequests] Process response:', processResponse);
+
+        if (processResponse.success && processResponse.data) {
+          const { processed, assigned, assignments } = processResponse.data;
+          console.log('[AppointmentRequests] Processed:', processed, 'Assigned:', assigned);
+
+          if (assigned > 0) {
+            success(
+              `Successfully matched ${assigned} of ${processed} pending requests`,
+              {
+                title: 'Auto-Matching Complete',
+                duration: 5000
+              }
+            );
+
+            // Show details of assignments
+            if (assignments && assignments.length > 0) {
+              console.log('[AppointmentRequests] Assignment details:', assignments);
+            }
+
+            // Reload appointment requests to reflect changes
+            await loadData();
+          } else {
+            info(
+              processed > 0
+                ? `Reviewed ${processed} requests but none met the matching threshold (70%+ compatibility required)`
+                : 'No pending requests available to process',
+              {
+                title: 'Auto-Matching Complete',
+                duration: 4000
+              }
+            );
+          }
+        }
+      } else {
+        success('Auto-matching disabled. New requests will require manual assignment.', {
+          duration: 3000
+        });
+      }
+
+      console.log('[AppointmentRequests] ✓ Auto-match toggle complete');
+    } catch (error) {
+      console.error('[AppointmentRequests] ✗ Toggle auto-match error:', error);
+      errorAlert('Failed to toggle auto-matching setting');
+      // Revert state on error
+      setAutoMatchEnabled(!autoMatchEnabled);
+    } finally {
+      setIsTogglingAutoMatch(false);
+    }
+  };
 
   // Load smart pairing recommendations
   const loadSmartRecommendations = async (request: AppointmentRequest) => {
@@ -712,10 +813,11 @@ const AppointmentRequests: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => setAutoMatchEnabled(!autoMatchEnabled)}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${
-                  autoMatchEnabled ? 'bg-purple-600' : 'bg-gray-200'
-                }`}
+                onClick={handleToggleAutoMatch}
+                disabled={isTogglingAutoMatch}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 ${
+                  isTogglingAutoMatch ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                } ${autoMatchEnabled ? 'bg-purple-600' : 'bg-gray-200'}`}
               >
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
