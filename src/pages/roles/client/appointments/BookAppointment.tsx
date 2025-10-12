@@ -9,7 +9,8 @@ import {
   CheckCircleIcon,
   ArrowLeftIcon,
   InformationCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import { clientApi } from '@/services/unifiedApi';
@@ -64,6 +65,7 @@ const BookAppointment: React.FC = () => {
   const [therapistSearchTerm, setTherapistSearchTerm] = useState('');
   const [showTherapistSelection, setShowTherapistSelection] = useState(false);
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [autoMatchEnabled, setAutoMatchEnabled] = useState(false);
 
   // Get tomorrow's date as minimum
   const tomorrow = new Date();
@@ -587,6 +589,39 @@ const BookAppointment: React.FC = () => {
               {/* Show therapist selection - always visible */}
               {allTherapists.length > 0 && (
                 <div className="space-y-3">
+                  {/* Auto Match Option */}
+                  <div
+                    onClick={() => {
+                      console.log('[BookAppointment] Auto Match selected');
+                      setAutoMatchEnabled(true);
+                      setSelectedTherapist(null);
+                      setSelectedTime('');
+                      setPreferredTherapist('');
+                    }}
+                    className={`p-4 rounded-lg cursor-pointer transition-all border-2 ${
+                      autoMatchEnabled
+                        ? 'bg-purple-50 border-purple-500 shadow-md'
+                        : 'bg-white border-gray-300 hover:border-purple-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center flex-shrink-0">
+                          <SparklesIcon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900 flex items-center">
+                            {t('appointments.autoMatch')}
+                            {autoMatchEnabled && <CheckCircleIcon className="w-5 h-5 text-purple-600 ml-2" />}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {t('appointments.autoMatchDescription')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Search bar */}
                   <div className="relative">
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -612,6 +647,7 @@ const BookAppointment: React.FC = () => {
                           key={therapist.id}
                           onClick={() => {
                             console.log('[BookAppointment] Therapist selected:', therapist.first_name, therapist.last_name, '(ID:', therapist.id + ')');
+                            setAutoMatchEnabled(false);
                             setSelectedTherapist(therapist);
                             setPreferredTherapist(therapist.id);
                             setShowTherapistSelection(false);
@@ -737,11 +773,18 @@ const BookAppointment: React.FC = () => {
                   </span>
                 </div>
                 
-                {selectedTherapist && (
+                {(selectedTherapist || autoMatchEnabled) && (
                   <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <span className="text-sm text-gray-600">{t('appointments.therapist')}</span>
                     <span className="font-medium text-gray-900">
-                      {selectedTherapist.first_name} {selectedTherapist.last_name}
+                      {autoMatchEnabled ? (
+                        <span className="flex items-center text-purple-600">
+                          <SparklesIcon className="w-4 h-4 mr-1" />
+                          {t('appointments.autoMatch')}
+                        </span>
+                      ) : selectedTherapist ? (
+                        `${selectedTherapist.first_name} ${selectedTherapist.last_name}`
+                      ) : null}
                     </span>
                   </div>
                 )}

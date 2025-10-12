@@ -457,6 +457,9 @@ const translations = {
   'appointments.additionalDetailsPlaceholder': { en: 'Add any additional details that might help your therapist prepare for the session...', nl: 'Voeg eventuele aanvullende details toe die uw therapeut kunnen helpen bij de voorbereiding van de sessie...' },
   'appointments.optionalAdditionalInfo': { en: 'This is optional but can help provide additional context beyond your selected concerns.', nl: 'Dit is optioneel maar kan helpen om extra context te geven naast uw geselecteerde hulpvragen.' },
   'appointments.optional': { en: 'optional', nl: 'optioneel' },
+  'appointments.autoMatch': { en: 'Auto Match', nl: 'Automatisch Matchen' },
+  'appointments.autoMatchDescription': { en: 'Let our system automatically match you with the best therapist based on your concerns', nl: 'Laat ons systeem u automatisch matchen met de beste therapeut op basis van uw hulpvragen' },
+  'appointments.autoMatchSelected': { en: 'Auto-matching enabled - We will find the best therapist for you', nl: 'Automatisch matchen ingeschakeld - Wij vinden de beste therapeut voor u' },
 
   // Therapist
   'therapist.browseOtherTherapists': { en: 'Browse Other Therapists', nl: 'Bekijk Andere Therapeuten' },
