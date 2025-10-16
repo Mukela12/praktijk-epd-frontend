@@ -228,7 +228,7 @@ const AppointmentRequests: React.FC = () => {
           } else {
             info(
               processed > 0
-                ? `Reviewed ${processed} requests but none met the matching threshold (70%+ compatibility required)`
+                ? `Reviewed ${processed} requests but no suitable matches found with available therapists`
                 : 'No pending requests available to process',
               {
                 title: 'Auto-Matching Complete',

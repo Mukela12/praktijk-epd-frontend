@@ -1001,9 +1001,9 @@ const AppointmentsManagement: React.FC = () => {
       groupedAppointments[date].push(apt);
     });
 
-    // Sort dates
-    const sortedDates = Object.keys(groupedAppointments).sort((a, b) => 
-      new Date(a).getTime() - new Date(b).getTime()
+    // Sort dates (newest first)
+    const sortedDates = Object.keys(groupedAppointments).sort((a, b) =>
+      new Date(b).getTime() - new Date(a).getTime()
     );
 
     return (
