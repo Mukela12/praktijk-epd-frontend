@@ -27,6 +27,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/store/authStore';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useAdminDashboard, useAdminWaitingList, useAdminFinancialOverview } from '@/hooks/useRealApi';
+import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { PremiumCard, PremiumButton, StatusBadge, PremiumEmptyState } from '@/components/layout/PremiumLayout';
 import PageTransition from '@/components/ui/PageTransition';
@@ -222,16 +223,28 @@ const ProfessionalAdminDashboard: React.FC = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [financial, setFinancial] = useState<FinancialOverview | null>(null);
   const [recentWaitingList, setRecentWaitingList] = useState<WaitingListApplication[]>([]);
+  const [autoMatchStatus, setAutoMatchStatus] = useState<{
+    enabled: boolean;
+    todayAssigned: number;
+    pendingRequests: number;
+    lastRunAt: string | null;
+  }>({
+    enabled: false,
+    todayAssigned: 0,
+    pendingRequests: 0,
+    lastRunAt: null
+  });
 
   // Load dashboard data
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [dashboardResult, financialResult] = await Promise.all([
+        const [dashboardResult, financialResult, autoMatchResult] = await Promise.all([
           getDashboard(),
-          getFinancialOverview()
+          getFinancialOverview(),
+          realApiService.admin.getAutoMatchingStatus()
         ]);
-        
+
         await getWaitingList();
 
         if (dashboardResult) {
@@ -239,6 +252,14 @@ const ProfessionalAdminDashboard: React.FC = () => {
         }
         if (financialResult) {
           setFinancial(financialResult);
+        }
+        if (autoMatchResult && autoMatchResult.success && autoMatchResult.data) {
+          setAutoMatchStatus({
+            enabled: autoMatchResult.data.autoMatchingEnabled,
+            todayAssigned: autoMatchResult.data.todayStats?.assigned || 0,
+            pendingRequests: autoMatchResult.data.statistics?.pendingRequests || 0,
+            lastRunAt: autoMatchResult.data.todayStats?.lastRunAt || null
+          });
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
@@ -291,6 +312,20 @@ const ProfessionalAdminDashboard: React.FC = () => {
         { label: t('dashboard.monthlyRevenue'), value: `€${financial?.totalRevenue?.toLocaleString() || '0'}` },
         { label: t('dashboard.outstanding') || 'Outstanding', value: `€${financial?.outstandingAmount?.toLocaleString() || '0'}` }
       ]
+    },
+    {
+      title: 'Auto-Match System',
+      description: 'Automatically match pending appointment requests to best available therapists',
+      icon: SparklesIcon,
+      color: 'bg-purple-600',
+      link: '/admin/appointment-requests',
+      stats: [
+        { label: 'Status', value: autoMatchStatus.enabled ? 'Active' : 'Inactive' },
+        { label: 'Today Assigned', value: autoMatchStatus.todayAssigned },
+        { label: 'Pending Requests', value: autoMatchStatus.pendingRequests }
+      ],
+      badge: autoMatchStatus.enabled ? { text: 'ON', color: 'bg-green-100 text-green-800' } : undefined,
+      isNew: true
     },
     {
       title: t('nav.addressChanges'),

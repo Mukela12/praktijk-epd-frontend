@@ -153,6 +153,19 @@ const AppointmentRequests: React.FC = () => {
   useEffect(() => {
     loadData();
     loadAutoMatchStatus();
+
+    // Reload auto-match status when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAutoMatchStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Load auto-match status
