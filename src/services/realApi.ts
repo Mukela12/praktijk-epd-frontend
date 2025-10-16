@@ -608,6 +608,16 @@ export const realApiService = {
         totalAssignments: number;
         recentAssignments: number;
       };
+      todayStats: {
+        processed: number;
+        assigned: number;
+        lastRunAt: string | null;
+      };
+      weeklyStats: Array<{
+        date: string;
+        processed: number;
+        assigned: number;
+      }>;
     }>> => {
       const response = await api.get('/admin/auto-matching-status');
       return response.data;
