@@ -10,7 +10,9 @@ import {
   ArrowLeftIcon,
   InformationCircleIcon,
   MagnifyingGlassIcon,
-  SparklesIcon
+  SparklesIcon,
+  ClipboardDocumentListIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { realApiService } from '@/services/realApi';
 import { clientApi } from '@/services/unifiedApi';
@@ -21,6 +23,15 @@ import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
 import SimpleHulpvragenSelector from '@/components/forms/SimpleHulpvragenSelector';
 import { usePremiumNotifications } from '@/utils/premiumNotifications';
+import {
+  AppointmentType,
+  APPOINTMENT_TYPE_LABELS,
+  THERAPY_TYPES,
+  getAvailableDurations,
+  isIntakeFormRequired,
+  isAppointmentFree,
+  formatDuration
+} from '@/types/appointments';
 
 interface Therapist {
   id: string;
@@ -46,8 +57,11 @@ const BookAppointment: React.FC = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Form data
+
+  // Form data - NEW FLOW (5 steps)
+  const [appointmentType, setAppointmentType] = useState<AppointmentType | ''>('');
+  const [selectedTherapyType, setSelectedTherapyType] = useState<string>('');
+  const [selectedDuration, setSelectedDuration] = useState<number>(50);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [problemDescription, setProblemDescription] = useState('');
@@ -56,7 +70,7 @@ const BookAppointment: React.FC = () => {
   const [preferredTherapist, setPreferredTherapist] = useState<string>('');
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [therapyType, setTherapyType] = useState('Individual Therapy');
+  const [therapyType, setTherapyType] = useState('Individual Therapy'); // Legacy - keeping for compatibility
   const [hasUnpaidInvoices, setHasUnpaidInvoices] = useState(false);
   const [unpaidAmount, setUnpaidAmount] = useState(0);
   const [isCheckingInvoices, setIsCheckingInvoices] = useState(true);
@@ -313,7 +327,7 @@ const BookAppointment: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime || selectedHulpvragen.length === 0) {
+    if (!appointmentType || !selectedTherapyType || !selectedDate || !selectedTime || selectedHulpvragen.length === 0) {
       errorAlert(t('validation.fillRequiredFields'));
       return;
     }
@@ -326,6 +340,9 @@ const BookAppointment: React.FC = () => {
           therapistId: selectedTherapist.id,
           appointmentDate: selectedDate,
           appointmentTime: selectedTime,
+          appointmentType,
+          therapyType: selectedTherapyType,
+          duration: selectedDuration,
           hulpvragen: selectedHulpvragen
         });
 
@@ -333,9 +350,11 @@ const BookAppointment: React.FC = () => {
           therapistId: selectedTherapist.id,
           appointmentDate: selectedDate,
           appointmentTime: selectedTime,
+          appointmentType,
+          therapyType: selectedTherapyType,
+          duration: selectedDuration,
           hulpvragen: selectedHulpvragen,
           problemDescription: problemDescription || '',
-          therapyType: urgency === 'urgent' ? 'emergency' : 'individual',
           urgencyLevel: urgency
         };
 
@@ -388,13 +407,15 @@ const BookAppointment: React.FC = () => {
         setIsSubmitting(false);
       }
     } else {
-      // Fallback to old endpoint if no therapist selected
+      // Fallback to appointment request endpoint if no therapist selected
       setIsSubmitting(true);
       try {
         const requestData = {
           preferredDate: selectedDate,
           preferredTime: selectedTime,
-          therapyType: urgency === 'urgent' ? 'emergency' : 'regular',
+          appointmentType,
+          therapyType: selectedTherapyType,
+          duration: selectedDuration,
           urgencyLevel: urgency,
           hulpvragen: selectedHulpvragen,
           reason: problemDescription || '',
@@ -442,11 +463,160 @@ const BookAppointment: React.FC = () => {
   const renderStep = () => {
     switch (step) {
       case 1:
+        // NEW STEP 1: Appointment Type Selection
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Appointment Type</h3>
+              <p className="text-gray-600 mb-6">
+                Choose the type of therapy session you would like to book
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.values(AppointmentType).map((type) => (
+                  <div
+                    key={type}
+                    onClick={() => {
+                      setAppointmentType(type);
+                      // Set default duration for this appointment type
+                      const durations = getAvailableDurations(type);
+                      setSelectedDuration(durations[0]);
+                    }}
+                    className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                      appointmentType === type
+                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-lg mb-1 ${
+                          appointmentType === type ? 'text-blue-900' : 'text-gray-900'
+                        }`}>
+                          {APPOINTMENT_TYPE_LABELS[type].nl}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {APPOINTMENT_TYPE_LABELS[type].en}
+                        </p>
+                      </div>
+                      {appointmentType === type && (
+                        <CheckCircleIcon className="w-6 h-6 text-blue-600 flex-shrink-0 ml-2" />
+                      )}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center text-gray-600">
+                        <ClockIcon className="w-4 h-4 mr-2" />
+                        <span>Duration: {formatDuration(getAvailableDurations(type)[0])}</span>
+                      </div>
+                      {isAppointmentFree(type) && (
+                        <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                          FREE Session
+                        </div>
+                      )}
+                      {isIntakeFormRequired(type) && (
+                        <div className="flex items-center text-amber-600 bg-amber-50 px-3 py-2 rounded-md mt-2">
+                          <ClipboardDocumentListIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                          <span className="text-xs">Intake form required after booking</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {appointmentType && getAvailableDurations(appointmentType).length > 1 && (
+                <div className="mt-6 animate-fadeIn">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Select Session Duration
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {getAvailableDurations(appointmentType).map((duration) => (
+                      <button
+                        key={duration}
+                        onClick={() => setSelectedDuration(duration)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedDuration === duration
+                            ? 'border-blue-500 bg-blue-50 text-blue-900'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <ClockIcon className={`w-5 h-5 mx-auto mb-2 ${
+                          selectedDuration === duration ? 'text-blue-600' : 'text-gray-400'
+                        }`} />
+                        <p className="font-medium">{formatDuration(duration)}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 2:
+        // NEW STEP 2: Therapy Type Selection
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Therapy Method</h3>
+              <p className="text-gray-600 mb-6">
+                Choose the therapeutic approach you prefer or have been recommended
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {THERAPY_TYPES.map((therapy) => (
+                  <div
+                    key={therapy}
+                    onClick={() => setSelectedTherapyType(therapy)}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedTherapyType === therapy
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AcademicCapIcon className={`w-5 h-5 mr-3 ${
+                          selectedTherapyType === therapy ? 'text-blue-600' : 'text-gray-400'
+                        }`} />
+                        <span className={`font-medium ${
+                          selectedTherapyType === therapy ? 'text-blue-900' : 'text-gray-900'
+                        }`}>
+                          {therapy}
+                        </span>
+                      </div>
+                      {selectedTherapyType === therapy && (
+                        <CheckCircleIcon className="w-5 h-5 text-blue-600" />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <div className="flex items-start">
+                  <InformationCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Not sure which method to choose?</p>
+                    <p>
+                      Don't worry! Your therapist will discuss the best approach for your specific needs during your first session.
+                      You can select "CGT (Cognitieve Gedragstherapie)" as a general starting point.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        // STEP 3: Date/Time Selection (previously step 1)
         return (
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.selectDateTime')}</h3>
-              
+
               {/* Date Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -516,26 +686,6 @@ const BookAppointment: React.FC = () => {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Therapy Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('appointments.therapyType')} *
-              </label>
-              <select
-                value={therapyType}
-                onChange={(e) => setTherapyType(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="Individual Therapy">Individual Therapy</option>
-                <option value="CBT Session">CBT Session</option>
-                <option value="EMDR Session">EMDR Session</option>
-                <option value="Group Therapy">Group Therapy</option>
-                <option value="Family Therapy">Family Therapy</option>
-                <option value="Crisis Intervention">Crisis Intervention</option>
-              </select>
             </div>
 
             {/* Urgency Level */}
@@ -697,7 +847,8 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 2:
+      case 4:
+        // STEP 4: Hulpvragen Description (previously step 2)
         return (
           <div className="space-y-6">
             <div>
@@ -744,7 +895,8 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 3:
+      case 5:
+        // STEP 5: Review (previously step 3)
         return (
           <div className="space-y-6">
             <div>
@@ -752,20 +904,37 @@ const BookAppointment: React.FC = () => {
               
               <div className="bg-gray-50 rounded-lg p-6 space-y-4">
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Appointment Type</span>
+                  <span className="font-medium text-gray-900">
+                    {appointmentType ? APPOINTMENT_TYPE_LABELS[appointmentType].nl : ''}
+                    {appointmentType && isAppointmentFree(appointmentType) && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+                        FREE
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Therapy Method</span>
+                  <span className="font-medium text-gray-900">{selectedTherapyType}</span>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Duration</span>
+                  <span className="font-medium text-gray-900">{formatDuration(selectedDuration)}</span>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-gray-200">
                   <span className="text-sm text-gray-600">{t('appointments.date')}</span>
                   <span className="font-medium text-gray-900">{formatDate(selectedDate)}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
                   <span className="text-sm text-gray-600">{t('appointments.time')}</span>
                   <span className="font-medium text-gray-900">{selectedTime}</span>
                 </div>
-                
-                <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                  <span className="text-sm text-gray-600">{t('appointments.therapyType')}</span>
-                  <span className="font-medium text-gray-900">{therapyType}</span>
-                </div>
-                
+
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
                   <span className="text-sm text-gray-600">{t('appointments.urgency')}</span>
                   <span className={`font-medium ${urgency === 'urgent' ? 'text-red-600' : 'text-green-600'}`}>
@@ -806,6 +975,22 @@ const BookAppointment: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Intake Form Notice */}
+              {appointmentType && isIntakeFormRequired(appointmentType) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start">
+                    <ClipboardDocumentListIcon className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium mb-1">Intake Form Required</p>
+                      <p>
+                        After confirming this appointment, you will be asked to complete a mandatory intake form.
+                        This helps your therapist better understand your needs before your first session.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start">
@@ -902,7 +1087,7 @@ const BookAppointment: React.FC = () => {
         {/* Progress Steps */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3].map((stepNumber) => (
+            {[1, 2, 3, 4, 5].map((stepNumber) => (
               <div key={stepNumber} className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
                   step >= stepNumber
@@ -911,22 +1096,28 @@ const BookAppointment: React.FC = () => {
                 }`}>
                   {stepNumber}
                 </div>
-                {stepNumber < 3 && (
-                  <div className={`w-24 h-1 mx-2 transition-all ${
+                {stepNumber < 5 && (
+                  <div className={`w-16 h-1 mx-2 transition-all ${
                     step > stepNumber ? 'bg-blue-600' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-4">
-            <span className={`text-sm ${step >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+          <div className="flex justify-between mt-4 text-xs sm:text-sm">
+            <span className={`${step >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              Type
+            </span>
+            <span className={`${step >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              Method
+            </span>
+            <span className={`${step >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
               {t('appointments.dateTime')}
             </span>
-            <span className={`text-sm ${step >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`${step >= 4 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
               {t('appointments.description')}
             </span>
-            <span className={`text-sm ${step >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`${step >= 5 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
               {t('appointments.review')}
             </span>
           </div>
@@ -952,22 +1143,39 @@ const BookAppointment: React.FC = () => {
           )}
 
           <div className="ml-auto">
-            {step < 3 ? (
+            {step < 5 ? (
               <button
                 onClick={() => {
                   console.log('[BookAppointment] Attempting to move from step', step, 'to step', step + 1);
-                  if (step === 1 && (!selectedDate || !selectedTime)) {
+                  // Step 1: Appointment Type validation
+                  if (step === 1 && !appointmentType) {
+                    console.warn('[BookAppointment] Cannot proceed: No appointment type selected');
+                    errorAlert('Please select an appointment type');
+                    return;
+                  }
+                  // Step 2: Therapy Type validation
+                  if (step === 2 && !selectedTherapyType) {
+                    console.warn('[BookAppointment] Cannot proceed: No therapy method selected');
+                    errorAlert('Please select a therapy method');
+                    return;
+                  }
+                  // Step 3: Date/Time validation
+                  if (step === 3 && (!selectedDate || !selectedTime)) {
                     console.warn('[BookAppointment] Cannot proceed: Missing date or time');
                     errorAlert(t('appointments.selectDateTimeError'));
                     return;
                   }
-                  if (step === 2 && selectedHulpvragen.length === 0) {
+                  // Step 4: Hulpvragen validation
+                  if (step === 4 && selectedHulpvragen.length === 0) {
                     console.warn('[BookAppointment] Cannot proceed: No hulpvragen selected');
                     errorAlert(t('appointments.selectConcerns'));
                     return;
                   }
                   console.log('[BookAppointment] ✓ Validation passed, moving to step', step + 1);
                   console.log('[BookAppointment] Current state:', {
+                    appointmentType,
+                    therapyType: selectedTherapyType,
+                    duration: selectedDuration,
                     date: selectedDate,
                     time: selectedTime,
                     therapist: selectedTherapist ? `${selectedTherapist.first_name} ${selectedTherapist.last_name}` : 'None',
