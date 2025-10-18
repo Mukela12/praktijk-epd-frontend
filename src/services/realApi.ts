@@ -1203,6 +1203,10 @@ export const realApiService = {
       therapyType: string;
       urgencyLevel?: string;
       reason: string;
+      appointmentType?: string;
+      duration?: number;
+      hulpvragen?: string[];
+      problemDescription?: string;
     }): Promise<ApiResponse<{ id: string; status: string }>> => {
       const response = await api.post('/client/appointment-request', data);
       return response.data;
@@ -1227,6 +1231,8 @@ export const realApiService = {
       problemDescription?: string;
       therapyType?: string;
       urgencyLevel?: string;
+      appointmentType?: string;
+      duration?: number;
     }): Promise<ApiResponse> => {
       const response = await api.post('/client/appointments/book-with-therapist', data);
       return response.data;
