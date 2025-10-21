@@ -4,6 +4,7 @@ import {
   CalendarIcon,
   ClockIcon,
   UserIcon,
+  MapPinIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -47,6 +48,26 @@ interface Therapist {
   languages_spoken?: string[];
 }
 
+const LOCATIONS = [
+  'Amsterdam',
+  'Amsterdam IJburg',
+  'Amsterdam Zuid',
+  'Bergeijk',
+  'Den Haag',
+  'Hillegom',
+  'Hilversum',
+  'Maastricht',
+  'Nunspeet',
+  'Online',
+  'Online EMDR therapie',
+  'Online Yoga',
+  'Oosterhout',
+  'Purmerend',
+  'Utrecht (Tineke)',
+  'Valkenburg/Leiden',
+  'Woerdense Verlaat'
+];
+
 const BookAppointment: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,7 +79,8 @@ const BookAppointment: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form data - NEW FLOW (5 steps)
+  // Form data - NEW FLOW (6 steps)
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [appointmentType, setAppointmentType] = useState<AppointmentType | ''>('');
   const [selectedTherapyType, setSelectedTherapyType] = useState<string>('');
   const [selectedDuration, setSelectedDuration] = useState<number>(50);
@@ -327,7 +349,7 @@ const BookAppointment: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!appointmentType || !selectedTherapyType || !selectedDate || !selectedTime || selectedHulpvragen.length === 0) {
+    if (!selectedLocation || !appointmentType || !selectedTherapyType || !selectedDate || !selectedTime || selectedHulpvragen.length === 0) {
       errorAlert(t('validation.fillRequiredFields'));
       return;
     }
@@ -355,7 +377,8 @@ const BookAppointment: React.FC = () => {
           duration: selectedDuration,
           hulpvragen: selectedHulpvragen,
           problemDescription: problemDescription || '',
-          urgencyLevel: urgency
+          urgencyLevel: urgency,
+          preferredLocation: selectedLocation
         };
 
         const response = await realApiService.client.bookWithTherapist(bookingData);
@@ -389,6 +412,7 @@ const BookAppointment: React.FC = () => {
 
           // Reset form
           console.log('[BookAppointment] Booking successful - resetting form');
+          setSelectedLocation('');
           setSelectedDate('');
           setSelectedTime('');
           setSelectedHulpvragen([]);
@@ -419,7 +443,8 @@ const BookAppointment: React.FC = () => {
           urgencyLevel: urgency,
           hulpvragen: selectedHulpvragen,
           reason: problemDescription || '',
-          problemDescription: problemDescription || ''
+          problemDescription: problemDescription || '',
+          preferredLocation: selectedLocation
         };
 
         const response = await realApiService.client.requestAppointment(requestData);
@@ -440,6 +465,7 @@ const BookAppointment: React.FC = () => {
 
           // Reset form
           console.log('[BookAppointment] Request successful - resetting form');
+          setSelectedLocation('');
           setSelectedDate('');
           setSelectedTime('');
           setSelectedHulpvragen([]);
@@ -463,7 +489,48 @@ const BookAppointment: React.FC = () => {
   const renderStep = () => {
     switch (step) {
       case 1:
-        // NEW STEP 1: Appointment Type Selection
+        // NEW STEP 1: Location Selection
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Your Preferred Location</h3>
+              <p className="text-gray-600 mb-6">
+                Choose where you would like to have your appointment
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {LOCATIONS.map((location) => (
+                  <button
+                    key={location}
+                    onClick={() => setSelectedLocation(location)}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      selectedLocation === location
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <MapPinIcon className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                        selectedLocation === location ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                      <span className={`font-medium ${
+                        selectedLocation === location ? 'text-blue-900' : 'text-gray-900'
+                      }`}>
+                        {location}
+                      </span>
+                      {selectedLocation === location && (
+                        <CheckCircleIcon className="w-5 h-5 text-blue-600 ml-auto" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        // STEP 2: Appointment Type Selection (previously step 1)
         return (
           <div className="space-y-6">
             <div>
@@ -554,8 +621,8 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 2:
-        // NEW STEP 2: Therapy Type Selection
+      case 3:
+        // STEP 3: Therapy Type Selection (previously step 2)
         return (
           <div className="space-y-6">
             <div>
@@ -610,8 +677,8 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 3:
-        // STEP 3: Date/Time Selection (previously step 1)
+      case 4:
+        // STEP 4: Date/Time Selection (previously step 3)
         return (
           <div className="space-y-6">
             <div>
@@ -847,8 +914,8 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 4:
-        // STEP 4: Hulpvragen Description (previously step 2)
+      case 5:
+        // STEP 5: Hulpvragen Description (previously step 4)
         return (
           <div className="space-y-6">
             <div>
@@ -895,14 +962,22 @@ const BookAppointment: React.FC = () => {
           </div>
         );
 
-      case 5:
-        // STEP 5: Review (previously step 3)
+      case 6:
+        // STEP 6: Review (previously step 5)
         return (
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('appointments.reviewRequest')}</h3>
-              
+
               <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                  <span className="text-sm text-gray-600">Location</span>
+                  <span className="font-medium text-gray-900 flex items-center">
+                    <MapPinIcon className="w-4 h-4 mr-2 text-gray-600" />
+                    {selectedLocation}
+                  </span>
+                </div>
+
                 <div className="flex items-center justify-between py-3 border-b border-gray-200">
                   <span className="text-sm text-gray-600">Appointment Type</span>
                   <span className="font-medium text-gray-900">
@@ -1087,7 +1162,7 @@ const BookAppointment: React.FC = () => {
         {/* Progress Steps */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div className="flex items-center justify-between">
-            {[1, 2, 3, 4, 5].map((stepNumber) => (
+            {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
               <div key={stepNumber} className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
                   step >= stepNumber
@@ -1096,28 +1171,31 @@ const BookAppointment: React.FC = () => {
                 }`}>
                   {stepNumber}
                 </div>
-                {stepNumber < 5 && (
-                  <div className={`w-16 h-1 mx-2 transition-all ${
+                {stepNumber < 6 && (
+                  <div className={`w-12 h-1 mx-1 transition-all ${
                     step > stepNumber ? 'bg-blue-600' : 'bg-gray-200'
                   }`} />
                 )}
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-4 text-xs sm:text-sm">
+          <div className="flex justify-between mt-4 text-xs">
             <span className={`${step >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              Type
+              Location
             </span>
             <span className={`${step >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              Method
+              Type
             </span>
             <span className={`${step >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              {t('appointments.dateTime')}
+              Method
             </span>
             <span className={`${step >= 4 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
-              {t('appointments.description')}
+              {t('appointments.dateTime')}
             </span>
             <span className={`${step >= 5 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+              {t('appointments.description')}
+            </span>
+            <span className={`${step >= 6 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
               {t('appointments.review')}
             </span>
           </div>
@@ -1143,36 +1221,43 @@ const BookAppointment: React.FC = () => {
           )}
 
           <div className="ml-auto">
-            {step < 5 ? (
+            {step < 6 ? (
               <button
                 onClick={() => {
                   console.log('[BookAppointment] Attempting to move from step', step, 'to step', step + 1);
-                  // Step 1: Appointment Type validation
-                  if (step === 1 && !appointmentType) {
+                  // Step 1: Location validation
+                  if (step === 1 && !selectedLocation) {
+                    console.warn('[BookAppointment] Cannot proceed: No location selected');
+                    errorAlert('Please select your preferred location');
+                    return;
+                  }
+                  // Step 2: Appointment Type validation
+                  if (step === 2 && !appointmentType) {
                     console.warn('[BookAppointment] Cannot proceed: No appointment type selected');
                     errorAlert('Please select an appointment type');
                     return;
                   }
-                  // Step 2: Therapy Type validation
-                  if (step === 2 && !selectedTherapyType) {
+                  // Step 3: Therapy Type validation
+                  if (step === 3 && !selectedTherapyType) {
                     console.warn('[BookAppointment] Cannot proceed: No therapy method selected');
                     errorAlert('Please select a therapy method');
                     return;
                   }
-                  // Step 3: Date/Time validation
-                  if (step === 3 && (!selectedDate || !selectedTime)) {
+                  // Step 4: Date/Time validation
+                  if (step === 4 && (!selectedDate || !selectedTime)) {
                     console.warn('[BookAppointment] Cannot proceed: Missing date or time');
                     errorAlert(t('appointments.selectDateTimeError'));
                     return;
                   }
-                  // Step 4: Hulpvragen validation
-                  if (step === 4 && selectedHulpvragen.length === 0) {
+                  // Step 5: Hulpvragen validation
+                  if (step === 5 && selectedHulpvragen.length === 0) {
                     console.warn('[BookAppointment] Cannot proceed: No hulpvragen selected');
                     errorAlert(t('appointments.selectConcerns'));
                     return;
                   }
                   console.log('[BookAppointment] ✓ Validation passed, moving to step', step + 1);
                   console.log('[BookAppointment] Current state:', {
+                    location: selectedLocation,
                     appointmentType,
                     therapyType: selectedTherapyType,
                     duration: selectedDuration,
