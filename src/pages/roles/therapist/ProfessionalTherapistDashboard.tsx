@@ -210,11 +210,12 @@ const ProfessionalTherapistDashboard: React.FC = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [activeClients, setActiveClients] = useState<Client[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -255,6 +256,15 @@ const ProfessionalTherapistDashboard: React.FC = () => {
         if (clientsResult.success && clientsResult.data) {
           setActiveClients(clientsResult.data as unknown as Client[]);
         }
+
+        // Load recent unread notifications
+        const notificationsResult = await realApiService.therapist.getNotifications({
+          isRead: false,
+          limit: 5
+        });
+        if (notificationsResult.success && notificationsResult.data?.notifications) {
+          setNotifications(notificationsResult.data.notifications);
+        }
       }
 
     } catch (error) {
@@ -262,6 +272,23 @@ const ProfessionalTherapistDashboard: React.FC = () => {
       setError('Failed to load dashboard data. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleNotificationClick = async (notification: any) => {
+    try {
+      // Mark as read
+      await realApiService.therapist.markNotificationRead(notification.id);
+
+      // Remove from list
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+      // Navigate to action URL
+      if (notification.action_url) {
+        navigate(notification.action_url);
+      }
+    } catch (error) {
+      console.error('Error handling notification click:', error);
     }
   };
 
@@ -355,6 +382,65 @@ const ProfessionalTherapistDashboard: React.FC = () => {
             onClick={() => navigate('/therapist/appointments?status=completed')}
           />
         </div>
+
+        {/* Notifications Section */}
+        {notifications.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <BellAlertIcon className="w-5 h-5 mr-2 text-green-600" />
+                Recent Notifications
+              </h3>
+              <span className="text-sm text-gray-500">{notifications.length} unread</span>
+            </div>
+            <div className="space-y-3">
+              {notifications.map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`relative overflow-hidden rounded-xl border-l-4 p-4 cursor-pointer transition-all duration-200 ${
+                    notif.priority === 'high'
+                      ? 'bg-red-50 border-red-500 hover:bg-red-100'
+                      : 'bg-blue-50 border-blue-500 hover:bg-blue-100'
+                  }`}
+                  onClick={() => handleNotificationClick(notif)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-4">
+                      <div className="flex items-center mb-1">
+                        <p className={`font-semibold ${
+                          notif.priority === 'high' ? 'text-red-900' : 'text-blue-900'
+                        }`}>
+                          {notif.title}
+                        </p>
+                        {notif.priority === 'high' && (
+                          <ExclamationCircleIcon className="w-5 h-5 text-red-500 ml-2 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className={`text-sm whitespace-pre-line ${
+                        notif.priority === 'high' ? 'text-red-800' : 'text-blue-800'
+                      }`}>
+                        {notif.message}
+                      </p>
+                      <p className={`text-xs mt-2 ${
+                        notif.priority === 'high' ? 'text-red-600' : 'text-blue-600'
+                      }`}>
+                        {new Date(notif.created_at).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <ArrowRightIcon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:translate-x-1 ${
+                      notif.priority === 'high' ? 'text-red-400' : 'text-blue-400'
+                    }`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div>

@@ -23,6 +23,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { StatusBadge, PremiumButton } from '@/components/layout/PremiumLayout';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
 import { handleApiError } from '@/utils/apiErrorHandler';
+import { LOCATIONS, getLocationLabel } from '@/types/locations';
+import { APPOINTMENT_TYPE_LABELS } from '@/types/appointments';
 
 // Types
 interface AppointmentRequest {
@@ -35,11 +37,15 @@ interface AppointmentRequest {
   preferred_time: string;
   alternative_date?: string;
   alternative_time?: string;
-  therapy_type: string;
+  therapy_type?: string;
   urgency_level: string;
   reason_for_therapy: string;
   hulpvragen?: string[]; // Selected help questions/concerns
   preferred_therapist_id?: string;
+  preferred_location?: string;
+  appointment_type?: 'intake' | 'individual' | 'relation' | 'group' | 'family' | 'crisis';
+  duration_minutes?: number;
+  smart_pairing_used?: boolean;
   status: string;
   created_at: string;
 }
@@ -94,6 +100,8 @@ const AppointmentRequests: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUrgency, setFilterUrgency] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterAppointmentType, setFilterAppointmentType] = useState('all');
   const [smartRecommendations, setSmartRecommendations] = useState<SmartPairingRecommendation[]>([]);
   const [selectedTherapist, setSelectedTherapist] = useState('');
   const [assignmentNotes, setAssignmentNotes] = useState('');
@@ -386,14 +394,16 @@ const AppointmentRequests: React.FC = () => {
 
   // Filter requests
   const filteredRequests = requests.filter(request => {
-    const matchesSearch = 
+    const matchesSearch =
       request.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.reason_for_therapy.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesUrgency = filterUrgency === 'all' || request.urgency_level === filterUrgency;
-    
-    return matchesSearch && matchesUrgency && request.status === 'pending';
+    const matchesLocation = filterLocation === 'all' || request.preferred_location === filterLocation;
+    const matchesAppointmentType = filterAppointmentType === 'all' || request.appointment_type === filterAppointmentType;
+
+    return matchesSearch && matchesUrgency && matchesLocation && matchesAppointmentType && request.status === 'pending';
   });
 
   // Get urgency color
@@ -492,10 +502,47 @@ const AppointmentRequests: React.FC = () => {
                         </div>
                       )}
                     </div>
+                    {/* Appointment Details Badges */}
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      {/* Location Badge */}
+                      {request.preferred_location && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200">
+                          <MapPinIcon className="w-3 h-3 mr-1" />
+                          {getLocationLabel(request.preferred_location, 'nl')}
+                        </span>
+                      )}
+
+                      {/* Appointment Type Badge */}
+                      {request.appointment_type && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200">
+                          {APPOINTMENT_TYPE_LABELS[request.appointment_type as keyof typeof APPOINTMENT_TYPE_LABELS]?.nl || request.appointment_type}
+                        </span>
+                      )}
+
+                      {/* Duration Badge */}
+                      {request.duration_minutes && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 border border-green-200">
+                          <ClockIcon className="w-3 h-3 mr-1" />
+                          {request.duration_minutes} min
+                        </span>
+                      )}
+
+                      {/* Therapy Type Badge */}
+                      {request.therapy_type && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-amber-100 text-amber-800 border border-amber-200">
+                          {request.therapy_type.replace('_', ' ')}
+                        </span>
+                      )}
+
+                      {/* Auto-Match Badge */}
+                      {request.smart_pairing_used && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200">
+                          <SparklesIcon className="w-3 h-3 mr-1" />
+                          Auto-Matched
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-2 flex items-center space-x-4">
-                      <span className="text-sm text-gray-600">
-                        <span className="font-medium">Therapy Type:</span> {request.therapy_type?.replace('_', ' ') || 'Not specified'}
-                      </span>
                       <span className="text-sm text-gray-500">
                         Requested {formatDate(request.created_at)}
                       </span>
@@ -552,7 +599,27 @@ const AppointmentRequests: React.FC = () => {
               </p>
             </div>
             <div>
-              <p className="text-sm text-blue-700">Therapy Type</p>
+              <p className="text-sm text-blue-700">Appointment Type</p>
+              <p className="font-medium text-blue-900">
+                {selectedRequest.appointment_type
+                  ? APPOINTMENT_TYPE_LABELS[selectedRequest.appointment_type as keyof typeof APPOINTMENT_TYPE_LABELS]?.nl || selectedRequest.appointment_type
+                  : 'Not specified'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-blue-700">Duration</p>
+              <p className="font-medium text-blue-900">
+                {selectedRequest.duration_minutes ? `${selectedRequest.duration_minutes} minutes` : 'Not specified'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-blue-700">Location</p>
+              <p className="font-medium text-blue-900">
+                {selectedRequest.preferred_location ? getLocationLabel(selectedRequest.preferred_location, 'nl') : 'Not specified'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-blue-700">Therapy Type/Method</p>
               <p className="font-medium text-blue-900 capitalize">{selectedRequest.therapy_type?.replace('_', ' ') || 'Not specified'}</p>
             </div>
             <div className="md:col-span-2">
@@ -853,16 +920,46 @@ const AppointmentRequests: React.FC = () => {
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={
-              <select
-                value={filterUrgency}
-                onChange={(e) => setFilterUrgency(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Urgency Levels</option>
-                <option value="emergency">Emergency</option>
-                <option value="urgent">Urgent</option>
-                <option value="normal">Normal</option>
-              </select>
+              <div className="flex gap-2 flex-wrap">
+                {/* Urgency Filter */}
+                <select
+                  value={filterUrgency}
+                  onChange={(e) => setFilterUrgency(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Urgency Levels</option>
+                  <option value="emergency">Emergency</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="normal">Normal</option>
+                </select>
+
+                {/* Location Filter */}
+                <select
+                  value={filterLocation}
+                  onChange={(e) => setFilterLocation(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Locations</option>
+                  {LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{getLocationLabel(loc, 'nl')}</option>
+                  ))}
+                </select>
+
+                {/* Appointment Type Filter */}
+                <select
+                  value={filterAppointmentType}
+                  onChange={(e) => setFilterAppointmentType(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Types</option>
+                  <option value="intake">Intake</option>
+                  <option value="individual">Individual</option>
+                  <option value="relation">Relation</option>
+                  <option value="group">Group</option>
+                  <option value="family">Family</option>
+                  <option value="crisis">Crisis</option>
+                </select>
+              </div>
             }
           />
 

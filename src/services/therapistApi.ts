@@ -484,6 +484,77 @@ export const therapistApi = {
       }
       throw error;
     }
+  },
+
+  // Get notification counts for sidebar indicators
+  getNotificationCounts: async (): Promise<ApiResponse<{
+    clients: number;
+    appointments: number;
+    messages: number;
+    total: number;
+  }>> => {
+    try {
+      const response = await api.get('/therapist/notifications/counts');
+      return response.data;
+    } catch (error: any) {
+      console.error('[therapistApi.getNotificationCounts] ERROR:', error);
+      // Return zeros on error to prevent UI breakage
+      return {
+        success: false,
+        message: 'Failed to load notification counts',
+        data: {
+          clients: 0,
+          appointments: 0,
+          messages: 0,
+          total: 0
+        }
+      };
+    }
+  },
+
+  // Get recent notifications
+  getNotifications: async (params?: {
+    isRead?: boolean;
+    limit?: number;
+  }): Promise<ApiResponse<{
+    notifications: Array<{
+      id: string;
+      title: string;
+      message: string;
+      type: string;
+      priority?: string;
+      action_url?: string;
+      is_read: boolean;
+      created_at: string;
+      related_entity_type?: string;
+      related_entity_id?: string;
+    }>;
+  }>> => {
+    try {
+      const response = await api.get('/notifications', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('[therapistApi.getNotifications] ERROR:', error);
+      return {
+        success: false,
+        message: 'Failed to load notifications',
+        data: { notifications: [] }
+      };
+    }
+  },
+
+  // Mark notification as read
+  markNotificationRead: async (notificationId: string): Promise<ApiResponse<any>> => {
+    try {
+      const response = await api.put(`/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error: any) {
+      console.error('[therapistApi.markNotificationRead] ERROR:', error);
+      return {
+        success: false,
+        message: 'Failed to mark notification as read'
+      };
+    }
   }
 };
 

@@ -47,6 +47,12 @@ interface NavItem {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientCount, setClientCount] = useState<number | null>(null);
+  const [notificationCounts, setNotificationCounts] = useState<{
+    clients: number;
+    appointments: number;
+    messages: number;
+    total: number;
+  } | null>(null);
   const { user, logout, getDisplayName, getRoleColor } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
@@ -57,10 +63,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     navigate('/auth/login');
   };
 
-  // Load client count for therapists
+  // Load client count and notification counts for therapists
   useEffect(() => {
     if (user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) {
       loadClientCount();
+      loadNotificationCounts();
+
+      // Refresh notification counts every 30 seconds
+      const interval = setInterval(() => {
+        loadNotificationCounts();
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -74,6 +88,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     } catch (error) {
       console.error('Error loading client count:', error);
       setClientCount(0);
+    }
+  };
+
+  const loadNotificationCounts = async () => {
+    try {
+      const response = await therapistApi.getNotificationCounts();
+      if (response.success && response.data) {
+        setNotificationCounts(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading notification counts:', error);
     }
   };
 
@@ -480,10 +505,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     <span className="flex-1">{t(item.nameKey)}</span>
-                    {/* Red dot indicator for therapist clients tab */}
-                    {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && 
-                     item.href === '/therapist/clients' && 
-                     clientCount === 0 && (
+                    {/* Red dot indicators for therapists */}
+                    {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && notificationCounts && (
+                      <>
+                        {item.href === '/therapist/clients' && notificationCounts.clients > 0 && (
+                          <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                            {notificationCounts.clients > 9 ? '9+' : notificationCounts.clients}
+                          </span>
+                        )}
+                        {item.href === '/therapist/appointments' && notificationCounts.appointments > 0 && (
+                          <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                            {notificationCounts.appointments > 9 ? '9+' : notificationCounts.appointments}
+                          </span>
+                        )}
+                        {item.href.includes('/messages') && notificationCounts.messages > 0 && (
+                          <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                            {notificationCounts.messages > 9 ? '9+' : notificationCounts.messages}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {/* Red dot for no clients assigned */}
+                    {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) &&
+                     item.href === '/therapist/clients' &&
+                     clientCount === 0 &&
+                     (!notificationCounts || notificationCounts.clients === 0) && (
                       <span className="ml-2 h-2 w-2 bg-red-600 rounded-full animate-pulse" title="No clients assigned" />
                     )}
                   </Link>
@@ -553,10 +599,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   <span className="flex-1">{t(item.nameKey)}</span>
-                  {/* Red dot indicator for therapist clients tab */}
-                  {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && 
-                   item.href === '/therapist/clients' && 
-                   clientCount === 0 && (
+                  {/* Red dot indicators for therapists */}
+                  {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) && notificationCounts && (
+                    <>
+                      {item.href === '/therapist/clients' && notificationCounts.clients > 0 && (
+                        <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                          {notificationCounts.clients > 9 ? '9+' : notificationCounts.clients}
+                        </span>
+                      )}
+                      {item.href === '/therapist/appointments' && notificationCounts.appointments > 0 && (
+                        <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                          {notificationCounts.appointments > 9 ? '9+' : notificationCounts.appointments}
+                        </span>
+                      )}
+                      {item.href.includes('/messages') && notificationCounts.messages > 0 && (
+                        <span className="ml-auto bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-semibold">
+                          {notificationCounts.messages > 9 ? '9+' : notificationCounts.messages}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {/* Red dot for no clients assigned */}
+                  {(user?.role === UserRole.THERAPIST || user?.role === UserRole.SUBSTITUTE) &&
+                   item.href === '/therapist/clients' &&
+                   clientCount === 0 &&
+                   (!notificationCounts || notificationCounts.clients === 0) && (
                     <span className="ml-2 h-2 w-2 bg-red-600 rounded-full animate-pulse" title="No clients assigned" />
                   )}
                 </Link>

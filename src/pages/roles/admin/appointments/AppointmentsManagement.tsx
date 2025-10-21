@@ -32,6 +32,8 @@ import { normalizeAppointmentList, withSmartDefaults } from '@/utils/dataMappers
 import { InlineCrudLayout, FilterBar, ListItemCard, FormSection, ActionButtons } from '@/components/crud/InlineCrudLayout';
 import { TextField, SelectField, TextareaField, DateField, TimeField } from '@/components/forms/FormFields';
 import { handleApiError } from '@/utils/apiErrorHandler';
+import { LOCATIONS, getLocationLabel } from '@/types/locations';
+import { THERAPY_TYPES } from '@/types/appointments';
 
 // Types
 interface Appointment {
@@ -107,7 +109,9 @@ const AppointmentsManagement: React.FC = () => {
     status: 'all',
     therapist: 'all',
     date: 'all',
-    paymentStatus: 'all'
+    paymentStatus: 'all',
+    therapyType: 'all',
+    location: 'all'
   });
   const [statistics, setStatistics] = useState({
     total: 0,
@@ -385,17 +389,33 @@ const AppointmentsManagement: React.FC = () => {
 
   // Filter appointments by search
   const filteredAppointments = appointments.filter(apt => {
-    if (!searchTerm) return true;
-    
-    const search = searchTerm.toLowerCase();
-    return (
-      apt.client_first_name?.toLowerCase().includes(search) ||
-      apt.client_last_name?.toLowerCase().includes(search) ||
-      apt.therapist_first_name?.toLowerCase().includes(search) ||
-      apt.therapist_last_name?.toLowerCase().includes(search) ||
-      apt.therapy_type?.toLowerCase().includes(search) ||
-      apt.location?.toLowerCase().includes(search)
-    );
+    // Search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = (
+        apt.client_first_name?.toLowerCase().includes(search) ||
+        apt.client_last_name?.toLowerCase().includes(search) ||
+        apt.therapist_first_name?.toLowerCase().includes(search) ||
+        apt.therapist_last_name?.toLowerCase().includes(search) ||
+        apt.therapy_type?.toLowerCase().includes(search) ||
+        apt.location?.toLowerCase().includes(search)
+      );
+      if (!matchesSearch) return false;
+    }
+
+    // Therapy type filter
+    const matchesTherapyType =
+      filters.therapyType === 'all' ||
+      (filters.therapyType === 'not_specified' && !apt.therapy_type) ||
+      apt.therapy_type === filters.therapyType;
+
+    // Location filter
+    const matchesLocation =
+      filters.location === 'all' ||
+      (filters.location === 'not_specified' && !apt.location) ||
+      apt.location === filters.location;
+
+    return matchesTherapyType && matchesLocation;
   });
 
   // Form validation
@@ -960,27 +980,33 @@ const AppointmentsManagement: React.FC = () => {
   // Render list
   const renderList = () => {
     if (filteredAppointments.length === 0) {
+      const hasActiveFilters = searchTerm || filters.status !== 'all' || filters.date !== 'all' ||
+                               filters.therapist !== 'all' || filters.paymentStatus !== 'all' ||
+                               filters.therapyType !== 'all' || filters.location !== 'all';
+
       return (
         <PremiumEmptyState
           icon={CalendarDaysIcon}
-          title={searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
+          title={hasActiveFilters
             ? "No appointments match your filters"
             : "No appointments scheduled yet"}
-          description={searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
-            ? "Try adjusting your search criteria or filters to see more results" 
+          description={hasActiveFilters
+            ? "Try adjusting your search criteria or filters to see more results"
             : "Start scheduling appointments to manage therapy sessions"}
           action={{
-            label: searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all'
+            label: hasActiveFilters
               ? "Clear Filters"
               : "Schedule First Appointment",
             onClick: () => {
-              if (searchTerm || filters.status !== 'all' || filters.date !== 'all' || filters.therapist !== 'all' || filters.paymentStatus !== 'all') {
+              if (hasActiveFilters) {
                 setSearchTerm('');
                 setFilters({
                   status: 'all',
                   therapist: 'all',
                   date: 'all',
-                  paymentStatus: 'all'
+                  paymentStatus: 'all',
+                  therapyType: 'all',
+                  location: 'all'
                 });
               } else {
                 setViewMode('create');
@@ -1315,6 +1341,28 @@ const AppointmentsManagement: React.FC = () => {
                   <option value="paid">Paid</option>
                   <option value="pending">Pending</option>
                   <option value="failed">Failed</option>
+                </select>
+                <select
+                  value={filters.therapyType}
+                  onChange={(e) => setFilters(prev => ({ ...prev, therapyType: e.target.value }))}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Therapy Types</option>
+                  {THERAPY_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                  <option value="not_specified">Not Specified (Legacy)</option>
+                </select>
+                <select
+                  value={filters.location}
+                  onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Locations</option>
+                  {LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{getLocationLabel(loc, 'nl')}</option>
+                  ))}
+                  <option value="not_specified">Not Specified (Legacy)</option>
                 </select>
               </>
             }
