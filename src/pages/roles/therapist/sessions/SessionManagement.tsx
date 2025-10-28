@@ -23,6 +23,7 @@ import { therapistApi as legacyTherapistApi } from '@/services/therapistApi';
 import { therapistApi } from '@/services/unifiedApi';
 import { useTranslation } from '@/contexts/LanguageContext';
 import { useAlert } from '@/components/ui/CustomAlert';
+import { useAuth } from '@/store/authStore';
 import { PremiumCard, PremiumButton, PremiumEmptyState, StatusBadge } from '@/components/layout/PremiumLayout';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { formatDate, formatTime } from '@/utils/dateFormatters';
@@ -59,6 +60,7 @@ const SessionManagement: React.FC = () => {
   const { success, error } = useAlert();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
@@ -144,17 +146,34 @@ const SessionManagement: React.FC = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      
-      // Load today's appointments
-      const today = new Date().toISOString().split('T')[0];
-      const appointmentsResponse = await legacyTherapistApi.getAppointments({
-        date: today,
-        status: 'scheduled'
-      });
-      
-      if (appointmentsResponse.success && appointmentsResponse.data) {
-        const appointmentsData = appointmentsResponse.data as any;
-        setAppointments(Array.isArray(appointmentsData) ? appointmentsData : appointmentsData.appointments || []);
+
+      // Load startable appointments (confirmed appointments without sessions)
+      // This uses the new endpoint that shows appointments ready to start
+      if (user?.id) {
+        try {
+          const startableResponse = await fetch(
+            `https://praktijk-epd-backend-production.up.railway.app/api/schema/startable-appointments/${user.id}`
+          );
+          const startableData = await startableResponse.json();
+
+          if (startableData.success && startableData.data?.appointments) {
+            setAppointments(startableData.data.appointments);
+            console.log(`[SessionManagement] Loaded ${startableData.data.count} startable appointments`);
+          }
+        } catch (err) {
+          console.error('Error loading startable appointments:', err);
+          // Fallback to legacy method
+          const today = new Date().toISOString().split('T')[0];
+          const appointmentsResponse = await legacyTherapistApi.getAppointments({
+            date: today,
+            status: 'scheduled'
+          });
+
+          if (appointmentsResponse.success && appointmentsResponse.data) {
+            const appointmentsData = appointmentsResponse.data as any;
+            setAppointments(Array.isArray(appointmentsData) ? appointmentsData : appointmentsData.appointments || []);
+          }
+        }
       }
 
       // Load session history
@@ -162,7 +181,7 @@ const SessionManagement: React.FC = () => {
         const sessionsResponse = await therapistApi.getSessions({
           limit: 20
         });
-        
+
         if (sessionsResponse.success && sessionsResponse.data) {
           const sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : (sessionsResponse.data as any)?.sessions || [];
           setSessionHistory(Array.isArray(sessions) ? sessions : []);
