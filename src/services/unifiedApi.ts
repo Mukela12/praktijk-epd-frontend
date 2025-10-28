@@ -215,11 +215,12 @@ class UnifiedApiClient {
     getSessions: (params?: any) => this.request<any[]>('GET', '/therapist/sessions', undefined, params, { entityKey: 'sessions' }),
     createSessionNote: (sessionData: any) => this.request<any>('POST', '/therapist/sessions', sessionData),
     updateSessionNote: (sessionId: string, updates: any) => this.request<any>('PUT', `/therapist/sessions/${sessionId}`, updates),
-    startSession: (sessionData: any) => this.request<any>('POST', '/therapist/sessions/start', sessionData),
-    endSession: (sessionId: string, sessionData: any) => this.request<any>('POST', `/therapist/sessions/${sessionId}/end`, sessionData),
-    
+    startSession: (sessionData: any) => this.request<any>('POST', '/sessions/start', sessionData),
+    endSession: (sessionId: string, sessionData: any) => this.request<any>('POST', `/sessions/${sessionId}/end`, sessionData),
+    updateSessionProgress: (sessionId: string, progressData: any) => this.request<any>('PUT', `/sessions/${sessionId}/progress`, progressData),
+
     // Invoices - Generate from session
-    generateInvoiceFromSession: (sessionId: string, invoiceData?: any) => this.request<any>('POST', `/therapist/sessions/${sessionId}/generate-invoice`, invoiceData),
+    generateInvoiceFromSession: (sessionId: string, invoiceData?: any) => this.request<any>('POST', `/sessions/${sessionId}/generate-invoice`, invoiceData),
     
     // Availability
     getAvailability: (params?: any) => this.request<any[]>('GET', '/therapist/availability', undefined, params),
