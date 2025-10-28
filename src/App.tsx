@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -8,119 +8,108 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { useAuth } from '@/store/authStore';
 import { UserRole, AuthenticationState } from '@/types/auth';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-// Removed useAuthMonitor import - it was causing infinite loops
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-// Layout Components
+// Layout Components (keep eager loaded)
 import AuthLayout from '@/components/layout/AuthLayout';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-
-// Auth Components
-import LoginPage from '@/pages/auth/LoginPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
-import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
-import TwoFactorPage from '@/pages/auth/TwoFactorPage';
-import EmailVerificationPendingPage from '@/pages/auth/EmailVerificationPendingPage';
-
-// Dashboard Components
-import AdminDashboard from '@/pages/roles/admin/Dashboard';
-import ProfessionalTherapistDashboard from '@/pages/roles/therapist/ProfessionalTherapistDashboard';
-import ClientDashboard from '@/pages/roles/client/Dashboard';
-
-// Admin Components
-import AgendaPage from '@/pages/roles/admin/agenda/AgendaPage';
-import AllClients from '@/pages/roles/admin/client-management/AllClients';
-import ClientManagement from '@/pages/roles/admin/client-management/ClientManagement';
-import FinancialDashboard from '@/pages/roles/admin/financial-management/FinancialDashboard';
-import WaitingListManagement from '@/pages/roles/admin/waiting-list/WaitingListManagement';
-import FinancialOverview from '@/pages/roles/admin/financial/FinancialOverview';
-import AdminReports from '@/pages/roles/admin/reports/AdminReports';
-import AdminSettings from '@/pages/roles/admin/settings/AdminSettings';
-import ResourcesManagement from '@/pages/roles/admin/resources/ResourcesManagement';
-import ChallengesManagement from '@/pages/roles/admin/challenges/ChallengesManagement';
-import SurveysManagement from '@/pages/roles/admin/surveys/SurveysManagement';
-import TherapiesManagement from '@/pages/roles/admin/therapies/TherapiesManagement';
-import PsychologicalProblemsManagement from '@/pages/roles/admin/psychological-problems/PsychologicalProblemsManagement';
-import AddressChangeManagement from '@/pages/roles/admin/AddressChangeManagement';
-import UserManagement from '@/pages/roles/admin/user-management/UserManagement';
-import AdminAppointmentsManagement from '@/pages/roles/admin/appointments/AppointmentsManagement';
-import AppointmentRequests from '@/pages/roles/admin/appointments/AppointmentRequests';
-import TherapistManagement from '@/pages/roles/admin/therapist-management'; // New modular therapist management
-
-// Therapist Components
-import TherapistCalendar from '@/pages/roles/therapist/calendar/TherapistCalendar';
-import TherapistMessages from '@/pages/roles/therapist/messages/TherapistMessages';
-import ProfessionalTherapistClients from '@/pages/roles/therapist/clients/ProfessionalTherapistClients';
-import ClientPsychologicalBehavior from '@/pages/roles/therapist/clients/ClientPsychologicalBehavior';
-import ProfessionalTherapistAppointments from '@/pages/roles/therapist/appointments/ProfessionalTherapistAppointments';
-import AppointmentDetail from '@/pages/roles/therapist/appointments/AppointmentDetail';
-import CreateAppointment from '@/pages/roles/therapist/appointments/CreateAppointment';
-import RescheduleAppointment from '@/pages/roles/therapist/appointments/RescheduleAppointment';
-// Removed imports for non-existent therapist components
-import ProfessionalTherapistProfile from '@/pages/roles/therapist/profile/ProfessionalTherapistProfile';
-import AvailabilityManagement from '@/pages/roles/therapist/AvailabilityManagement';
-import TherapistSettings from '@/pages/roles/therapist/settings/TherapistSettings';
-import ProfessionalSessionNotes from '@/pages/roles/therapist/notes/ProfessionalSessionNotes';
-import SessionNoteForm from '@/pages/roles/therapist/notes/SessionNoteForm';
-import SessionNoteView from '@/pages/roles/therapist/notes/SessionNoteView';
-import SessionManagement from '@/pages/roles/therapist/sessions/SessionManagement';
-import ProfessionalTherapistSurveys from '@/pages/roles/therapist/surveys/ProfessionalTherapistSurveys';
-import CreateSurvey from '@/pages/roles/therapist/surveys/CreateSurvey';
-import AssignSurvey from '@/pages/roles/therapist/surveys/AssignSurvey';
-import SurveyResponses from '@/pages/roles/therapist/surveys/SurveyResponses';
-import ProfessionalTherapistChallenges from '@/pages/roles/therapist/challenges/ProfessionalTherapistChallenges';
-import CreateChallenge from '@/pages/roles/therapist/challenges/CreateChallenge';
-import AssignChallenge from '@/pages/roles/therapist/challenges/AssignChallenge';
-import ResourcesManagementInline from '@/pages/roles/therapist/resources/ResourcesManagementInline';
-import TherapistClientProfile from '@/pages/roles/therapist/clients/TherapistClientProfile';
-
-// Client Components
-import ClientAppointments from '@/pages/roles/client/appointments/ClientAppointments';
-import BookAppointment from '@/pages/roles/client/appointments/BookAppointment';
-import ClientMessages from '@/pages/roles/client/messages/ClientMessages';
-import ClientProfile from '@/pages/roles/client/profile/ClientProfile';
-import ClientDocuments from '@/pages/roles/client/documents/ClientDocuments';
-// Removed import for non-existent ClientBilling
-import ClientInvoices from '@/pages/roles/client/invoices/ClientInvoices';
-// Removed import for non-existent ClientBillingHistory
-import PaymentCenter from '@/pages/roles/client/PaymentCenter';
-import PaymentMethods from '@/pages/roles/client/PaymentMethods';
-import SessionHistory from '@/pages/roles/client/SessionHistory';
-// Removed import for non-existent TherapyJourney
-import ClientResourcesImproved from '@/pages/roles/client/resources/ClientResourcesImproved';
-import ClientResources from '@/pages/roles/client/resources/ClientResources';
-import IntakeForm from '@/pages/roles/client/IntakeForm';
-import ClientChallenges from '@/pages/roles/client/challenges/ClientChallenges';
-import ClientSurveys from '@/pages/roles/client/surveys/ClientSurveys';
-import ClientTherapist from '@/pages/roles/client/therapist/ClientTherapist';
-import AllTherapistsClient from '@/pages/roles/client/therapists/AllTherapists';
-// Removed import for non-existent ClientProgress
-import AddressChangeRequest from '@/pages/roles/client/AddressChangeRequest';
-// Removed import for non-existent ClientQuestionnaires
-// Removed import for non-existent ClientNotes
-import ClientSettings from '@/pages/roles/client/settings/ClientSettings';
-
-// Assistant Components
-import AssistantMessages from '@/pages/roles/assistant/messages/AssistantMessages';
-
-// Bookkeeper Components
-import BookkeeperDashboard from '@/pages/roles/bookkeeper/Dashboard';
-import BookkeeperFinancialDashboard from '@/pages/roles/bookkeeper/financial/FinancialDashboard';
-import InvoiceManagement from '@/pages/roles/bookkeeper/invoices/InvoiceManagement';
-import Reports from '@/pages/roles/bookkeeper/reports/Reports';
-import BookkeeperMessages from '@/pages/roles/bookkeeper/messages/BookkeeperMessages';
-import BookkeeperSettings from '@/pages/roles/bookkeeper/settings/BookkeeperSettings';
-
-// Other Components
 import SimpleProtectedRoute from '@/components/auth/SimpleProtectedRoute';
 import RoleRedirect from '@/components/auth/RoleRedirect';
 import NetworkErrorHandler from '@/components/NetworkErrorHandler';
-// Removed duplicate import - ErrorBoundary already imported above
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+
+// Lazy load all page components
+const LoginPage = React.lazy(() => import('@/pages/auth/LoginPage'));
+const RegisterPage = React.lazy(() => import('@/pages/auth/RegisterPage'));
+const ForgotPasswordPage = React.lazy(() => import('@/pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('@/pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = React.lazy(() => import('@/pages/auth/VerifyEmailPage'));
+const TwoFactorPage = React.lazy(() => import('@/pages/auth/TwoFactorPage'));
+const EmailVerificationPendingPage = React.lazy(() => import('@/pages/auth/EmailVerificationPendingPage'));
+
+// Dashboard Components
+const AdminDashboard = React.lazy(() => import('@/pages/roles/admin/Dashboard'));
+const ProfessionalTherapistDashboard = React.lazy(() => import('@/pages/roles/therapist/ProfessionalTherapistDashboard'));
+const ClientDashboard = React.lazy(() => import('@/pages/roles/client/Dashboard'));
+
+// Admin Components
+const AgendaPage = React.lazy(() => import('@/pages/roles/admin/agenda/AgendaPage'));
+const AllClients = React.lazy(() => import('@/pages/roles/admin/client-management/AllClients'));
+const ClientManagement = React.lazy(() => import('@/pages/roles/admin/client-management/ClientManagement'));
+const FinancialDashboard = React.lazy(() => import('@/pages/roles/admin/financial-management/FinancialDashboard'));
+const WaitingListManagement = React.lazy(() => import('@/pages/roles/admin/waiting-list/WaitingListManagement'));
+const FinancialOverview = React.lazy(() => import('@/pages/roles/admin/financial/FinancialOverview'));
+const AdminReports = React.lazy(() => import('@/pages/roles/admin/reports/AdminReports'));
+const AdminSettings = React.lazy(() => import('@/pages/roles/admin/settings/AdminSettings'));
+const ResourcesManagement = React.lazy(() => import('@/pages/roles/admin/resources/ResourcesManagement'));
+const ChallengesManagement = React.lazy(() => import('@/pages/roles/admin/challenges/ChallengesManagement'));
+const SurveysManagement = React.lazy(() => import('@/pages/roles/admin/surveys/SurveysManagement'));
+const TherapiesManagement = React.lazy(() => import('@/pages/roles/admin/therapies/TherapiesManagement'));
+const PsychologicalProblemsManagement = React.lazy(() => import('@/pages/roles/admin/psychological-problems/PsychologicalProblemsManagement'));
+const AddressChangeManagement = React.lazy(() => import('@/pages/roles/admin/AddressChangeManagement'));
+const UserManagement = React.lazy(() => import('@/pages/roles/admin/user-management/UserManagement'));
+const AdminAppointmentsManagement = React.lazy(() => import('@/pages/roles/admin/appointments/AppointmentsManagement'));
+const AppointmentRequests = React.lazy(() => import('@/pages/roles/admin/appointments/AppointmentRequests'));
+const TherapistManagement = React.lazy(() => import('@/pages/roles/admin/therapist-management'));
+
+// Therapist Components
+const TherapistCalendar = React.lazy(() => import('@/pages/roles/therapist/calendar/TherapistCalendar'));
+const TherapistMessages = React.lazy(() => import('@/pages/roles/therapist/messages/TherapistMessages'));
+const ProfessionalTherapistClients = React.lazy(() => import('@/pages/roles/therapist/clients/ProfessionalTherapistClients'));
+const ClientPsychologicalBehavior = React.lazy(() => import('@/pages/roles/therapist/clients/ClientPsychologicalBehavior'));
+const ProfessionalTherapistAppointments = React.lazy(() => import('@/pages/roles/therapist/appointments/ProfessionalTherapistAppointments'));
+const AppointmentDetail = React.lazy(() => import('@/pages/roles/therapist/appointments/AppointmentDetail'));
+const CreateAppointment = React.lazy(() => import('@/pages/roles/therapist/appointments/CreateAppointment'));
+const RescheduleAppointment = React.lazy(() => import('@/pages/roles/therapist/appointments/RescheduleAppointment'));
+const ProfessionalTherapistProfile = React.lazy(() => import('@/pages/roles/therapist/profile/ProfessionalTherapistProfile'));
+const AvailabilityManagement = React.lazy(() => import('@/pages/roles/therapist/AvailabilityManagement'));
+const TherapistSettings = React.lazy(() => import('@/pages/roles/therapist/settings/TherapistSettings'));
+const ProfessionalSessionNotes = React.lazy(() => import('@/pages/roles/therapist/notes/ProfessionalSessionNotes'));
+const SessionNoteForm = React.lazy(() => import('@/pages/roles/therapist/notes/SessionNoteForm'));
+const SessionNoteView = React.lazy(() => import('@/pages/roles/therapist/notes/SessionNoteView'));
+const SessionManagement = React.lazy(() => import('@/pages/roles/therapist/sessions/SessionManagement'));
+const ProfessionalTherapistSurveys = React.lazy(() => import('@/pages/roles/therapist/surveys/ProfessionalTherapistSurveys'));
+const CreateSurvey = React.lazy(() => import('@/pages/roles/therapist/surveys/CreateSurvey'));
+const AssignSurvey = React.lazy(() => import('@/pages/roles/therapist/surveys/AssignSurvey'));
+const SurveyResponses = React.lazy(() => import('@/pages/roles/therapist/surveys/SurveyResponses'));
+const ProfessionalTherapistChallenges = React.lazy(() => import('@/pages/roles/therapist/challenges/ProfessionalTherapistChallenges'));
+const CreateChallenge = React.lazy(() => import('@/pages/roles/therapist/challenges/CreateChallenge'));
+const AssignChallenge = React.lazy(() => import('@/pages/roles/therapist/challenges/AssignChallenge'));
+const ResourcesManagementInline = React.lazy(() => import('@/pages/roles/therapist/resources/ResourcesManagementInline'));
+const TherapistClientProfile = React.lazy(() => import('@/pages/roles/therapist/clients/TherapistClientProfile'));
+
+// Client Components
+const ClientAppointments = React.lazy(() => import('@/pages/roles/client/appointments/ClientAppointments'));
+const BookAppointment = React.lazy(() => import('@/pages/roles/client/appointments/BookAppointment'));
+const ClientMessages = React.lazy(() => import('@/pages/roles/client/messages/ClientMessages'));
+const ClientProfile = React.lazy(() => import('@/pages/roles/client/profile/ClientProfile'));
+const ClientDocuments = React.lazy(() => import('@/pages/roles/client/documents/ClientDocuments'));
+const ClientInvoices = React.lazy(() => import('@/pages/roles/client/invoices/ClientInvoices'));
+const PaymentCenter = React.lazy(() => import('@/pages/roles/client/PaymentCenter'));
+const PaymentMethods = React.lazy(() => import('@/pages/roles/client/PaymentMethods'));
+const SessionHistory = React.lazy(() => import('@/pages/roles/client/SessionHistory'));
+const ClientResourcesImproved = React.lazy(() => import('@/pages/roles/client/resources/ClientResourcesImproved'));
+const ClientResources = React.lazy(() => import('@/pages/roles/client/resources/ClientResources'));
+const IntakeForm = React.lazy(() => import('@/pages/roles/client/IntakeForm'));
+const ClientChallenges = React.lazy(() => import('@/pages/roles/client/challenges/ClientChallenges'));
+const ClientSurveys = React.lazy(() => import('@/pages/roles/client/surveys/ClientSurveys'));
+const ClientTherapist = React.lazy(() => import('@/pages/roles/client/therapist/ClientTherapist'));
+const AllTherapistsClient = React.lazy(() => import('@/pages/roles/client/therapists/AllTherapists'));
+const AddressChangeRequest = React.lazy(() => import('@/pages/roles/client/AddressChangeRequest'));
+const ClientSettings = React.lazy(() => import('@/pages/roles/client/settings/ClientSettings'));
+
+// Assistant Components
+const AssistantMessages = React.lazy(() => import('@/pages/roles/assistant/messages/AssistantMessages'));
+
+// Bookkeeper Components
+const BookkeeperDashboard = React.lazy(() => import('@/pages/roles/bookkeeper/Dashboard'));
+const BookkeeperFinancialDashboard = React.lazy(() => import('@/pages/roles/bookkeeper/financial/FinancialDashboard'));
+const InvoiceManagement = React.lazy(() => import('@/pages/roles/bookkeeper/invoices/InvoiceManagement'));
+const Reports = React.lazy(() => import('@/pages/roles/bookkeeper/reports/Reports'));
+const BookkeeperMessages = React.lazy(() => import('@/pages/roles/bookkeeper/messages/BookkeeperMessages'));
+const BookkeeperSettings = React.lazy(() => import('@/pages/roles/bookkeeper/settings/BookkeeperSettings'));
 
 // Onboarding
-import OnboardingPage from '@/pages/Onboarding';
+const OnboardingPage = React.lazy(() => import('@/pages/Onboarding'));
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -165,7 +154,12 @@ const AppRoutes: React.FC = () => {
   
   return (
     <div className="App">
-      <Routes>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <LoadingSpinner size="large" />
+        </div>
+      }>
+        <Routes>
         {/* Auth routes - Only render when on auth paths */}
         <Route 
           path="/auth/*" 
@@ -405,6 +399,7 @@ const AppRoutes: React.FC = () => {
           }
         />
       </Routes>
+      </Suspense>
     </div>
   );
 };
