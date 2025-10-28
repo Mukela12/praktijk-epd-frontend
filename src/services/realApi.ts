@@ -1944,8 +1944,8 @@ export const realApiService = {
   // Clients endpoints (generic)
   clients: {
     getAll: async (params?: { status?: string; page?: number; limit?: number }): Promise<ApiResponse<any>> => {
-      return managedApiCall('/clients', async () => {
-        const response = await api.get('/clients', { params });
+      return managedApiCall('/therapist/clients', async () => {
+        const response = await api.get('/therapist/clients', { params });
         return response.data;
       }, 30000, params);
     },
@@ -2079,7 +2079,7 @@ export const realApiService = {
     },
 
     getInbox: async (userId: string): Promise<ApiResponse<{ messages: Message[] }>> => {
-      const response = await api.get(`/messages/inbox/${userId}`);
+      const response = await api.get(`/messages/conversation/${userId}`);
       return response.data;
     },
 
