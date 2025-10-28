@@ -19,10 +19,8 @@ export default defineConfig({
             if (id.includes('firebase')) return 'vendor-firebase';
             if (id.includes('@fullcalendar')) return 'vendor-fullcalendar';
             if (id.includes('chart.js') || id.includes('chartjs')) return 'vendor-charts';
-            if (id.includes('react') || id.includes('react-dom')) return 'vendor-react';
-            if (id.includes('react-router')) return 'vendor-router';
             if (id.includes('@tanstack')) return 'vendor-tanstack';
-            // All other node_modules go into a general vendor chunk
+            // All other node_modules (including React) go into a general vendor chunk
             return 'vendor';
           }
         }
