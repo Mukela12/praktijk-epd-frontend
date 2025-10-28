@@ -18,6 +18,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
+import notifications from '@/utils/notifications';
 
 // Question type definitions
 const questionTypes = [
@@ -318,25 +319,31 @@ const CreateSurvey: React.FC = () => {
 
   const handleSubmit = async (saveAsTemplate: boolean = false) => {
     if (!surveyData.title.trim()) {
-      alert('Please enter a survey title');
+      notifications.error('Please enter a survey title', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     if (surveyData.questions.length === 0) {
-      alert('Please add at least one question');
+      notifications.error('Please add at least one question', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     // Validate all questions have text
     const invalidQuestions = surveyData.questions.filter(q => !q.text.trim());
     if (invalidQuestions.length > 0) {
-      alert('Please fill in all question texts');
+      notifications.error('Please fill in all question texts', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
+
       const dataToSubmit = {
         ...surveyData,
         isTemplate: saveAsTemplate,
@@ -344,15 +351,25 @@ const CreateSurvey: React.FC = () => {
       };
 
       const response = await realApiService.therapist.createSurvey(dataToSubmit);
-      
+
       if (response.success) {
+        notifications.success(
+          saveAsTemplate ? 'Survey template saved successfully' : 'Survey created successfully',
+          {
+            title: 'Success',
+            duration: 3000
+          }
+        );
         navigate('/therapist/surveys');
       } else {
         throw new Error('Failed to create survey');
       }
     } catch (error: any) {
       console.error('Error creating survey:', error);
-      alert('Failed to create survey. Please try again.');
+      notifications.error('Failed to create survey. Please try again.', {
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred'
+      });
     } finally {
       setIsSubmitting(false);
     }

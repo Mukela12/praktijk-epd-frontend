@@ -25,6 +25,7 @@ import { useTranslation } from '@/contexts/LanguageContext';
 import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
+import notifications from '@/utils/notifications';
 
 // Challenge categories with icons
 const categories = [
@@ -278,12 +279,16 @@ const CreateChallenge: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!challengeData.title.trim()) {
-      alert('Please enter a challenge title');
+      notifications.error('Please enter a challenge title', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     if (!challengeData.description.trim()) {
-      alert('Please enter a challenge description');
+      notifications.error('Please enter a challenge description', {
+        title: 'Validation Error'
+      });
       return;
     }
 
@@ -292,13 +297,15 @@ const CreateChallenge: React.FC = () => {
     const validTips = challengeData.tips.filter(t => t.trim());
 
     if (validInstructions.length === 0) {
-      alert('Please add at least one instruction');
+      notifications.error('Please add at least one instruction', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
+
       const dataToSubmit = {
         ...challengeData,
         instructions: validInstructions,
@@ -307,15 +314,22 @@ const CreateChallenge: React.FC = () => {
       };
 
       const response = await realApiService.therapist.createChallenge(dataToSubmit);
-      
+
       if (response.success) {
+        notifications.success('Challenge created successfully', {
+          title: 'Success',
+          duration: 3000
+        });
         navigate('/therapist/challenges');
       } else {
         throw new Error('Failed to create challenge');
       }
     } catch (error: any) {
       console.error('Error creating challenge:', error);
-      alert('Failed to create challenge. Please try again.');
+      notifications.error('Failed to create challenge. Please try again.', {
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred'
+      });
     } finally {
       setIsSubmitting(false);
     }

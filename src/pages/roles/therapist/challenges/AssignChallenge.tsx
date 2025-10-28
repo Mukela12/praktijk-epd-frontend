@@ -26,6 +26,7 @@ import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { Client } from '@/types/entities';
+import notifications from '@/utils/notifications';
 import { formatDate } from '@/utils/dateFormatters';
 
 // Challenge category icons
@@ -158,33 +159,47 @@ const AssignChallenge: React.FC = () => {
 
   const handleSubmit = async () => {
     if (selectedClients.length === 0) {
-      alert('Please select at least one client');
+      notifications.error('Please select at least one client', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
+
       // Assign challenge to each selected client
-      const assignmentPromises = selectedClients.map(clientId => 
+      const assignmentPromises = selectedClients.map(clientId =>
         realApiService.therapist.assignChallenge(challengeId!, clientId, {
           startDate,
           customInstructions: customInstructions || null,
           sendNotification
         })
       );
-      
+
       const results = await Promise.allSettled(assignmentPromises);
-      
+
       // Count successful assignments
       const successCount = results.filter(r => r.status === 'fulfilled').length;
       const failCount = results.filter(r => r.status === 'rejected').length;
-      
+
       if (successCount > 0) {
         if (failCount > 0) {
-          alert(`Challenge assigned to ${successCount} clients. ${failCount} assignments failed.`);
+          notifications.warning(
+            `Challenge assigned to ${successCount} clients. ${failCount} assignments failed.`,
+            {
+              title: 'Partial Success',
+              duration: 5000
+            }
+          );
         } else {
-          alert(`Challenge successfully assigned to ${successCount} clients!`);
+          notifications.success(
+            `Challenge successfully assigned to ${successCount} clients!`,
+            {
+              title: 'Success',
+              duration: 3000
+            }
+          );
         }
         navigate('/therapist/challenges');
       } else {
@@ -192,7 +207,10 @@ const AssignChallenge: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error assigning challenge:', error);
-      alert('Failed to assign challenge. Please try again.');
+      notifications.error('Failed to assign challenge. Please try again.', {
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred'
+      });
     } finally {
       setIsSubmitting(false);
     }

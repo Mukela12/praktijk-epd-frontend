@@ -32,6 +32,7 @@ import { realApiService } from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
+import notifications from '@/utils/notifications';
 
 // Challenge category icons
 const categoryIcons: { [key: string]: React.ElementType } = {
@@ -372,11 +373,17 @@ const ProfessionalTherapistChallenges: React.FC = () => {
     try {
       const response = await realApiService.therapist.deleteChallenge(challengeId);
       if (response.success) {
+        notifications.success('Challenge deleted successfully', {
+          title: 'Success',
+          duration: 3000
+        });
         await loadChallenges();
       }
     } catch (error) {
       console.error('Error deleting challenge:', error);
-      alert('Failed to delete challenge. Please try again.');
+      notifications.error('Failed to delete challenge. Please try again.', {
+        title: 'Error'
+      });
     }
   };
 
@@ -390,14 +397,20 @@ const ProfessionalTherapistChallenges: React.FC = () => {
       delete duplicatedData.id;
       delete duplicatedData.createdAt;
       delete duplicatedData.updatedAt;
-      
+
       const response = await realApiService.therapist.createChallenge(duplicatedData);
       if (response.success) {
+        notifications.success('Challenge duplicated successfully', {
+          title: 'Success',
+          duration: 3000
+        });
         await loadChallenges();
       }
     } catch (error) {
       console.error('Error duplicating challenge:', error);
-      alert('Failed to duplicate challenge. Please try again.');
+      notifications.error('Failed to duplicate challenge. Please try again.', {
+        title: 'Error'
+      });
     }
   };
 

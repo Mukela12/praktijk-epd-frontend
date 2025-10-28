@@ -1,6 +1,7 @@
 import React, { RefObject } from 'react';
 import { CloudArrowUpIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { PremiumCard } from '@/components/layout/PremiumLayout';
+import notifications from '@/utils/notifications';
 
 interface FileUploadSectionProps {
   selectedFile: File | null;
@@ -22,19 +23,25 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     if (file && file.type === 'text/csv') {
       onFileSelect(file);
     } else if (file) {
-      alert('Please select a CSV file');
+      notifications.error('Please select a CSV file', {
+        title: 'Invalid File Type',
+        description: 'Only CSV files are supported'
+      });
     }
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragOver(false);
-    
+
     const file = event.dataTransfer.files[0];
     if (file && file.type === 'text/csv') {
       onFileSelect(file);
     } else if (file) {
-      alert('Please select a CSV file');
+      notifications.error('Please select a CSV file', {
+        title: 'Invalid File Type',
+        description: 'Only CSV files are supported'
+      });
     }
   };
 

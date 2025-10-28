@@ -26,6 +26,7 @@ import realApiService from '@/services/realApi';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { formatDate } from '@/utils/dateFormatters';
+import notifications from '@/utils/notifications';
 
 // Survey status badge component
 const SurveyStatusBadge: React.FC<{ status: string }> = ({ status }) => {
@@ -388,11 +389,17 @@ const ProfessionalTherapistSurveys: React.FC = () => {
     try {
       const response = await realApiService.therapist.deleteSurvey(surveyId);
       if (response.success) {
+        notifications.success('Survey deleted successfully', {
+          title: 'Success',
+          duration: 3000
+        });
         await loadSurveys();
       }
     } catch (error) {
       console.error('Error deleting survey:', error);
-      alert('Failed to delete survey. Please try again.');
+      notifications.error('Failed to delete survey. Please try again.', {
+        title: 'Error'
+      });
     }
   };
 
@@ -407,14 +414,20 @@ const ProfessionalTherapistSurveys: React.FC = () => {
       delete duplicatedData.id;
       delete duplicatedData.createdAt;
       delete duplicatedData.updatedAt;
-      
+
       const response = await realApiService.therapist.createSurvey(duplicatedData);
       if (response.success) {
+        notifications.success('Survey duplicated successfully', {
+          title: 'Success',
+          duration: 3000
+        });
         await loadSurveys();
       }
     } catch (error) {
       console.error('Error duplicating survey:', error);
-      alert('Failed to duplicate survey. Please try again.');
+      notifications.error('Failed to duplicate survey. Please try again.', {
+        title: 'Error'
+      });
     }
   };
 

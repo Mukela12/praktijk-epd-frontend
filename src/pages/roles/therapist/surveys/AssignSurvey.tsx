@@ -19,6 +19,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import { Client } from '@/types/entities';
 import { formatDate } from '@/utils/dateFormatters';
+import notifications from '@/utils/notifications';
 
 // Client selection card
 interface ClientCardProps {
@@ -139,20 +140,24 @@ const AssignSurvey: React.FC = () => {
 
   const handleSubmit = async () => {
     if (selectedClients.length === 0) {
-      alert('Please select at least one client');
+      notifications.error('Please select at least one client', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     if (isRecurring && !dueDate) {
-      alert('Please set a due date for recurring assignments');
+      notifications.error('Please set a due date for recurring assignments', {
+        title: 'Validation Error'
+      });
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
+
       // Assign survey to each selected client
-      const assignmentPromises = selectedClients.map(clientId => 
+      const assignmentPromises = selectedClients.map(clientId =>
         realApiService.therapist.assignSurvey(surveyId!, clientId, {
           dueDate: dueDate || null,
           isRecurring,
@@ -161,18 +166,30 @@ const AssignSurvey: React.FC = () => {
           sendNotification
         })
       );
-      
+
       const results = await Promise.allSettled(assignmentPromises);
-      
+
       // Count successful assignments
       const successCount = results.filter(r => r.status === 'fulfilled').length;
       const failCount = results.filter(r => r.status === 'rejected').length;
-      
+
       if (successCount > 0) {
         if (failCount > 0) {
-          alert(`Survey assigned to ${successCount} clients. ${failCount} assignments failed.`);
+          notifications.warning(
+            `Survey assigned to ${successCount} clients. ${failCount} assignments failed.`,
+            {
+              title: 'Partial Success',
+              duration: 5000
+            }
+          );
         } else {
-          alert(`Survey successfully assigned to ${successCount} clients!`);
+          notifications.success(
+            `Survey successfully assigned to ${successCount} clients!`,
+            {
+              title: 'Success',
+              duration: 3000
+            }
+          );
         }
         navigate('/therapist/surveys');
       } else {
@@ -180,7 +197,10 @@ const AssignSurvey: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error assigning survey:', error);
-      alert('Failed to assign survey. Please try again.');
+      notifications.error('Failed to assign survey. Please try again.', {
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred'
+      });
     } finally {
       setIsSubmitting(false);
     }
