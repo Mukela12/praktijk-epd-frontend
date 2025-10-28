@@ -211,6 +211,11 @@ const SessionManagement: React.FC = () => {
   const autoSaveProgress = async () => {
     if (!activeSession || isSaving) return;
 
+    if (!activeSession.id) {
+      console.error('[SessionManagement] Cannot auto-save: activeSession.id is undefined');
+      return;
+    }
+
     try {
       setIsSaving(true);
       await therapistApi.updateSessionProgress(activeSession.id, {
@@ -245,12 +250,29 @@ const SessionManagement: React.FC = () => {
       });
 
       if (response.success && response.data) {
+        console.log('[SessionManagement] startSession response:', response.data);
+
+        // Get session ID from response - try multiple locations
+        const sessionId = response.data.session?.id ||
+                         response.data.id ||
+                         response.data.session?.session_id ||
+                         response.data.sessionId;
+
+        if (!sessionId) {
+          console.error('[SessionManagement] No session ID in response:', response.data);
+          error('Failed to start session: No session ID returned');
+          return;
+        }
+
+        console.log('[SessionManagement] Session ID:', sessionId);
+
         const duration = appointment.duration || 50;
         const startTime = new Date();
         const expectedEndTime = new Date(startTime.getTime() + duration * 60 * 1000);
 
         setActiveSession({
           ...response.data.session,
+          id: sessionId, // Explicitly set the ID
           appointment,
           startTime,
           duration: 0,
@@ -285,6 +307,12 @@ const SessionManagement: React.FC = () => {
 
   const endSession = async () => {
     if (!activeSession) return;
+
+    if (!activeSession.id) {
+      console.error('[SessionManagement] Cannot end session: activeSession.id is undefined');
+      error('Cannot end session: Session ID is missing');
+      return;
+    }
 
     if (!summaryForm.summary) {
       error('Please provide a session summary');
