@@ -72,7 +72,9 @@ const TherapistMessages: React.FC = () => {
 
         if (messagesResponse.success && messagesResponse.data) {
           // Transform API messages to match our local Message interface
-          const transformedMessages = (Array.isArray(messagesResponse.data) ? messagesResponse.data : []).map((msg: any) => ({
+          // Backend returns {data: {messages: [], unreadCount, pagination}}
+          const messageArray = messagesResponse.data.messages || (Array.isArray(messagesResponse.data) ? messagesResponse.data : []);
+          const transformedMessages = messageArray.map((msg: any) => ({
             id: msg.id,
             sender_id: msg.sender_id,
             sender_name: msg.sender_name,

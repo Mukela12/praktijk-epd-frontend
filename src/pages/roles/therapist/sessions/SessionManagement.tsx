@@ -16,7 +16,9 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  UserPlusIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { therapistApi as legacyTherapistApi } from '@/services/therapistApi';
 import { therapistApi } from '@/services/unifiedApi';
@@ -847,6 +849,66 @@ const SessionManagement: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </PremiumCard>
+
+              {/* Client Assignments Panel - New Feature */}
+              <PremiumCard>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <UserPlusIcon className="w-6 h-6 text-purple-600" />
+                    <h3 className="text-lg font-semibold">Assign Resources, Surveys & Challenges</h3>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Assign resources, surveys, or challenges to {activeSession.appointment?.client_first_name} during or after this session.
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <PremiumButton
+                      variant="outline"
+                      icon={BookOpenIcon}
+                      onClick={() => {
+                        // Navigate to resources assignment
+                        navigate(`/therapist/resources?assignTo=${activeSession.appointment?.client_id}`);
+                      }}
+                      className="w-full"
+                    >
+                      Assign Resource
+                    </PremiumButton>
+
+                    <PremiumButton
+                      variant="outline"
+                      icon={DocumentTextIcon}
+                      onClick={() => {
+                        // Navigate to surveys assignment
+                        navigate(`/therapist/surveys?assignTo=${activeSession.appointment?.client_id}`);
+                      }}
+                      className="w-full"
+                    >
+                      Assign Survey
+                    </PremiumButton>
+
+                    <PremiumButton
+                      variant="outline"
+                      icon={ChartBarIcon}
+                      onClick={() => {
+                        // Navigate to challenges assignment
+                        navigate(`/therapist/challenges?assignTo=${activeSession.appointment?.client_id}`);
+                      }}
+                      className="w-full"
+                    >
+                      Assign Challenge
+                    </PremiumButton>
+                  </div>
+
+                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <p className="text-xs text-purple-900">
+                      <strong>Tip:</strong> Assignments are optional. Use them to provide additional support and track client progress between sessions.
+                    </p>
+                  </div>
+                </div>
               </PremiumCard>
 
               {/* Session Progress Panel - Collapsible */}

@@ -150,13 +150,17 @@ const TherapistResourcesManagementInline: React.FC = () => {
       setIsSubmitting(true);
       
       if (viewMode === 'create') {
+        // Ensure contentUrl is either a valid URL or undefined (not empty string)
+        const contentUrl = formData.url?.trim();
+        const isValidUrl = contentUrl && (contentUrl.startsWith('http://') || contentUrl.startsWith('https://'));
+
         const response = await realApiService.resources.createResource({
           title: formData.title || '',
           description: formData.description || '',
           type: formData.type || 'article',
           category: formData.category || 'general',
           contentBody: formData.contentBody || '',
-          contentUrl: formData.url || '',
+          contentUrl: isValidUrl ? contentUrl : undefined,
           difficulty: formData.difficulty || 'beginner',
           tags: formData.tags || [],
           isPublic: formData.isPublic !== false
@@ -168,6 +172,10 @@ const TherapistResourcesManagementInline: React.FC = () => {
           handleCancel();
         }
       } else if (viewMode === 'edit' && selectedResource) {
+        // Ensure contentUrl is either a valid URL or undefined (not empty string)
+        const contentUrl = formData.url?.trim() || selectedResource.url;
+        const isValidUrl = contentUrl && (contentUrl.startsWith('http://') || contentUrl.startsWith('https://'));
+
         const response = await realApiService.resources.updateResource(selectedResource.id, {
           title: formData.title || selectedResource.title,
           description: formData.description || selectedResource.description,
@@ -175,7 +183,7 @@ const TherapistResourcesManagementInline: React.FC = () => {
           type: formData.type || selectedResource.type,
           category: formData.category || selectedResource.category,
           contentBody: formData.contentBody || selectedResource.contentBody,
-          contentUrl: formData.url || selectedResource.url,
+          contentUrl: isValidUrl ? contentUrl : undefined,
           difficulty: formData.difficulty || selectedResource.difficulty,
           tags: formData.tags || selectedResource.tags,
           isPublic: formData.isPublic !== undefined ? formData.isPublic : selectedResource.isPublic,
