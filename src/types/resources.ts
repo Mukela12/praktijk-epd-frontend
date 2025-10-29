@@ -1,7 +1,7 @@
 // Resource Management Types
 
 export type ResourceType = 'article' | 'video' | 'pdf' | 'audio' | 'interactive' | 'external';
-export type ResourceCategory = 'anxiety' | 'depression' | 'stress' | 'relationships' | 'trauma' | 'self-care' | 'mindfulness' | 'other';
+export type ResourceCategory = 'mental_health' | 'anxiety' | 'depression' | 'stress' | 'relationships' | 'trauma' | 'self_care' | 'mindfulness' | 'coping_skills' | 'other';
 export type ResourceDifficulty = 'beginner' | 'intermediate' | 'advanced';
 export type ResourceAudience = 'all' | 'clients' | 'therapists' | 'specific';
 export type ResourceStatus = 'draft' | 'published' | 'archived';
