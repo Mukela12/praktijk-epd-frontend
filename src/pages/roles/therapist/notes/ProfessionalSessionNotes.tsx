@@ -74,11 +74,11 @@ const NoteCard: React.FC<{
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 bg-green-600/10 rounded-full flex items-center justify-center">
-            <UserIcon className="w-6 h-6 text-green-600" />
+            <DocumentTextIcon className="w-6 h-6 text-green-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              {note.client_name}
+              Session with {note.client_name}
               {note.is_important && (
                 <StarIconSolid className="w-5 h-5 text-yellow-500 ml-2" />
               )}
@@ -87,7 +87,12 @@ const NoteCard: React.FC<{
               <CalendarIcon className="w-4 h-4 mr-1" />
               {formatDate(note.session_date)}
               <ClockIcon className="w-4 h-4 ml-3 mr-1" />
-              {note.duration} min
+              {note.duration} min session
+              {note.attachments && note.attachments.length > 0 && (
+                <span className="ml-3 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-medium">
+                  {note.attachments.length} {note.attachments.length === 1 ? 'attachment' : 'attachments'}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -188,24 +193,30 @@ const NoteCard: React.FC<{
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span className="text-sm text-gray-500">
-          Updated {formatDate(note.updated_at)}
-        </span>
+        <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <span>Updated {formatDate(note.updated_at)}</span>
+          {note.private_notes && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs font-medium">
+              <LockClosedIcon className="w-3 h-3 mr-1" />
+              Has private notes
+            </span>
+          )}
+        </div>
         <div className="flex space-x-2">
           <button
             onClick={onView}
-            className="px-3 py-1 text-sm text-green-600 hover:bg-green-600/10 rounded-lg transition-colors flex items-center"
+            className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center shadow-sm"
           >
-            <EyeIcon className="w-4 h-4 mr-1" />
-            View
+            <EyeIcon className="w-4 h-4 mr-1.5" />
+            View Full Details
           </button>
           {!note.is_locked && (
             <button
               onClick={onEdit}
-              className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center"
             >
-              <PencilSquareIcon className="w-4 h-4 mr-1" />
-              Edit
+              <PencilSquareIcon className="w-4 h-4 mr-1.5" />
+              Edit Note
             </button>
           )}
         </div>
