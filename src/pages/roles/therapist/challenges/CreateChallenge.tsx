@@ -27,16 +27,16 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageTransition from '@/components/ui/PageTransition';
 import notifications from '@/utils/notifications';
 
-// Challenge categories with icons
+// Challenge categories with icons (aligned with backend validation)
 const categories = [
-  { value: 'breathing', label: 'Breathing', icon: SunIcon },
-  { value: 'gratitude', label: 'Gratitude', icon: HeartIcon },
+  { value: 'mental_health', label: 'Mental Health', icon: HeartIcon },
   { value: 'mindfulness', label: 'Mindfulness', icon: BeakerIcon },
-  { value: 'exercise', label: 'Exercise', icon: BoltIcon },
-  { value: 'social', label: 'Social Connection', icon: UserGroupIcon },
+  { value: 'fitness', label: 'Fitness & Exercise', icon: BoltIcon },
+  { value: 'nutrition', label: 'Nutrition', icon: SparklesIcon },
   { value: 'sleep', label: 'Sleep', icon: MoonIcon },
-  { value: 'meditation', label: 'Meditation', icon: SunIcon },
-  { value: 'nutrition', label: 'Nutrition', icon: SparklesIcon }
+  { value: 'habits', label: 'Daily Habits', icon: ClockIcon },
+  { value: 'social', label: 'Social Connection', icon: UserGroupIcon },
+  { value: 'learning', label: 'Learning & Growth', icon: AcademicCapIcon }
 ];
 
 // Milestone editor component

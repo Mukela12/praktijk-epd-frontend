@@ -302,7 +302,8 @@ const ProfessionalSessionNotes: React.FC = () => {
       const response = await therapistApi.getSessionNotes();
 
       if (response.success && response.data) {
-        setNotes(Array.isArray(response.data) ? response.data : []);
+        // Backend returns { data: { notes: [], pagination: {} } }
+        setNotes(response.data.notes || []);
       } else {
         setNotes([]);
         // Don't show error for empty notes - just show empty state

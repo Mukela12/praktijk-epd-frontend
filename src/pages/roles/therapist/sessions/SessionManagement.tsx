@@ -103,6 +103,15 @@ const SessionManagement: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Assignment state
+  const [resources, setResources] = useState<any[]>([]);
+  const [surveys, setSurveys] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [selectedResourceId, setSelectedResourceId] = useState<string>('');
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string>('');
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string>('');
+  const [isAssigning, setIsAssigning] = useState(false);
+
   const availableTechniques = [
     'CBT (Cognitive Behavioral Therapy)',
     'Mindfulness',
@@ -135,6 +144,13 @@ const SessionManagement: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
+  }, [activeSession?.id]);
+
+  // Load assignment options when session is active
+  useEffect(() => {
+    if (activeSession) {
+      loadAssignmentOptions();
+    }
   }, [activeSession?.id]);
 
   // Auto-save functionality
@@ -207,6 +223,90 @@ const SessionManagement: React.FC = () => {
       error('Failed to load session data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadAssignmentOptions = async () => {
+    try {
+      // Load resources
+      const resourcesResponse = await therapistApi.getResources?.({ limit: 100 });
+      if (resourcesResponse?.success && resourcesResponse.data) {
+        setResources(Array.isArray(resourcesResponse.data) ? resourcesResponse.data : []);
+      }
+
+      // Load surveys
+      const surveysResponse = await therapistApi.getSurveys?.({ limit: 100 });
+      if (surveysResponse?.success && surveysResponse.data) {
+        setSurveys(Array.isArray(surveysResponse.data) ? surveysResponse.data : []);
+      }
+
+      // Load challenges
+      const challengesResponse = await therapistApi.getChallenges?.({ limit: 100 });
+      if (challengesResponse?.success && challengesResponse.data) {
+        setChallenges(Array.isArray(challengesResponse.data) ? challengesResponse.data : []);
+      }
+    } catch (err) {
+      console.error('Error loading assignment options:', err);
+    }
+  };
+
+  const handleAssignResource = async () => {
+    if (!selectedResourceId || !activeSession?.appointment?.client_id) return;
+
+    try {
+      setIsAssigning(true);
+      const response = await therapistApi.assignResource?.(selectedResourceId, activeSession.appointment.client_id);
+      if (response?.success) {
+        success('Resource assigned successfully');
+        setSelectedResourceId('');
+      } else {
+        error('Failed to assign resource');
+      }
+    } catch (err) {
+      console.error('Error assigning resource:', err);
+      error('Failed to assign resource');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleAssignSurvey = async () => {
+    if (!selectedSurveyId || !activeSession?.appointment?.client_id) return;
+
+    try {
+      setIsAssigning(true);
+      const response = await therapistApi.assignSurvey?.(selectedSurveyId, activeSession.appointment.client_id);
+      if (response?.success) {
+        success('Survey assigned successfully');
+        setSelectedSurveyId('');
+      } else {
+        error('Failed to assign survey');
+      }
+    } catch (err) {
+      console.error('Error assigning survey:', err);
+      error('Failed to assign survey');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleAssignChallenge = async () => {
+    if (!selectedChallengeId || !activeSession?.appointment?.client_id) return;
+
+    try {
+      setIsAssigning(true);
+      const response = await therapistApi.assignChallenge?.(selectedChallengeId, activeSession.appointment.client_id);
+      if (response?.success) {
+        success('Challenge assigned successfully');
+        setSelectedChallengeId('');
+      } else {
+        error('Failed to assign challenge');
+      }
+    } catch (err) {
+      console.error('Error assigning challenge:', err);
+      error('Failed to assign challenge');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -851,7 +951,7 @@ const SessionManagement: React.FC = () => {
                 )}
               </PremiumCard>
 
-              {/* Client Assignments Panel - New Feature */}
+              {/* Client Assignments Panel - Dropdown Based */}
               <PremiumCard>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -861,51 +961,106 @@ const SessionManagement: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mb-4">
                     Assign resources, surveys, or challenges to {activeSession.appointment?.client_first_name} during or after this session.
                   </p>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <PremiumButton
-                      variant="outline"
-                      icon={BookOpenIcon}
-                      onClick={() => {
-                        // Navigate to resources assignment
-                        navigate(`/therapist/resources?assignTo=${activeSession.appointment?.client_id}`);
-                      }}
-                      className="w-full"
-                    >
+                  {/* Resources */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <BookOpenIcon className="w-4 h-4 inline mr-2" />
                       Assign Resource
-                    </PremiumButton>
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedResourceId}
+                        onChange={(e) => setSelectedResourceId(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        disabled={isAssigning || resources.length === 0}
+                      >
+                        <option value="">Select a resource...</option>
+                        {resources.map((resource) => (
+                          <option key={resource.id} value={resource.id}>
+                            {resource.title} ({resource.type})
+                          </option>
+                        ))}
+                      </select>
+                      <PremiumButton
+                        variant="primary"
+                        onClick={handleAssignResource}
+                        disabled={!selectedResourceId || isAssigning}
+                        className="whitespace-nowrap"
+                      >
+                        {isAssigning ? 'Assigning...' : 'Assign'}
+                      </PremiumButton>
+                    </div>
+                  </div>
 
-                    <PremiumButton
-                      variant="outline"
-                      icon={DocumentTextIcon}
-                      onClick={() => {
-                        // Navigate to surveys assignment
-                        navigate(`/therapist/surveys?assignTo=${activeSession.appointment?.client_id}`);
-                      }}
-                      className="w-full"
-                    >
+                  {/* Surveys */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <DocumentTextIcon className="w-4 h-4 inline mr-2" />
                       Assign Survey
-                    </PremiumButton>
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedSurveyId}
+                        onChange={(e) => setSelectedSurveyId(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        disabled={isAssigning || surveys.length === 0}
+                      >
+                        <option value="">Select a survey...</option>
+                        {surveys.map((survey) => (
+                          <option key={survey.id} value={survey.id}>
+                            {survey.title} ({survey.type})
+                          </option>
+                        ))}
+                      </select>
+                      <PremiumButton
+                        variant="primary"
+                        onClick={handleAssignSurvey}
+                        disabled={!selectedSurveyId || isAssigning}
+                        className="whitespace-nowrap"
+                      >
+                        {isAssigning ? 'Assigning...' : 'Assign'}
+                      </PremiumButton>
+                    </div>
+                  </div>
 
-                    <PremiumButton
-                      variant="outline"
-                      icon={ChartBarIcon}
-                      onClick={() => {
-                        // Navigate to challenges assignment
-                        navigate(`/therapist/challenges?assignTo=${activeSession.appointment?.client_id}`);
-                      }}
-                      className="w-full"
-                    >
+                  {/* Challenges */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      <ChartBarIcon className="w-4 h-4 inline mr-2" />
                       Assign Challenge
-                    </PremiumButton>
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedChallengeId}
+                        onChange={(e) => setSelectedChallengeId(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        disabled={isAssigning || challenges.length === 0}
+                      >
+                        <option value="">Select a challenge...</option>
+                        {challenges.map((challenge) => (
+                          <option key={challenge.id} value={challenge.id}>
+                            {challenge.title} ({challenge.duration} days)
+                          </option>
+                        ))}
+                      </select>
+                      <PremiumButton
+                        variant="primary"
+                        onClick={handleAssignChallenge}
+                        disabled={!selectedChallengeId || isAssigning}
+                        className="whitespace-nowrap"
+                      >
+                        {isAssigning ? 'Assigning...' : 'Assign'}
+                      </PremiumButton>
+                    </div>
                   </div>
 
                   <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                     <p className="text-xs text-purple-900">
-                      <strong>Tip:</strong> Assignments are optional. Use them to provide additional support and track client progress between sessions.
+                      <strong>Tip:</strong> Assignments are optional. They help track client progress between sessions. The client will be notified when you assign an item.
                     </p>
                   </div>
                 </div>
