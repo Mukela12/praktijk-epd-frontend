@@ -1078,59 +1078,59 @@ export const realApiService = {
 
     // Challenges
     getChallenges: async (): Promise<ApiResponse<{ challenges: any[] }>> => {
-      const response = await api.get('/therapist/challenges');
+      const response = await api.get('/challenges');
       return response.data;
     },
 
     createChallenge: async (data: any): Promise<ApiResponse<any>> => {
-      const response = await api.post('/therapist/challenges', data);
+      const response = await api.post('/challenges', data);
       return response.data;
     },
 
     updateChallenge: async (id: string, data: any): Promise<ApiResponse<any>> => {
-      const response = await api.put(`/therapist/challenges/${id}`, data);
+      const response = await api.put(`/challenges/${id}`, data);
       return response.data;
     },
 
     deleteChallenge: async (id: string): Promise<ApiResponse<any>> => {
-      const response = await api.delete(`/therapist/challenges/${id}`);
+      const response = await api.delete(`/challenges/${id}`);
       return response.data;
     },
 
     assignChallenge: async (challengeId: string, clientId: string, data?: any): Promise<ApiResponse<any>> => {
-      const response = await api.post(`/therapist/challenges/${challengeId}/assign`, { clientId, ...data });
+      const response = await api.post(`/challenges/${challengeId}/assign`, { clientId, ...data });
       return response.data;
     },
 
     // Surveys
     getSurveys: async (): Promise<ApiResponse<{ surveys: any[] }>> => {
-      const response = await api.get('/therapist/surveys');
+      const response = await api.get('/surveys');
       return response.data;
     },
 
     createSurvey: async (data: any): Promise<ApiResponse<any>> => {
-      const response = await api.post('/therapist/surveys', data);
+      const response = await api.post('/surveys', data);
       return response.data;
     },
 
     updateSurvey: async (id: string, data: any): Promise<ApiResponse<any>> => {
-      const response = await api.put(`/therapist/surveys/${id}`, data);
+      const response = await api.put(`/surveys/${id}`, data);
       return response.data;
     },
 
     deleteSurvey: async (id: string): Promise<ApiResponse<any>> => {
-      const response = await api.delete(`/therapist/surveys/${id}`);
+      const response = await api.delete(`/surveys/${id}`);
       return response.data;
     },
 
     assignSurvey: async (surveyId: string, clientId: string, data?: any): Promise<ApiResponse<any>> => {
-      const response = await api.post(`/therapist/surveys/${surveyId}/assign`, { clientId, ...data });
+      const response = await api.post(`/surveys/${surveyId}/assign`, { clientId, ...data });
       return response.data;
     },
 
     // Resources
     getResources: async (): Promise<ApiResponse<{ resources: any[] }>> => {
-      const response = await api.get('/therapist/resources');
+      const response = await api.get('/resources');
       return response.data;
     }
   },

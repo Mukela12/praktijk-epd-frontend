@@ -207,7 +207,7 @@ export const therapistApi = {
       success: response.data.success,
       message: response.data.message || 'Surveys loaded successfully',
       data: {
-        surveys: response.data.data || []
+        surveys: response.data.data?.surveys || []
       }
     };
   },
@@ -252,7 +252,7 @@ export const therapistApi = {
       success: response.data.success,
       message: response.data.message || 'Challenges loaded successfully',
       data: {
-        challenges: response.data.data || []
+        challenges: response.data.data?.challenges || []
       }
     };
   },
@@ -287,7 +287,7 @@ export const therapistApi = {
       success: response.data.success,
       message: response.data.message || 'Resources loaded successfully',
       data: {
-        resources: response.data.data || []
+        resources: response.data.data?.resources || []
       }
     };
   },
