@@ -130,7 +130,7 @@ const NoteCard: React.FC<{
       </div>
 
       {/* Key points */}
-      {note.key_points.length > 0 && (
+      {Array.isArray(note.key_points) && note.key_points.length > 0 && (
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">Key Points:</h4>
           <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
