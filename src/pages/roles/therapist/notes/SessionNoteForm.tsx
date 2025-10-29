@@ -84,13 +84,17 @@ const SessionNoteForm: React.FC = () => {
       // Load clients
       const clientsResponse = await therapistApi.getClients();
       if (clientsResponse.success && clientsResponse.data) {
-        setClients(clientsResponse.data);
+        setClients(Array.isArray(clientsResponse.data) ? clientsResponse.data : []);
+      } else {
+        setClients([]);
       }
 
       // Load appointments
       const appointmentsResponse = await therapistApi.getAppointments();
       if (appointmentsResponse.success && appointmentsResponse.data) {
-        setAppointments(appointmentsResponse.data);
+        setAppointments(Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : []);
+      } else {
+        setAppointments([]);
       }
 
       // Load existing note if in edit mode
@@ -255,7 +259,7 @@ const SessionNoteForm: React.FC = () => {
                     
                     // Initialize hulpvragen progress tracking
                     let hulpvragenProgress = {};
-                    if (selectedClient?.hulpvragen) {
+                    if (selectedClient?.hulpvragen && Array.isArray(selectedClient.hulpvragen)) {
                       hulpvragenProgress = selectedClient.hulpvragen.reduce((acc: any, hulpvraag: string) => {
                         acc[hulpvraag] = {
                           discussed: false,
@@ -276,7 +280,7 @@ const SessionNoteForm: React.FC = () => {
                   required
                 >
                   <option value="">Select a client</option>
-                  {clients.map(client => (
+                  {Array.isArray(clients) && clients.map(client => (
                     <option key={client.id} value={client.id}>
                       {client.first_name} {client.last_name}
                     </option>
@@ -360,7 +364,7 @@ const SessionNoteForm: React.FC = () => {
                 
                 return (
                   <div className="space-y-4">
-                    {selectedClient.hulpvragen && selectedClient.hulpvragen.length > 0 && (
+                    {selectedClient.hulpvragen && Array.isArray(selectedClient.hulpvragen) && selectedClient.hulpvragen.length > 0 && (
                       <div>
                         <p className="text-sm font-medium text-blue-700 mb-2">
                           Client's Selected Concerns (Hulpvragen):
