@@ -69,10 +69,14 @@ const SessionNoteView = React.lazy(() => import('@/pages/roles/therapist/notes/S
 const SessionManagement = React.lazy(() => import('@/pages/roles/therapist/sessions/SessionManagement'));
 const ProfessionalTherapistSurveys = React.lazy(() => import('@/pages/roles/therapist/surveys/ProfessionalTherapistSurveys'));
 const CreateSurvey = React.lazy(() => import('@/pages/roles/therapist/surveys/CreateSurvey'));
+const SurveyDetail = React.lazy(() => import('@/pages/roles/therapist/surveys/SurveyDetail'));
+const EditSurvey = React.lazy(() => import('@/pages/roles/therapist/surveys/EditSurvey'));
 const AssignSurvey = React.lazy(() => import('@/pages/roles/therapist/surveys/AssignSurvey'));
 const SurveyResponses = React.lazy(() => import('@/pages/roles/therapist/surveys/SurveyResponses'));
 const ProfessionalTherapistChallenges = React.lazy(() => import('@/pages/roles/therapist/challenges/ProfessionalTherapistChallenges'));
 const CreateChallenge = React.lazy(() => import('@/pages/roles/therapist/challenges/CreateChallenge'));
+const ChallengeDetail = React.lazy(() => import('@/pages/roles/therapist/challenges/ChallengeDetail'));
+const EditChallenge = React.lazy(() => import('@/pages/roles/therapist/challenges/EditChallenge'));
 const AssignChallenge = React.lazy(() => import('@/pages/roles/therapist/challenges/AssignChallenge'));
 const ResourcesManagementInline = React.lazy(() => import('@/pages/roles/therapist/resources/ResourcesManagementInline'));
 const TherapistClientProfile = React.lazy(() => import('@/pages/roles/therapist/clients/TherapistClientProfile'));
@@ -273,11 +277,15 @@ const AppRoutes: React.FC = () => {
                   {/* Survey Routes */}
                   <Route path="surveys" element={<ProfessionalTherapistSurveys />} />
                   <Route path="surveys/new" element={<CreateSurvey />} />
+                  <Route path="surveys/:surveyId" element={<SurveyDetail />} />
+                  <Route path="surveys/:surveyId/edit" element={<EditSurvey />} />
                   <Route path="surveys/:surveyId/assign" element={<AssignSurvey />} />
                   <Route path="surveys/:surveyId/responses" element={<SurveyResponses />} />
                   {/* Challenge Routes */}
                   <Route path="challenges" element={<ProfessionalTherapistChallenges />} />
                   <Route path="challenges/new" element={<CreateChallenge />} />
+                  <Route path="challenges/:challengeId" element={<ChallengeDetail />} />
+                  <Route path="challenges/:challengeId/edit" element={<EditChallenge />} />
                   <Route path="challenges/:challengeId/assign" element={<AssignChallenge />} />
                   {/* Resources Route */}
                   <Route path="resources" element={<ResourcesManagementInline />} />
