@@ -88,17 +88,7 @@ const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
     }
   };
 
-  // Get unique categories for filtering
-  const categories = useMemo(() => {
-    const uniqueCategories = Array.from(new Set(hulpvragen.map(h => h.category))).sort();
-    return [
-      { value: 'all', label: language === 'en' ? 'All Categories' : 'Alle Categorieën' },
-      ...uniqueCategories.map(cat => ({
-        value: cat,
-        label: getCategoryDisplayName(cat)
-      }))
-    ];
-  }, [hulpvragen, language]);
+  // Helper functions - defined before useMemo to avoid TDZ errors
 
   // Get display name for category
   const getCategoryDisplayName = (category: string): string => {
@@ -120,11 +110,33 @@ const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
       'eating': { nl: 'Eetstoornis', en: 'Eating' },
       'other': { nl: 'Overig', en: 'Other' }
     };
-    
-    return categoryNames[category] 
+
+    return categoryNames[category]
       ? categoryNames[category][language as keyof typeof categoryNames[typeof category]]
       : category;
   };
+
+  // Get display name for hulpvraag
+  const getHulpvraagDisplayName = (hulpvraag: PsychologicalProblem): string => {
+    return language === 'en' && hulpvraag.name_en ? hulpvraag.name_en : hulpvraag.name;
+  };
+
+  // Get description for hulpvraag
+  const getHulpvraagDescription = (hulpvraag: PsychologicalProblem): string => {
+    return language === 'en' && hulpvraag.description_en ? hulpvraag.description_en : hulpvraag.description;
+  };
+
+  // Get unique categories for filtering
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(hulpvragen.map(h => h.category))).sort();
+    return [
+      { value: 'all', label: language === 'en' ? 'All Categories' : 'Alle Categorieën' },
+      ...uniqueCategories.map(cat => ({
+        value: cat,
+        label: getCategoryDisplayName(cat)
+      }))
+    ];
+  }, [hulpvragen, language]);
 
   // Filter hulpvragen based on search term and category
   const filteredHulpvragen = useMemo(() => {
@@ -164,16 +176,6 @@ const HulpvragenSelector: React.FC<HulpvragenSelectorProps> = ({
   // Clear all selections
   const clearAll = () => {
     onChange([]);
-  };
-
-  // Get display name for hulpvraag
-  const getHulpvraagDisplayName = (hulpvraag: PsychologicalProblem): string => {
-    return language === 'en' && hulpvraag.name_en ? hulpvraag.name_en : hulpvraag.name;
-  };
-
-  // Get description for hulpvraag
-  const getHulpvraagDescription = (hulpvraag: PsychologicalProblem): string => {
-    return language === 'en' && hulpvraag.description_en ? hulpvraag.description_en : hulpvraag.description;
   };
 
   if (isLoading) {
