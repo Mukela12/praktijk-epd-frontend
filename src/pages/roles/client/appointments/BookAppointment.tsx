@@ -386,6 +386,31 @@ const BookAppointment: React.FC = () => {
         console.log('[BookAppointment] Booking response:', response);
 
         if (response.success) {
+          // Check if intake form is required for this appointment type
+          if (appointmentType && isIntakeFormRequired(appointmentType)) {
+            console.log('[BookAppointment] Intake form required - redirecting to intake form');
+            notifications.success(
+              `Your intake appointment has been successfully booked!`,
+              {
+                title: 'Appointment Confirmed',
+                description: `Next step: Please complete your intake form`,
+                duration: 5000
+              }
+            );
+
+            // Redirect to intake form with appointment context
+            navigate('/client/intake-form', {
+              state: {
+                appointmentId: response.data?.appointment?.id,
+                therapistName: selectedTherapist ? `${selectedTherapist.first_name} ${selectedTherapist.last_name}` : 'Your therapist',
+                appointmentDate: selectedDate,
+                appointmentTime: selectedTime,
+                fromBooking: true
+              }
+            });
+            return; // Exit early - don't reset form or show other notifications
+          }
+
           if (response.data?.waitingList) {
             notifications.info(
               'Your request has been added to the waiting list. An admin will assign you a suitable therapist soon.',
@@ -450,6 +475,30 @@ const BookAppointment: React.FC = () => {
         const response = await realApiService.client.requestAppointment(requestData);
 
         if (response.success) {
+          // Check if intake form is required for this appointment type
+          if (appointmentType && isIntakeFormRequired(appointmentType)) {
+            console.log('[BookAppointment] Intake form required for appointment request - redirecting to intake form');
+            notifications.success(
+              'Your intake appointment request has been submitted!',
+              {
+                title: 'Request Submitted',
+                description: 'Next step: Please complete your intake form',
+                duration: 5000
+              }
+            );
+
+            // Redirect to intake form
+            navigate('/client/intake-form', {
+              state: {
+                requestId: response.data?.requestId,
+                appointmentDate: selectedDate,
+                appointmentTime: selectedTime,
+                fromBooking: true
+              }
+            });
+            return; // Exit early
+          }
+
           notifications.success(
             'Your appointment request has been submitted successfully.',
             {

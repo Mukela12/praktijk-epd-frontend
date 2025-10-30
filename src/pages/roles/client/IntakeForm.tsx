@@ -225,17 +225,15 @@ const IntakeForm: React.FC = () => {
       const response = await clientApi.submitIntakeForm(submitData);
       
       if (response.success) {
-        success('Intake form completed successfully. Now let\'s schedule your first appointment.', {
+        success('Intake form completed successfully! You can now manage your appointments.', {
           title: 'Intake Complete',
           duration: 5000
         });
-        // Navigate to appointment booking with intake data
-        navigate('/client/book-appointment', { 
-          state: { 
-            fromIntake: true,
-            hulpvragen: formData.hulpvragen,
-            reasonForTherapy: formData.reasonForTherapy,
-            urgencyLevel: 'normal' // Default urgency
+        // Navigate to appointments page
+        navigate('/client/appointments', {
+          state: {
+            intakeCompleted: true,
+            message: 'Your intake form has been successfully completed!'
           }
         });
       }
