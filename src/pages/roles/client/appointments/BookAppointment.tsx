@@ -399,7 +399,7 @@ const BookAppointment: React.FC = () => {
             );
 
             // Redirect to intake form with appointment context
-            navigate('/client/intake-form', {
+            navigate('/client/intake', {
               state: {
                 appointmentId: response.data?.appointment?.id,
                 therapistName: selectedTherapist ? `${selectedTherapist.first_name} ${selectedTherapist.last_name}` : 'Your therapist',
@@ -488,7 +488,7 @@ const BookAppointment: React.FC = () => {
             );
 
             // Redirect to intake form
-            navigate('/client/intake-form', {
+            navigate('/client/intake', {
               state: {
                 requestId: response.data?.requestId,
                 appointmentDate: selectedDate,
